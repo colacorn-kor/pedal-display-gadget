@@ -1,0 +1,29 @@
+<svg width="100%" viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <rect width="480" height="320" fill="#0E1116"/>
+  <text x="30" y="34" fill="#7FD4A8" font-size="13" font-weight="bold" letter-spacing="2">TUNER</text>
+
+  <!-- 큰 음 이름 (약간 플랫 → 앰버. 인튠이면 초록) -->
+  <text x="240" y="135" fill="#E8C24A" font-size="104" font-weight="bold" text-anchor="middle">A<tspan font-size="40" dy="-44">2</tspan></text>
+
+  <!-- 인튠 존(±5센트) 옅은 초록 -->
+  <rect x="222" y="196" width="36" height="22" fill="#36C26B" fill-opacity="0.12"/>
+  <!-- 센트 트랙 -->
+  <line x1="60" y1="207" x2="420" y2="207" stroke="#3A424C" stroke-width="2"/>
+  <!-- 틱 -->
+  <g fill="#6B7480" font-size="9" text-anchor="middle">
+    <rect x="59" y="201" width="2" height="12" fill="#3A424C"/><text x="60" y="230">-50</text>
+    <rect x="149" y="201" width="2" height="12" fill="#3A424C"/><text x="150" y="230">-25</text>
+    <rect x="239" y="197" width="2" height="20" fill="#7FD4A8"/><text x="240" y="230">0</text>
+    <rect x="329" y="201" width="2" height="12" fill="#3A424C"/><text x="330" y="230">+25</text>
+    <rect x="419" y="201" width="2" height="12" fill="#3A424C"/><text x="420" y="230">+50</text>
+  </g>
+  <!-- 플랫/샤프 -->
+  <text x="40" y="212" fill="#6B7480" font-size="20" text-anchor="middle">&#9837;</text>
+  <text x="442" y="212" fill="#6B7480" font-size="20" text-anchor="middle">&#9839;</text>
+  <!-- 니들 (cents -12) -->
+  <rect x="194.8" y="187" width="4" height="40" rx="2" fill="#E8C24A"/>
+
+  <!-- 수치 -->
+  <text x="240" y="270" fill="#AEB6C0" font-size="16" text-anchor="middle">-12 &#162;</text>
+  <text x="240" y="294" fill="#5A626C" font-size="13" text-anchor="middle">108.9 Hz</text>
+</svg>

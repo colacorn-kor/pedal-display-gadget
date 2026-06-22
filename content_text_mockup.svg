@@ -1,0 +1,31 @@
+<svg width="100%" viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <rect x="0" y="0" width="480" height="320" fill="#0E1116"/>
+
+  <!-- 섹션 라벨 (악센트) -->
+  <text x="240" y="58" fill="#7FD4A8" font-size="15" font-weight="bold"
+        letter-spacing="3" text-anchor="middle">CHORUS</text>
+
+  <!-- 큰 코드 행 (무대 가독성: 굵고 크게) -->
+  <text x="240" y="135" fill="#F2F4F7" font-size="46" font-weight="bold"
+        letter-spacing="6" text-anchor="middle">Am  F  C  G</text>
+
+  <!-- 큐/가사 한 줄 -->
+  <text x="240" y="185" fill="#AEB6C0" font-size="22" text-anchor="middle">
+    build → drop on the G
+  </text>
+
+  <!-- 다음 코드 미리보기 (옅게) -->
+  <text x="240" y="232" fill="#5A626C" font-size="18" text-anchor="middle">
+    next:  Dm  →  E7
+  </text>
+
+  <!-- 하단 오버레이: 이름 + 인덱스 점 -->
+  <text x="20" y="306" fill="#6B7480" font-size="13">set1 / song3</text>
+  <g>
+    <circle cx="392" cy="301" r="3.5" fill="#3A424C"/>
+    <circle cx="408" cy="301" r="3.5" fill="#3A424C"/>
+    <circle cx="424" cy="301" r="4.5" fill="#7FD4A8"/>
+    <circle cx="440" cy="301" r="3.5" fill="#3A424C"/>
+    <circle cx="456" cy="301" r="3.5" fill="#3A424C"/>
+  </g>
+</svg>
