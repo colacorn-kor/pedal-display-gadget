@@ -33,7 +33,7 @@ Core0 input_task : 버튼/풋스위치/UI queue → lvgl_port_lock → sm_on_eve
 | `app.h` | 모듈 간 공유 선언: 오디오 스냅샷, UI queue, 뮤트, 화면 매니저 API |
 | `app_main.c` | 부팅 + 3태스크(audio Core1 / display·input Core0) + sequence 스냅샷·UI queue·I2S |
 | `fft_map.{c,h}` | 스펙트럼 매핑: 2048-pt FFT(esp-dsp) → 256점 로그 곡선(20Hz–20kHz), 틸트·평활·피크홀드, Monitor/Visualizer 프리셋 |
-| `tuner.{c,h}` | 시간영역 피치검출(MPM/NSDF), 48k→12k 데시메이션, 음이름+센트 |
+| `tuner.{c,h}` | 시간영역 피치검출(MPM/NSDF), 63-tap LPF + 48k→8k 데시메이션, 30–1300Hz, 음이름+센트 |
 | `renderer.{c,h}` | 렌더러 레지스트리 + 내장 테마(Classic/Robot/Cute) |
 | `renderer_curve.c` | 곡선 렌더러(PSRAM 캔버스 직접 픽셀) |
 | `renderer_bars.c` | 막대 렌더러(256점→32막대 그룹핑) |

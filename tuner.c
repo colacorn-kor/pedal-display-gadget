@@ -9,23 +9,46 @@
 #include "audio_config.h"
 #include "tuner.h"
 
-#define DEC               4
+#define DEC               6
 #define SR                (AUDIO_SAMPLE_RATE / DEC)
-#define WIN               1024
-#define HOP               256
-#define FMIN              58.0f
-#define FMAX              1100.0f
-#define TAU_CALC_MIN      10
-#define TAU_SEARCH_MIN    11
-#define TAU_SEARCH_MAX    207
-#define TAU_CALC_MAX      208
+#define WIN               1536
+#define HOP               192
+#define FMIN              30.0f
+#define FMAX              1300.0f
+
+/* SR=8 kHz: 1300 Hz -> tau=6.15, 30 Hz -> tau=266.67.
+ * Keep one extra lag at each side for parabolic interpolation. */
+#define TAU_CALC_MIN      5
+#define TAU_SEARCH_MIN    6
+#define TAU_SEARCH_MAX    267
+#define TAU_CALC_MAX      268
+
+/* WIN/SR = 192 ms, or 5.76 cycles at 30 Hz. Even at tau=267 the
+ * overlap is 1269 samples (158.6 ms, 4.76 cycles at 30 Hz), so the lowest
+ * band retains a useful NSDF confidence interval without a 2048-sample
+ * window. This guard protects that invariant if the range changes later. */
+#define MIN_NSDF_OVERLAP  1024
 #define CLARITY_THRESHOLD 0.50f
 #define MIN_RMS           0.0002f
 #define A4                440.0f
+#define RANGE_EDGE_TOLERANCE 0.015f
 
 #define FIR_TAPS          63
-#define FIR_CUTOFF_HZ     1800.0f
+/* 63-tap Hamming LPF: about -0.42 dB at 1300 Hz and <= -52.7 dB from
+ * the new 4 kHz Nyquist upward. More taps are not justified here: they
+ * would increase every 48 kHz input-sample convolution without improving
+ * the tuner passband materially. */
+#define FIR_CUTOFF_HZ     2200.0f
 #define PI_F              3.14159265358979323846f
+
+_Static_assert(AUDIO_SAMPLE_RATE % DEC == 0,
+               "tuner decimation must produce an integer sample rate");
+_Static_assert(TAU_CALC_MIN + 1 == TAU_SEARCH_MIN,
+               "NSDF needs one interpolation lag below the search range");
+_Static_assert(TAU_SEARCH_MAX + 1 == TAU_CALC_MAX,
+               "NSDF needs one interpolation lag above the search range");
+_Static_assert(WIN - TAU_CALC_MAX >= MIN_NSDF_OVERLAP,
+               "NSDF overlap guard must cover every calculated lag");
 
 static const char *NOTE[12] = {
     "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
@@ -152,6 +175,10 @@ static void analyze(void)
         float autocorrelation = 0.0f;
         float normalization = 0.0f;
         int count = WIN - tau;
+        if (count < MIN_NSDF_OVERLAP) {
+            s_nsdf[tau] = 0.0f;
+            continue;
+        }
         for (int i = 0; i < count; i++) {
             float a = s_window[i];
             float b = s_window[i + tau];
@@ -196,10 +223,17 @@ static void analyze(void)
     else if (shift > 0.5f) shift = 0.5f;
 
     float f0 = (float)SR / (best + shift);
-    if (!isfinite(f0) || f0 < FMIN || f0 > FMAX) {
+    /* Parabolic interpolation is least accurate at the two search edges.
+     * Accept one accuracy-budget of numerical overshoot, then saturate to
+     * the advertised 30..1300 Hz range instead of dropping an edge note. */
+    if (!isfinite(f0) ||
+        f0 < FMIN * (1.0f - RANGE_EDGE_TOLERANCE) ||
+        f0 > FMAX * (1.0f + RANGE_EDGE_TOLERANCE)) {
         publish_unvoiced(max_peak);
         return;
     }
+    if (f0 < FMIN) f0 = FMIN;
+    else if (f0 > FMAX) f0 = FMAX;
 
     float midi = 69.0f + 12.0f * log2f(f0 / A4);
     int note = (int)lroundf(midi);
