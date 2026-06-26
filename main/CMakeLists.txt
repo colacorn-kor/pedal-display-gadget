@@ -1,8 +1,12 @@
 set(APP_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/../app_main.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../app_images.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../app_monitor.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../app_tuner.c"
     "${CMAKE_CURRENT_LIST_DIR}/../content_screen.c"
     "${CMAKE_CURRENT_LIST_DIR}/../display_bringup.c"
     "${CMAKE_CURRENT_LIST_DIR}/../fft_map.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../gadget_app.c"
     "${CMAKE_CURRENT_LIST_DIR}/../midi.c"
     "${CMAKE_CURRENT_LIST_DIR}/../midi_map.c"
     "${CMAKE_CURRENT_LIST_DIR}/../renderer.c"
