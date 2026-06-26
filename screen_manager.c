@@ -12,10 +12,20 @@ typedef enum {
     SM_APP_BASE = 1,
 } sm_screen_t;
 
+#define POPUP_ITEM_COUNT 4
+#define POPUP_EXIT_IDX 0
+
 static int s_active_app = -1;
 static int s_sel;
 static lv_obj_t *s_item[10];
+static lv_obj_t *s_popup;
+static lv_obj_t *s_popup_item[POPUP_ITEM_COUNT];
+static int s_popup_sel;
 static float s_bpm = 120.0f;
+
+static const char *POPUP_LABELS[POPUP_ITEM_COUNT] = {
+    "Exit", "Settings", "Help", "About"
+};
 
 static void clean_screen(void)
 {
@@ -23,6 +33,9 @@ static void clean_screen(void)
     for (int i = 0; i < (int)(sizeof(s_item) / sizeof(s_item[0])); i++) {
         s_item[i] = 0;
     }
+    s_popup = 0;
+    for (int i = 0; i < POPUP_ITEM_COUNT; i++) s_popup_item[i] = 0;
+    s_popup_sel = 0;
 }
 
 static const gadget_app_t *active_app(void)
@@ -72,8 +85,80 @@ static void build_home(void)
     highlight_home();
 }
 
+static void popup_highlight(void)
+{
+    for (int i = 0; i < POPUP_ITEM_COUNT; i++) {
+        if (s_popup_item[i]) {
+            lv_obj_set_style_text_color(
+                s_popup_item[i],
+                lv_color_hex(i == s_popup_sel ? 0x7FD4A8 : 0xD9DEE5),
+                0);
+        }
+    }
+}
+
+static void popup_close(void)
+{
+    if (s_popup) lv_obj_delete(s_popup);
+    s_popup = 0;
+    for (int i = 0; i < POPUP_ITEM_COUNT; i++) s_popup_item[i] = 0;
+    s_popup_sel = 0;
+}
+
+static void popup_open(void)
+{
+    if (s_popup) return;
+
+    s_popup_sel = POPUP_EXIT_IDX;
+    s_popup = lv_obj_create(lv_screen_active());
+    lv_obj_set_size(s_popup, 480, 320);
+    lv_obj_set_pos(s_popup, 0, 0);
+    lv_obj_remove_flag(s_popup, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_radius(s_popup, 0, 0);
+    lv_obj_set_style_border_width(s_popup, 0, 0);
+    lv_obj_set_style_pad_all(s_popup, 0, 0);
+    lv_obj_set_style_bg_color(s_popup, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(s_popup, 170, 0);
+
+    lv_obj_t *panel = lv_obj_create(s_popup);
+    lv_obj_set_size(panel, 260, 210);
+    lv_obj_center(panel);
+    lv_obj_remove_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_radius(panel, 6, 0);
+    lv_obj_set_style_border_width(panel, 1, 0);
+    lv_obj_set_style_border_color(panel, lv_color_hex(0x2A323C), 0);
+    lv_obj_set_style_pad_all(panel, 0, 0);
+    lv_obj_set_style_bg_color(panel, lv_color_hex(0x121821), 0);
+    lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
+
+    lv_obj_t *title = lv_label_create(panel);
+    lv_label_set_text(title, "MENU");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x6B7480), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 16);
+
+    for (int i = 0; i < POPUP_ITEM_COUNT; i++) {
+        s_popup_item[i] = lv_label_create(panel);
+        lv_label_set_text(s_popup_item[i], POPUP_LABELS[i]);
+        lv_obj_set_style_text_font(s_popup_item[i], &lv_font_montserrat_28, 0);
+        lv_obj_align(s_popup_item[i], LV_ALIGN_TOP_LEFT, 42, 54 + i * 36);
+    }
+    popup_highlight();
+}
+
+static void popup_move(ui_event_t event)
+{
+    if (event == EV_UP || event == EV_LEFT) {
+        s_popup_sel = (s_popup_sel - 1 + POPUP_ITEM_COUNT) % POPUP_ITEM_COUNT;
+    } else if (event == EV_DOWN || event == EV_RIGHT) {
+        s_popup_sel = (s_popup_sel + 1) % POPUP_ITEM_COUNT;
+    }
+    popup_highlight();
+}
+
 static void go_home(void)
 {
+    popup_close();
     exit_active_app();
     clean_screen();
     audio_set_mode(AUDIO_SPECTRUM);
@@ -85,6 +170,7 @@ static void enter_app(int idx, int variant)
     const gadget_app_t *app = app_registry_at(idx);
     if (!app) return;
 
+    popup_close();
     exit_active_app();
     clean_screen();
     s_active_app = idx;
@@ -106,6 +192,11 @@ static void footsw_quick_app(void)
 {
     const int tuner = app_registry_find("tuner");
     if (tuner >= 0 && s_active_app != tuner) enter_app(tuner, 0);
+}
+
+static void popup_activate(void)
+{
+    if (s_popup_sel == POPUP_EXIT_IDX) go_home();
 }
 
 void sm_load_scene(int content, int theme, int renderer)
@@ -149,6 +240,29 @@ void sm_init(void)
 
 void sm_on_event(ui_event_t event)
 {
+    if (event == EV_HOME_HOLD) {
+        go_home();
+        return;
+    }
+
+    if (s_popup) {
+        if (event == EV_UP || event == EV_DOWN ||
+            event == EV_LEFT || event == EV_RIGHT) {
+            popup_move(event);
+        } else if (event == EV_OK) {
+            popup_activate();
+        } else if (event == EV_HOME) {
+            popup_close();
+        } else if (event == EV_FOOTSW) {
+            popup_close();
+            footsw_next_app();
+        } else if (event == EV_FOOTSW_HOLD) {
+            popup_close();
+            footsw_quick_app();
+        }
+        return;
+    }
+
     if (event == EV_FOOTSW) {
         footsw_next_app();
         return;
@@ -157,8 +271,9 @@ void sm_on_event(ui_event_t event)
         footsw_quick_app();
         return;
     }
-    if (event == EV_HOME_HOLD) {
-        go_home();
+
+    if (event == EV_HOME) {
+        if (s_active_app >= 0) popup_open();
         return;
     }
 
@@ -180,8 +295,6 @@ void sm_on_event(ui_event_t event)
 
     const gadget_app_t *app = active_app();
     if (app && app->on_event && app->on_event(event)) return;
-
-    if (event == EV_HOME) go_home();
 }
 
 void sm_render(void)
