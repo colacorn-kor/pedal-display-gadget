@@ -30,14 +30,23 @@
 
 #define DMA_FRAMES  256
 #define MUTE_IO     GPIO_NUM_21
-#define BTN1_IO     GPIO_NUM_4
-#define BTN2_IO     GPIO_NUM_5
-#define BTN3_IO     GPIO_NUM_6
+#define BTN_UP_IO   GPIO_NUM_1
+#define BTN_DOWN_IO GPIO_NUM_2
+#define BTN_LEFT_IO GPIO_NUM_4
+#define BTN_OK_IO   GPIO_NUM_5
+#define BTN_RIGHT_IO GPIO_NUM_6
+#define BTN_HOME_IO GPIO_NUM_13
 #define FOOTSW_IO   GPIO_NUM_7
 #define I2S_MCK     GPIO_NUM_16
 #define I2S_BCK     GPIO_NUM_17
 #define I2S_WS      GPIO_NUM_18
 #define I2S_DIN     GPIO_NUM_15
+
+#define INPUT_POLL_MS         10
+#define INPUT_DEBOUNCE_MS     30
+#define INPUT_HOLD_MS         500
+#define INPUT_REPEAT_DELAY_MS 400
+#define INPUT_REPEAT_RATE_MS  120
 
 static const char *TAG = "app";
 
@@ -349,41 +358,121 @@ static void dispatch_ui_action(const ui_action_t *action)
     lvgl_port_unlock();
 }
 
+typedef struct {
+    gpio_num_t pin;
+    ui_event_t ev_short;
+    ui_event_t ev_hold;
+    bool has_hold;
+    bool repeats;
+    int raw_level;
+    int stable_level;
+    int debounce_ms;
+    int held_ms;
+    int repeat_ms;
+    bool hold_fired;
+} input_button_t;
+
+static void dispatch_input_event(ui_event_t event)
+{
+    const ui_action_t action = { .type = UI_ACTION_EVENT, .event = event };
+    dispatch_ui_action(&action);
+}
+
+static void input_button_pressed(input_button_t *button)
+{
+    button->held_ms = 0;
+    button->repeat_ms = 0;
+    button->hold_fired = false;
+    if (!button->has_hold) dispatch_input_event(button->ev_short);
+}
+
+static void input_button_released(input_button_t *button)
+{
+    if (button->has_hold && !button->hold_fired) {
+        dispatch_input_event(button->ev_short);
+    }
+    button->held_ms = 0;
+    button->repeat_ms = 0;
+    button->hold_fired = false;
+}
+
+static void input_button_update(input_button_t *button)
+{
+    int raw = gpio_get_level(button->pin);
+    if (raw != button->raw_level) {
+        button->raw_level = raw;
+        button->debounce_ms = 0;
+    } else if (button->debounce_ms < INPUT_DEBOUNCE_MS) {
+        button->debounce_ms += INPUT_POLL_MS;
+        if (button->debounce_ms >= INPUT_DEBOUNCE_MS &&
+            button->stable_level != button->raw_level) {
+            button->stable_level = button->raw_level;
+            if (button->stable_level == 0) input_button_pressed(button);
+            else input_button_released(button);
+        }
+    }
+
+    if (button->raw_level != button->stable_level) return;
+    if (button->stable_level != 0) return;
+
+    button->held_ms += INPUT_POLL_MS;
+    if (button->has_hold && !button->hold_fired &&
+        button->held_ms >= INPUT_HOLD_MS) {
+        button->hold_fired = true;
+        dispatch_input_event(button->ev_hold);
+    }
+
+    if (button->repeats && button->held_ms >= INPUT_REPEAT_DELAY_MS) {
+        button->repeat_ms += INPUT_POLL_MS;
+        if (button->repeat_ms >= INPUT_REPEAT_RATE_MS) {
+            button->repeat_ms = 0;
+            dispatch_input_event(button->ev_short);
+        }
+    }
+}
+
 static void input_task(void *arg)
 {
     (void)arg;
     xSemaphoreTake(s_ui_ready, portMAX_DELAY);
 
-    const gpio_num_t pins[4] = { BTN1_IO, BTN2_IO, BTN3_IO, FOOTSW_IO };
-    const ui_event_t events[4] = { EV_PREV, EV_SELECT, EV_NEXT, EV_FOOTSW };
+    input_button_t buttons[] = {
+        { .pin = BTN_UP_IO, .ev_short = EV_UP, .repeats = true },
+        { .pin = BTN_DOWN_IO, .ev_short = EV_DOWN, .repeats = true },
+        { .pin = BTN_LEFT_IO, .ev_short = EV_LEFT, .repeats = true },
+        { .pin = BTN_RIGHT_IO, .ev_short = EV_RIGHT, .repeats = true },
+        { .pin = BTN_OK_IO, .ev_short = EV_OK },
+        { .pin = BTN_HOME_IO, .ev_short = EV_HOME,
+          .ev_hold = EV_HOME_HOLD, .has_hold = true },
+        { .pin = FOOTSW_IO, .ev_short = EV_FOOTSW,
+          .ev_hold = EV_FOOTSW_HOLD, .has_hold = true },
+    };
+    const int button_count = (int)(sizeof(buttons) / sizeof(buttons[0]));
     const gpio_config_t input_cfg = {
-        .pin_bit_mask = (1ULL << BTN1_IO) | (1ULL << BTN2_IO) |
-                        (1ULL << BTN3_IO) | (1ULL << FOOTSW_IO),
+        .pin_bit_mask = (1ULL << BTN_UP_IO) | (1ULL << BTN_DOWN_IO) |
+                        (1ULL << BTN_LEFT_IO) | (1ULL << BTN_RIGHT_IO) |
+                        (1ULL << BTN_OK_IO) | (1ULL << BTN_HOME_IO) |
+                        (1ULL << FOOTSW_IO),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
     };
     ESP_ERROR_CHECK(gpio_config(&input_cfg));
 
-    int last[4] = { 1, 1, 1, 1 };
+    for (int i = 0; i < button_count; i++) {
+        int level = gpio_get_level(buttons[i].pin);
+        buttons[i].raw_level = level;
+        buttons[i].stable_level = level;
+        buttons[i].debounce_ms = INPUT_DEBOUNCE_MS;
+    }
+
     for (;;) {
         ui_action_t queued;
         while (xQueueReceive(s_ui_queue, &queued, 0) == pdTRUE) {
             dispatch_ui_action(&queued);
         }
 
-        for (int i = 0; i < 4; i++) {
-            int value = gpio_get_level(pins[i]);
-            if (value == 0 && last[i] == 1) {
-                const ui_action_t action = {
-                    .type = UI_ACTION_EVENT,
-                    .event = events[i],
-                };
-                dispatch_ui_action(&action);
-                vTaskDelay(pdMS_TO_TICKS(30));
-            }
-            last[i] = value;
-        }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        for (int i = 0; i < button_count; i++) input_button_update(&buttons[i]);
+        vTaskDelay(pdMS_TO_TICKS(INPUT_POLL_MS));
     }
 }
 

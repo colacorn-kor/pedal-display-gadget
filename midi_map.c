@@ -58,11 +58,11 @@ static void handle_cc(const midi_msg_t *message)
     if (!rising) return;
 
     switch (message->d1) {
-    case CC_NEXT:  ui_post_event(EV_NEXT); break;
-    case CC_PREV:  ui_post_event(EV_PREV); break;
-    case CC_THEME: ui_post_event(EV_NEXT); break;
-    case CC_REND:  ui_post_event(EV_PREV); break;
-    case CC_TUNER: ui_post_event(EV_FOOTSW); break;
+    case CC_NEXT:  ui_post_event(EV_RIGHT); break;
+    case CC_PREV:  ui_post_event(EV_LEFT); break;
+    case CC_THEME: ui_post_event(EV_UP); break;
+    case CC_REND:  ui_post_event(EV_DOWN); break;
+    case CC_TUNER: ui_post_event(EV_FOOTSW_HOLD); break;
     case CC_MUTE:  ui_post_mute_toggle(); break;
     }
 }

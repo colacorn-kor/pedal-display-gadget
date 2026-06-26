@@ -40,12 +40,12 @@ static void images_exit(void)
 
 static bool images_on_event(ui_event_t event)
 {
-    if (event == EV_PREV) {
+    if (event == EV_LEFT) {
         s_image = (s_image - 1 + IMGN) % IMGN;
         images_show_current();
         return true;
     }
-    if (event == EV_NEXT) {
+    if (event == EV_RIGHT) {
         s_image = (s_image + 1) % IMGN;
         images_show_current();
         return true;

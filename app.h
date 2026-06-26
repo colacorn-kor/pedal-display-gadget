@@ -26,7 +26,17 @@ void mute_set(int on);
 int  mute_get(void);
 
 /* 화면 매니저 공개 API */
-typedef enum { EV_PREV, EV_NEXT, EV_SELECT, EV_BACK, EV_FOOTSW } ui_event_t;
+typedef enum {
+    EV_UP,
+    EV_DOWN,
+    EV_LEFT,
+    EV_RIGHT,
+    EV_OK,
+    EV_HOME,
+    EV_HOME_HOLD,
+    EV_FOOTSW,
+    EV_FOOTSW_HOLD,
+} ui_event_t;
 void sm_init(void);
 void sm_on_event(ui_event_t ev);
 void sm_render(void);

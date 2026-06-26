@@ -13,8 +13,6 @@ typedef enum {
 } sm_screen_t;
 
 static int s_active_app = -1;
-static int s_prev_app = -1;
-static int s_prev_was_home = 1;
 static int s_sel;
 static lv_obj_t *s_item[10];
 static float s_bpm = 120.0f;
@@ -30,11 +28,6 @@ static void clean_screen(void)
 static const gadget_app_t *active_app(void)
 {
     return app_registry_at(s_active_app);
-}
-
-static int tuner_idx(void)
-{
-    return app_registry_find("tuner");
 }
 
 static void exit_active_app(void)
@@ -98,32 +91,21 @@ static void enter_app(int idx, int variant)
     if (app->on_enter) app->on_enter(variant);
 }
 
-static void enter_tuner_bridge(void)
+static void footsw_next_app(void)
 {
-    const int tuner = tuner_idx();
-    if (tuner < 0) return;
-
-    s_prev_app = s_active_app;
-    s_prev_was_home = s_active_app < 0;
-    enter_app(tuner, 0);
+    const int n = app_registry_count();
+    if (n <= 0) return;
+    if (s_active_app < 0) {
+        enter_app(s_sel >= 0 && s_sel < n ? s_sel : 0, 0);
+    } else {
+        enter_app((s_active_app + 1) % n, 0);
+    }
 }
 
-static void exit_tuner_bridge(void)
+static void footsw_quick_app(void)
 {
-    const int target = s_prev_app;
-    const int was_home = s_prev_was_home;
-
-    exit_active_app();
-    clean_screen();
-    audio_set_mode(AUDIO_SPECTRUM);
-
-    if (!was_home && app_registry_at(target)) {
-        s_active_app = target;
-        const gadget_app_t *app = active_app();
-        if (app && app->on_enter) app->on_enter(0);
-    } else {
-        build_home();
-    }
+    const int tuner = app_registry_find("tuner");
+    if (tuner >= 0 && s_active_app != tuner) enter_app(tuner, 0);
 }
 
 void sm_load_scene(int content, int theme, int renderer)
@@ -168,8 +150,15 @@ void sm_init(void)
 void sm_on_event(ui_event_t event)
 {
     if (event == EV_FOOTSW) {
-        if (s_active_app == tuner_idx()) exit_tuner_bridge();
-        else enter_tuner_bridge();
+        footsw_next_app();
+        return;
+    }
+    if (event == EV_FOOTSW_HOLD) {
+        footsw_quick_app();
+        return;
+    }
+    if (event == EV_HOME_HOLD) {
+        go_home();
         return;
     }
 
@@ -177,15 +166,14 @@ void sm_on_event(ui_event_t event)
         const int n = app_registry_count();
         if (n <= 0) return;
 
-        if (event == EV_PREV) {
+        if (event == EV_UP || event == EV_LEFT) {
             s_sel = (s_sel - 1 + n) % n;
             highlight_home();
-        } else if (event == EV_NEXT) {
+        } else if (event == EV_DOWN || event == EV_RIGHT) {
             s_sel = (s_sel + 1) % n;
             highlight_home();
-        } else if (event == EV_SELECT) {
-            if (s_sel == tuner_idx()) enter_tuner_bridge();
-            else enter_app(s_sel, 0);
+        } else if (event == EV_OK) {
+            enter_app(s_sel, 0);
         }
         return;
     }
@@ -193,10 +181,7 @@ void sm_on_event(ui_event_t event)
     const gadget_app_t *app = active_app();
     if (app && app->on_event && app->on_event(event)) return;
 
-    if (event == EV_SELECT || event == EV_BACK) {
-        if (s_active_app == tuner_idx()) exit_tuner_bridge();
-        else go_home();
-    }
+    if (event == EV_HOME) go_home();
 }
 
 void sm_render(void)

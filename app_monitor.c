@@ -60,12 +60,12 @@ static void monitor_render(void)
 
 static bool monitor_on_event(ui_event_t event)
 {
-    if (event == EV_PREV && renderer_count() > 0) {
+    if (event == EV_DOWN && renderer_count() > 0) {
         s_renderer = (s_renderer + 1) % renderer_count();
         monitor_select_renderer();
         return true;
     }
-    if (event == EV_NEXT && viz_theme_count() > 0) {
+    if (event == EV_UP && viz_theme_count() > 0) {
         s_theme = (s_theme + 1) % viz_theme_count();
         monitor_select_renderer();
         return true;
