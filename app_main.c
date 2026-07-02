@@ -29,18 +29,18 @@
 #include "tuner.h"
 
 #define DMA_FRAMES  256
-#define MUTE_IO     GPIO_NUM_21
-#define BTN_UP_IO   GPIO_NUM_1
-#define BTN_DOWN_IO GPIO_NUM_2
-#define BTN_LEFT_IO GPIO_NUM_4
-#define BTN_OK_IO   GPIO_NUM_5
-#define BTN_RIGHT_IO GPIO_NUM_6
-#define BTN_HOME_IO GPIO_NUM_13
-#define FOOTSW_IO   GPIO_NUM_7
-#define I2S_MCK     GPIO_NUM_16
-#define I2S_BCK     GPIO_NUM_17
+#define MUTE_IO      GPIO_NUM_3
+#define BTN_UP_IO    GPIO_NUM_4
+#define BTN_DOWN_IO  GPIO_NUM_5
+#define BTN_LEFT_IO  GPIO_NUM_6
+#define BTN_OK_IO    GPIO_NUM_16
+#define BTN_RIGHT_IO GPIO_NUM_7
+#define BTN_HOME_IO  GPIO_NUM_15
+#define FOOTSW_IO    GPIO_NUM_17
+#define I2S_MCK      GPIO_NUM_8
+#define I2S_BCK      GPIO_NUM_9
 #define I2S_WS      GPIO_NUM_18
-#define I2S_DIN     GPIO_NUM_15
+#define I2S_DIN      GPIO_NUM_10
 
 #define INPUT_POLL_MS         10
 #define INPUT_DEBOUNCE_MS     30

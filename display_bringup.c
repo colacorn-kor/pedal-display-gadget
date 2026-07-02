@@ -25,11 +25,11 @@
         26-37 / 스트래핑 0·3·45·46 와 충돌 없는 GPIO) ───────────────────────── */
 #define LCD_SPI_HOST  SPI2_HOST
 #define PIN_SCLK  12
-#define PIN_MOSI  11
-#define PIN_CS    10
-#define PIN_DC     9
+#define PIN_MOSI  13
+#define PIN_CS     2
+#define PIN_DC    21
 #define PIN_RST   14
-#define PIN_BL     8        /* 백라이트 EN (전류 크면 트랜지스터 경유) */
+#define PIN_BL     1        /* 백라이트 EN (전류 크면 트랜지스터 경유) */
 #define LCD_HRES  480
 #define LCD_VRES  320
 #define LCD_PCLK  (40*1000*1000)   /* 우선 40MHz, 안정되면 80MHz 시도 */
