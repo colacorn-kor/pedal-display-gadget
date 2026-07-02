@@ -41,7 +41,7 @@
 #define LCD_MIRROR_Y    0
 #define LCD_GAP_X       0
 #define LCD_GAP_Y       0
-#define LCD_INVERT      1
+#define LCD_INVERT      0
 #define LCD_RGB_BGR     1
 #define LCD_SWAP_BYTES  1
 
