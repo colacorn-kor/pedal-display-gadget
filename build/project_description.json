@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "pedal_display",
-    "project_version":    "1d855dd-dirty",
+    "project_version":    "a9be580-dirty",
     "project_path":       "C:/Users/User/Documents/GitHub/pedal-display-gadget",
     "idf_path":           "C:/esp/v5.4.4/esp-idf",
     "build_dir":          "C:/Users/User/Documents/GitHub/pedal-display-gadget/build",

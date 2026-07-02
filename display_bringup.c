@@ -35,7 +35,7 @@
 #define LCD_PCLK_MHZ  10
 #define LCD_PCLK      (LCD_PCLK_MHZ * 1000 * 1000)
 
-#define LCD_BRINGUP_TEST 1
+#define LCD_BRINGUP_TEST 0
 #define LCD_SWAP_XY     1
 #define LCD_MIRROR_X    0
 #define LCD_MIRROR_Y    0
