@@ -32,7 +32,7 @@
 #define PIN_BL     1        /* 백라이트 EN (전류 크면 트랜지스터 경유) */
 #define LCD_HRES  480
 #define LCD_VRES  320
-#define LCD_PCLK  (40*1000*1000)   /* 우선 40MHz, 안정되면 80MHz 시도 */
+#define LCD_PCLK  (10*1000*1000)   /* DEBUG: 배선 신호무결성 테스트용 저속 */
 
 static const char *TAG = "display";
 
@@ -71,7 +71,7 @@ lv_display_t* bsp_display_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel,true));   /* 네거티브로 보이면 false */
     ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel,true));         /* 480x320 가로 */
-    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel,true,false));    /* 상하/좌우 뒤집히면 조정 */
+    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel,false,true));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel,true));
 
     /* LVGL 포트 + 디스플레이 등록 (자체 LVGL 태스크 생성) */
@@ -80,8 +80,8 @@ lv_display_t* bsp_display_init(void)
     ESP_ERROR_CHECK(lvgl_port_init(&lp));
     const lvgl_port_display_cfg_t dc={
         .io_handle=io, .panel_handle=panel,
-        .buffer_size=LCD_HRES*40,               /* 부분버퍼(내부 DMA RAM) */
-        .double_buffer=true,
+        .buffer_size=LCD_HRES*40,
+        .double_buffer=false,
         .hres=LCD_HRES, .vres=LCD_VRES,
         .color_format=LV_COLOR_FORMAT_RGB565,
         .flags={ .buff_dma=true, .buff_spiram=false, .swap_bytes=true },

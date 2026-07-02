@@ -1,0 +1,83 @@
+[0;33m--- Warning: GDB cannot open serial ports accessed as COMx[0m
+[0;33m--- Using \\.\COM4 instead...[0m
+[0;33m--- esp-idf-monitor 1.9.0 on \\.\COM4 115200[0m
+[0;33m--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H[0m
+[0m--- 0x42050056: [0;33mtask_wdt_timeout_handling[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m434[0m
+[0m--- 0x4205046c: [0;33mtask_wdt_isr[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m507[0m
+[0m--- 0x40377909: [0;33m_xt_lowint1[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/xtensa/xtensa_vectors.S[0m[0m:[1;31m1240[0m
+[0m--- 0x42017556: [0;33mwait_for_flushing[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1458[0m
+[0m--- 0x42018382: [0;33mrefr_configured_layer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1036[0m
+[0m--- 0x42018588: [0;33mrefr_area[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m907[0m
+[0m--- 0x420187a8: [0;33mrefr_invalid_areas[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m809[0m
+[0m--- 0x420188d7: [0;33mlv_display_refr_timer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m419[0m
+[0m--- 0x42022609: [0;33mlv_timer_exec[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m353[0m
+[0m--- 0x420226b1: [0;33mlv_timer_handler[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m107[0m
+[0m--- 0x4200f064: [0;33mlvgl_port_task[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/espressif__esp_lvgl_port/src/lvgl9/esp_lvgl_port.c[0m[0m:[1;31m242[0m
+[0m--- 0x4037d199: [0;33mvPortTaskWrapper[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m139[0m
+[0m--- 0x42050056: [0;33mtask_wdt_timeout_handling[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m434[0m
+[0m--- 0x4205046c: [0;33mtask_wdt_isr[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m507[0m
+[0m--- 0x40377909: [0;33m_xt_lowint1[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/xtensa/xtensa_vectors.S[0m[0m:[1;31m1240[0m
+[0m--- 0x42017551: [0;33mwait_for_flushing[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1454[0m
+[0m--- 0x42018382: [0;33mrefr_configured_layer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1036[0m
+[0m--- 0x42018588: [0;33mrefr_area[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m907[0m
+[0m--- 0x420187a8: [0;33mrefr_invalid_areas[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m809[0m
+[0m--- 0x420188d7: [0;33mlv_display_refr_timer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m419[0m
+[0m--- 0x42022609: [0;33mlv_timer_exec[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m353[0m
+[0m--- 0x420226b1: [0;33mlv_timer_handler[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m107[0m
+[0m--- 0x4200f064: [0;33mlvgl_port_task[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/espressif__esp_lvgl_port/src/lvgl9/esp_lvgl_port.c[0m[0m:[1;31m242[0m
+[0m--- 0x4037d199: [0;33mvPortTaskWrapper[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m139[0m
+[0m--- 0x42050056: [0;33mtask_wdt_timeout_handling[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m434[0m
+[0m--- 0x4205046c: [0;33mtask_wdt_isr[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m507[0m
+[0m--- 0x40377909: [0;33m_xt_lowint1[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/xtensa/xtensa_vectors.S[0m[0m:[1;31m1240[0m
+[0m--- 0x42017551: [0;33mwait_for_flushing[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1454[0m
+[0m--- 0x42018382: [0;33mrefr_configured_layer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1036[0m
+[0m--- 0x42018588: [0;33mrefr_area[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m907[0m
+[0m--- 0x420187a8: [0;33mrefr_invalid_areas[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m809[0m
+[0m--- 0x420188d7: [0;33mlv_display_refr_timer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m419[0m
+[0m--- 0x42022609: [0;33mlv_timer_exec[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m353[0m
+[0m--- 0x420226b1: [0;33mlv_timer_handler[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m107[0m
+[0m--- 0x4200f064: [0;33mlvgl_port_task[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/espressif__esp_lvgl_port/src/lvgl9/esp_lvgl_port.c[0m[0m:[1;31m242[0m
+[0m--- 0x4037d199: [0;33mvPortTaskWrapper[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m139[0m
+[0m--- 0x42050056: [0;33mtask_wdt_timeout_handling[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m434[0m
+[0m--- 0x4205046c: [0;33mtask_wdt_isr[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m507[0m
+[0m--- 0x40377909: [0;33m_xt_lowint1[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/xtensa/xtensa_vectors.S[0m[0m:[1;31m1240[0m
+[0m--- 0x42017551: [0;33mwait_for_flushing[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1454[0m
+[0m--- 0x42018382: [0;33mrefr_configured_layer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1036[0m
+[0m--- 0x42018588: [0;33mrefr_area[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m907[0m
+[0m--- 0x420187a8: [0;33mrefr_invalid_areas[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m809[0m
+[0m--- 0x420188d7: [0;33mlv_display_refr_timer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m419[0m
+[0m--- 0x42022609: [0;33mlv_timer_exec[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m353[0m
+[0m--- 0x420226b1: [0;33mlv_timer_handler[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m107[0m
+[0m--- 0x4200f064: [0;33mlvgl_port_task[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/espressif__esp_lvgl_port/src/lvgl9/esp_lvgl_port.c[0m[0m:[1;31m242[0m
+[0m--- 0x4037d199: [0;33mvPortTaskWrapper[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m139[0m
+[0m--- 0x42050056: [0;33mtask_wdt_timeout_handling[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m434[0m
+[0m--- 0x4205046c: [0;33mtask_wdt_isr[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/esp_system/task_wdt/task_wdt.c[0m[0m:[1;31m507[0m
+[0m--- 0x40377909: [0;33m_xt_lowint1[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/xtensa/xtensa_vectors.S[0m[0m:[1;31m1240[0m
+[0m--- 0x42017551: [0;33mwait_for_flushing[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1454[0m
+[0m--- 0x42018382: [0;33mrefr_configured_layer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m1036[0m
+[0m--- 0x42018588: [0;33mrefr_area[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m907[0m
+[0m--- 0x420187a8: [0;33mrefr_invalid_areas[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m809[0m
+[0m--- 0x420188d7: [0;33mlv_display_refr_timer[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/core/lv_refr.c[0m[0m:[1;31m419[0m
+[0m--- 0x42022609: [0;33mlv_timer_exec[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m353[0m
+[0m--- 0x420226b1: [0;33mlv_timer_handler[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/src/misc/lv_timer.c[0m[0m:[1;31m107[0m
+[0m--- 0x4200f064: [0;33mlvgl_port_task[0m[0m at [0;32mC:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/espressif__esp_lvgl_port/src/lvgl9/esp_lvgl_port.c[0m[0m:[1;31m242[0m
+[0m--- 0x4037d199: [0;33mvPortTaskWrapper[0m[0m at [0;32mC:/esp/v5.4.4/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c[0m[0m:[1;31m139[0m
+[0;33m--- To exit from IDF monitor please use "Ctrl+]". Alternatively, you can use Ctrl+T Ctrl+X to exit.[0m
+[0m
+Traceback (most recent call last):
+  File "C:\esp\v5.4.4\esp-idf\tools/idf_monitor.py", line 11, in <module>
+    sys.exit(subprocess.run([sys.executable, '-m', 'esp_idf_monitor'] + sys.argv[1:]).returncode)
+             ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 1213, in communicate
+    self.wait()
+    ~~~~~~~~~^^
+  File "C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 1279, in wait
+    return self._wait(timeout=timeout)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\Lib\subprocess.py", line 1605, in _wait
+    result = _winapi.WaitForSingleObject(self._handle,
+                                         timeout_millis)
+KeyboardInterrupt

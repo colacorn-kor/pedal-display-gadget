@@ -14,7 +14,8 @@ static viz_theme_t s_t;
 static float s_prevlvl=0, s_onset=0;
 
 static uint32_t lerp_rgb(uint32_t a,uint32_t b,float t){
-    if(t<0)t=0; if(t>1)t=1;
+    if (t < 0) t = 0;
+    if (t > 1) t = 1;
     int ar=(a>>16)&0xFF,ag=(a>>8)&0xFF,ab=a&0xFF;
     int br=(b>>16)&0xFF,bg=(b>>8)&0xFF,bb=b&0xFF;
     return ((ar+(int)((br-ar)*t))<<16)|((ag+(int)((bg-ag)*t))<<8)|(ab+(int)((bb-ab)*t));
