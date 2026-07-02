@@ -32,12 +32,12 @@
 #define PIN_BL     1        /* 백라이트 EN (전류 크면 트랜지스터 경유) */
 #define LCD_HRES  480
 #define LCD_VRES  320
-#define LCD_PCLK_MHZ  10
+#define LCD_PCLK_MHZ  40
 #define LCD_PCLK      (LCD_PCLK_MHZ * 1000 * 1000)
 
 #define LCD_BRINGUP_TEST 0
 #define LCD_SWAP_XY     1
-#define LCD_MIRROR_X    1
+#define LCD_MIRROR_X    0
 #define LCD_MIRROR_Y    0
 #define LCD_GAP_X       0
 #define LCD_GAP_Y       0
@@ -190,6 +190,11 @@ lv_display_t* bsp_display_init(void)
         .double_buffer=true,
         .hres=LCD_HRES, .vres=LCD_VRES,
         .color_format=LV_COLOR_FORMAT_RGB565,
+        .rotation={
+            .swap_xy  = (LCD_SWAP_XY  != 0),
+            .mirror_x = (LCD_MIRROR_X != 0),
+            .mirror_y = (LCD_MIRROR_Y != 0),
+        },
         .flags={ .buff_dma=true, .buff_spiram=false, .swap_bytes=true },
     };
     lv_display_t *display=lvgl_port_add_disp(&dc);
