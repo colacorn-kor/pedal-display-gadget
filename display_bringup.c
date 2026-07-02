@@ -38,7 +38,7 @@
 #define LCD_BRINGUP_TEST 0
 #define LCD_SWAP_XY     1
 #define LCD_MIRROR_X    0
-#define LCD_MIRROR_Y    0
+#define LCD_MIRROR_Y    1
 #define LCD_GAP_X       0
 #define LCD_GAP_Y       0
 #define LCD_INVERT      0
