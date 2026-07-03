@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "pedal-display-gadget")(type "KiCad")(uri "${KIPRJMOD}/hardware/pedal-display-gadget.kicad_sym")(options "")(descr "Pedal display gadget - custom module symbols (DRAFT)"))
+)
