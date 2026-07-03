@@ -4,6 +4,7 @@
 #include "lvgl.h"
 
 #include "app.h"
+#include "app_slots.h"
 #include "gadget_app.h"
 #include "renderer.h"
 
@@ -41,6 +42,20 @@ static void clean_screen(void)
 static const gadget_app_t *active_app(void)
 {
     return app_registry_at(s_active_app);
+}
+
+static int app_index(const gadget_app_t *app)
+{
+    return app ? app_registry_find(app->id) : -1;
+}
+
+static int variant_for_app(const gadget_app_t *app)
+{
+    for (int i = 0; i < app_slots_count(); i++) {
+        app_slot_t *slot = app_slots_at(i);
+        if (slot && slot->app == app) return slot->variant;
+    }
+    return 0;
 }
 
 static void exit_active_app(void)
@@ -175,23 +190,31 @@ static void enter_app(int idx, int variant)
     clean_screen();
     s_active_app = idx;
     if (app->on_enter) app->on_enter(variant);
+    app_slots_set_last_view(app->id);
+}
+
+static void enter_app_ptr(const gadget_app_t *app)
+{
+    const int idx = app_index(app);
+    if (idx >= 0) enter_app(idx, variant_for_app(app));
 }
 
 static void footsw_next_app(void)
 {
-    const int n = app_registry_count();
-    if (n <= 0) return;
-    if (s_active_app < 0) {
-        enter_app(s_sel >= 0 && s_sel < n ? s_sel : 0, 0);
-    } else {
-        enter_app((s_active_app + 1) % n, 0);
-    }
+    const gadget_app_t *app = s_active_app < 0
+        ? app_slots_first_live()
+        : app_slots_next_live(active_app());
+    enter_app_ptr(app);
 }
 
 static void footsw_quick_app(void)
 {
-    const int tuner = app_registry_find("tuner");
-    if (tuner >= 0 && s_active_app != tuner) enter_app(tuner, 0);
+    int idx = app_registry_find(app_slots_quick_app());
+    if (idx < 0) idx = app_registry_find("tuner");
+    if (idx >= 0 && s_active_app != idx) {
+        const gadget_app_t *app = app_registry_at(idx);
+        enter_app(idx, variant_for_app(app));
+    }
 }
 
 static void popup_activate(void)
@@ -234,8 +257,25 @@ void sm_init(void)
 {
     renderers_init();
     apps_init();
+    app_slots_init();
     audio_set_mode(AUDIO_SPECTRUM);
-    build_home();
+
+    const char *last_view = app_slots_last_view();
+    const int last_idx = last_view && last_view[0]
+        ? app_registry_find(last_view)
+        : -1;
+    if (last_idx >= 0) {
+        const gadget_app_t *app = app_registry_at(last_idx);
+        enter_app(last_idx, variant_for_app(app));
+        return;
+    }
+
+    const gadget_app_t *first_live = app_slots_first_live();
+    if (first_live) {
+        enter_app_ptr(first_live);
+    } else {
+        build_home();
+    }
 }
 
 void sm_on_event(ui_event_t event)
