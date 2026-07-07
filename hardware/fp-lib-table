@@ -1,4 +1,4 @@
 (fp_lib_table
-  (version 7)
-  (lib (name "pedal-display-gadget")(type "KiCad")(uri "${KIPRJMOD}/hardware/pedal-display-gadget.pretty")(options "")(descr "GUI/GG pedal - custom footprints"))
+	(version 7)
+	(lib (name "pedal-display-gadget") (type "KiCad") (uri "${KIPRJMOD}/pedal-display-gadget.pretty") (options "") (descr "GUI/GG pedal - custom footprints"))
 )
