@@ -29,6 +29,7 @@ struct gadget_app {
     const char *id;
     const char *name;
     audio_mode_t audio_mode;
+    const lv_img_dsc_t *icon;
 
     app_enter_fn on_enter;
     app_exit_fn on_exit;

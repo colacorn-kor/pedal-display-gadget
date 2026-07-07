@@ -39,6 +39,7 @@ const gadget_app_t APP_TUNER = {
     .id = "tuner",
     .name = "Tuner",
     .audio_mode = AUDIO_TUNER,
+    .icon = NULL,
     .on_enter = tuner_enter,
     .on_exit = tuner_exit,
     .on_render = tuner_render,

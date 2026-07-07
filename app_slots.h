@@ -28,3 +28,5 @@ const gadget_app_t *app_slots_prev_live(const gadget_app_t *cur);
 const char *app_slots_last_view(void);
 void app_slots_set_last_view(const char *id);
 const char *app_slots_quick_app(void);
+uint8_t app_slots_theme(void);
+void app_slots_set_theme(uint8_t idx);

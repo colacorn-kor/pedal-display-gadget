@@ -57,6 +57,7 @@ const gadget_app_t APP_IMAGES = {
     .id = "images",
     .name = "Images",
     .audio_mode = AUDIO_SPECTRUM,
+    .icon = NULL,
     .on_enter = images_enter,
     .on_exit = images_exit,
     .on_event = images_on_event,

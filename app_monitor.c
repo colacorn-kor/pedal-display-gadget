@@ -77,6 +77,7 @@ const gadget_app_t APP_MONITOR = {
     .id = "monitor",
     .name = "Sound Monitor",
     .audio_mode = AUDIO_SPECTRUM,
+    .icon = NULL,
     .on_enter = monitor_enter,
     .on_exit = monitor_exit,
     .on_render = monitor_render,

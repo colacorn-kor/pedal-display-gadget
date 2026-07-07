@@ -8,7 +8,7 @@
 #include "nvs_flash.h"
 
 #define APP_CFG_MAGIC 0x6741u
-#define APP_CFG_VERSION 1u
+#define APP_CFG_VERSION 2u
 #define APP_ID_LEN 16
 #define APP_CFG_NAMESPACE "gadget"
 #define APP_CFG_KEY "cfg"
@@ -30,6 +30,8 @@ typedef struct {
     uint16_t version;
     char last_view_id[APP_ID_LEN];
     char quick_app_id[APP_ID_LEN];
+    uint8_t theme_idx;
+    uint8_t reserved[7];
     app_cfg_entry_t apps[APP_SLOT_MAX];
 } platform_config_t;
 
@@ -410,4 +412,16 @@ void app_slots_set_last_view(const char *id)
 const char *app_slots_quick_app(void)
 {
     return s_cfg.quick_app_id[0] ? s_cfg.quick_app_id : APP_QUICK_DEFAULT;
+}
+
+uint8_t app_slots_theme(void)
+{
+    return s_cfg.theme_idx;
+}
+
+void app_slots_set_theme(uint8_t idx)
+{
+    if (s_cfg.theme_idx == idx) return;
+    s_cfg.theme_idx = idx;
+    app_slots_save();
 }

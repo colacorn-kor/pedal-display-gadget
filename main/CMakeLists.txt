@@ -15,6 +15,7 @@ set(APP_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/../renderer_curve.c"
     "${CMAKE_CURRENT_LIST_DIR}/../renderer_reactive.c"
     "${CMAKE_CURRENT_LIST_DIR}/../screen_manager.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../theme.c"
     "${CMAKE_CURRENT_LIST_DIR}/../tuner.c"
     "${CMAKE_CURRENT_LIST_DIR}/../tuner_screen.c"
 )
