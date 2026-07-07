@@ -1,12 +1,11 @@
 # PUNCHLIST.md — 미결·확인 항목 (다음 세션 최우선 점검표)
 
 ## 🔴 반복 미결 (즉시)
-1. **`hardware/*.pretty/` 풋프린트 폴더가 여전히 미커밋(3회째 404).** GitHub Desktop Changes에
-   `.kicad_mod` 4개가 잡히는지 확인 후 커밋. (심볼·노트는 커밋됨 — 단 `kicad_sym`이 SSOT 재작성본인지 확인)
-2. **"어떤 버튼 누르면 IDF 에러" 원문 미캡처** (예전 관찰, 이후 재확인 안 됨). 재현되면 로그 캡처.
+1. **`.pretty` 원인 판명: 파일이 로컬에 배치된 적 없음**(커밋 누락 아님 — Claude 오진). 
+   → TAEYUN_TODO §1 절차로 폴더 생성·파일 배치·커밋. (+`kicad_sym`이 SSOT 신본인지 확인: KiCad 심볼 목록에 `TL072_DIP8`·`PWR_9V_ELB040202` 있으면 신본)
 
 ## 🟡 결정/실측 대기
-3. SD 어댑터 VCC: 3.3직결 vs 5V+온보드LDO (보류 중)
+3. ~~SD VCC~~ **확정: +3V3 직결** (순수 어댑터 전제 — TAEYUN_TODO §2 참조. LDO/레벨시프터형 모듈은 비권장)
 4. 커스텀 풋프린트 실측 3+1종: DevKit 행간·6.35잭·MP1584·9V커넥터 (전부 DRAFT 치수)
 5. 게인 저항 튜닝: INST 2.2k / LINE 15k는 시작점 — 실기 클리핑 보며 조정
 6. `CONFIG_LV_DEF_REFR_PERIOD=33ms`(fps 상한 30) → 15ms 인하는 태윤 승인 후
