@@ -24,16 +24,23 @@ void     plat_lvgl_lock(void); void plat_lvgl_unlock(void);
 
 ## Part B — `sim/` 데스크톱 하네스 (CMake+SDL2, Windows/MSYS 또는 MSVC)
 1. `sim/CMakeLists.txt`: LVGL 9.5를 FetchContent로(**ESP와 동일 마이너버전**), SDL2 링크,
-   UI_SOURCES + `platform_sim.c` + `sim_main.c` 빌드. lv_conf: RGB565·UNSCII8/16 활성.
-2. `platform_sim.c` 스텁:
+   UI_SOURCES + `platform_sim.c` + `sim_main.c` 빌드. lv_conf: RGB565·UNSCII8/16·**LV_USE_CANVAS·LV_USE_GIF**(ESP sdkconfig와 동일 기능셋) 활성.
+2. **호환 심(shim) 계층 `sim/compat/`** — UI 소스는 `ESP_LOG*`·`heap_caps_malloc(…SPIRAM)`·
+   `esp_timer_get_time` 등을 도처에서 사용. 소스 수정 대신 sim 빌드에만 include 우선순위로 주입:
+   - `sim/compat/esp_log.h` → ESP_LOGI/W/E = printf 매핑(태그·레벨 포함)
+   - `sim/compat/esp_heap_caps.h` → `heap_caps_malloc/calloc/free` = 표준 malloc (CAP 플래그 무시)
+   - `sim/compat/esp_timer.h` → `esp_timer_get_time()` = SDL_GetTicks()*1000
+   - `sim/compat/esp_err.h` → ESP_OK/ESP_ERROR_CHECK printf-assert 버전
+   ESP 빌드는 이 폴더를 절대 include하지 않음. (UI 파일 무수정 원칙의 실현 수단)
+3. `platform_sim.c` 스텁:
    - 입력: 키보드 매핑 — 화살표=EV_UP/DOWN/LEFT/RIGHT, Enter=OK, H=HOME(길게=HOLD),
      F=FOOTSW(길게=HOLD). 길게 판정은 실제 펌웨어와 동일 임계(ms) 재사용.
    - NVS: `sim_nvs.bin` 파일 read/write (재실행 시 영속 재현).
    - 오디오: ①기본 = 합성 데모(느린 사인 스펙트럼 + 스페이스바=온셋 주입, 마우스휠=피치
      E2..E5) ②옵션 = `--wav 파일` 재생 입력(간단 RMS/FFT로 bars·온셋 생성; 품질은 근사면 충분).
    - lock: no-op. millis: SDL_GetTicks.
-3. `sim_main.c`: SDL 창 480×320, lv_display SDL 백엔드, `sm_init()` 호출 후 lv_timer 루프.
-4. 실행 문서 `sim/README.md`: 빌드 3줄(cmake -B build; cmake --build; 실행), 키맵 표.
+4. `sim_main.c`: SDL 창 480×320, lv_display SDL 백엔드, `sm_init()` 호출 후 lv_timer 루프.
+5. 실행 문서 `sim/README.md`: 빌드 3줄(cmake -B build; cmake --build; 실행), 키맵 표.
 
 ## 불변조건
 - **ESP 실동작 무변경**(Part A 후 회귀 0). 오디오 Core1 코드 이동 금지(ESP 전용 유지).

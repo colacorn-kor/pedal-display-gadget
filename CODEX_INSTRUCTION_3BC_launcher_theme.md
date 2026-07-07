@@ -22,7 +22,10 @@
 2. screen_manager에 상태 추가: `MODE_LIVE / MODE_POPUP(기존 홈팝업) / MODE_LAUNCHER / MODE_REORDER`.
    - 진입: **EV_HOME_HOLD → LAUNCHER** (어디서든, 아키텍처 §5 안전망). HOME 숏 팝업은 기존 유지.
    - LAUNCHER에서: 방향키=커서, OK=타일 실행/구석 액션, **FOOTSW 또는 HOME=직전 라이브 앱 복귀**.
-   - 앱 실행 시 `app_slots_set_last_view` 갱신(기존 경로 재사용).
+   - 앱 실행 시 `app_slots_set_last_view(app->id)` 갱신(기존 경로 재사용).
+   - **부팅 복귀 규칙(확정 결정)**: 런처 **진입 시 `app_slots_set_last_view("")`** 호출 →
+     `sm_init`에서 last_view가 빈 문자열이면 (③-A의 first_live 폴백 대신) **런처로 부팅**.
+     즉 런처 보던 중 전원 꺼짐 → 런처로 복귀. 앱 보던 중 → 그 앱으로 복귀.
 3. 레이아웃/시각: **UI_DESIGN §4 수치 그대로**(타일 88×88·간격12·아이콘 A8 리컬러(text색)·
    이름 UNSCII_8·타이틀 "GUI" UNSCII_16 accent·섹션라벨·STASH 60% 불투명·비활성 40%).
    아이콘 NULL이면 이름 첫 글자 UNSCII_16 폴백. 줄당 4타일, 커서 따라 좌우 스크롤.
@@ -44,6 +47,7 @@
 
 ## 완료 판정
 - HOME 롱 → 런처(2줄·아이콘/폴백 타일·커서). OK로 앱 진입, FOOTSW로 복귀.
+- **런처 상태에서 리셋 → 런처로 부팅**, 앱 상태에서 리셋 → 그 앱(둘 다 확인).
 - [THEME] 좌우 순환 → 즉시 색 변경 + 재부팅 후 유지(NVS v2).
 - [REORDER]로 monitor를 STASH로 옮기면 풋스위치 순환에서 제외 + 재부팅 후 유지.
 - v1 blob 자동 리셋 로그 1회 확인. -Werror 통과, 워치독 없음.
