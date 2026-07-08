@@ -26,6 +26,7 @@
 #include "content_screen.h"
 #include "display_bringup.h"
 #include "fft_map.h"
+#include "music_events.h"
 #include "tuner.h"
 
 #define DMA_FRAMES  256
@@ -232,6 +233,7 @@ static void audio_task(void *arg)
     ESP_ERROR_CHECK(fft_map_init());
     tuner_init();
     audio_init();
+    music_events_init();
 
     int producer = 1;
     audio_mode_t active_mode = audio_get_mode();
@@ -268,7 +270,8 @@ static void audio_task(void *arg)
             samples[i] = sample;
             sum += sample * sample;
         }
-        float level = sqrtf(sum / (float)n) * 3.0f;
+        float rms = sqrtf(sum / (float)n);
+        float level = rms * 3.0f;
         if (!isfinite(level) || level < 0.0f) level = 0.0f;
         if (level > 1.0f) level = 1.0f;
 
@@ -291,8 +294,11 @@ static void audio_task(void *arg)
 
         if (active_mode == AUDIO_TUNER) {
             tuner_feed(samples, n);
+            music_events_process_block(rms, level);
             continue;
         }
+
+        music_events_process_block(rms, level);
 
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_acq_rel);
         int produced = fft_feed(samples, n,

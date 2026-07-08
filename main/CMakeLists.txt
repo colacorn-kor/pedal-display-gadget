@@ -1,5 +1,6 @@
 set(APP_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/../app_main.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../app_bounce.c"
     "${CMAKE_CURRENT_LIST_DIR}/../app_images.c"
     "${CMAKE_CURRENT_LIST_DIR}/../app_monitor.c"
     "${CMAKE_CURRENT_LIST_DIR}/../app_slots.c"
@@ -10,6 +11,7 @@ set(APP_SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/../gadget_app.c"
     "${CMAKE_CURRENT_LIST_DIR}/../midi.c"
     "${CMAKE_CURRENT_LIST_DIR}/../midi_map.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../music_events.c"
     "${CMAKE_CURRENT_LIST_DIR}/../renderer.c"
     "${CMAKE_CURRENT_LIST_DIR}/../renderer_bars.c"
     "${CMAKE_CURRENT_LIST_DIR}/../renderer_curve.c"

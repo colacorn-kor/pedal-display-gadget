@@ -48,4 +48,5 @@ void apps_init(void)
     app_registry_register(&APP_MONITOR);
     app_registry_register(&APP_IMAGES);
     app_registry_register(&APP_TUNER);
+    app_registry_register(&APP_BOUNCE);
 }
