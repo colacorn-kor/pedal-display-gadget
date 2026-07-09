@@ -1,5 +1,6 @@
 #include "gadget_app.h"
 
+#include "platform.h"
 #include "renderer.h"
 
 static int s_renderer;
@@ -48,7 +49,7 @@ static void monitor_exit(void)
 
 static void monitor_render(void)
 {
-    audio_viz_snapshot_get(&s_viz_snapshot);
+    plat_audio_viz_get(&s_viz_snapshot);
     const viz_frame_t frame = {
         .bars = s_viz_snapshot.bars,
         .peaks = s_viz_snapshot.peaks,

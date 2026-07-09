@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "music_events.h"
+#include "platform.h"
 #include "theme.h"
 
 #define BOUNCE_W 32
@@ -220,7 +221,7 @@ static void bounce_enter(int variant)
     audio_set_mode(AUDIO_TUNER);
     reset_motion();
     music_snapshot_t snap;
-    music_snapshot_get(&snap);
+    plat_music_get(&snap);
     s_last_onset_seq = snap.onset_seq;
 
     s_host = lv_obj_create(lv_screen_active());
@@ -289,7 +290,7 @@ static void bounce_render(void)
     if (!s_host || !s_sprite || !s_status) return;
 
     music_snapshot_t snap;
-    music_snapshot_get(&snap);
+    plat_music_get(&snap);
     style_scene();
 
     if (snap.onset_seq != s_last_onset_seq) {

@@ -2,16 +2,12 @@
 
 #include <string.h>
 
-#include "esp_err.h"
 #include "esp_log.h"
-#include "nvs.h"
-#include "nvs_flash.h"
+#include "platform.h"
 
 #define APP_CFG_MAGIC 0x6741u
 #define APP_CFG_VERSION 2u
 #define APP_ID_LEN 16
-#define APP_CFG_NAMESPACE "gadget"
-#define APP_CFG_KEY "cfg"
 #define APP_QUICK_DEFAULT "tuner"
 
 typedef struct {
@@ -41,7 +37,6 @@ static app_slot_t s_slots[APP_SLOT_MAX];
 static int s_slot_count;
 static platform_config_t s_cfg;
 static bool s_initialized;
-static bool s_nvs_ready;
 
 static void copy_id(char dst[APP_ID_LEN], const char *src)
 {
@@ -97,47 +92,6 @@ static void terminate_config_strings(platform_config_t *cfg)
     for (int i = 0; i < APP_SLOT_MAX; i++) {
         cfg->apps[i].id[APP_ID_LEN - 1] = 0;
     }
-}
-
-static esp_err_t init_nvs_once(void)
-{
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
-        err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "NVS partition needs reset: %s", esp_err_to_name(err));
-        err = nvs_flash_erase();
-        if (err != ESP_OK) {
-            ESP_LOGW(TAG, "NVS erase failed: %s", esp_err_to_name(err));
-            return err;
-        }
-        err = nvs_flash_init();
-    }
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "NVS init failed: %s", esp_err_to_name(err));
-    }
-    return err;
-}
-
-static esp_err_t read_config(platform_config_t *cfg)
-{
-    nvs_handle_t handle;
-    esp_err_t err = nvs_open(APP_CFG_NAMESPACE, NVS_READONLY, &handle);
-    if (err != ESP_OK) return err;
-
-    size_t size = 0;
-    err = nvs_get_blob(handle, APP_CFG_KEY, NULL, &size);
-    if (err != ESP_OK) {
-        nvs_close(handle);
-        return err;
-    }
-    if (size != sizeof(*cfg)) {
-        nvs_close(handle);
-        return ESP_ERR_INVALID_SIZE;
-    }
-
-    err = nvs_get_blob(handle, APP_CFG_KEY, cfg, &size);
-    nvs_close(handle);
-    return err;
 }
 
 static int find_cfg_entry(const platform_config_t *cfg, const char *id)
@@ -308,21 +262,18 @@ void app_slots_init(void)
 
     default_config(&s_cfg);
 
-    s_nvs_ready = init_nvs_once() == ESP_OK;
-    bool needs_save = !s_nvs_ready;
-    if (s_nvs_ready) {
-        platform_config_t loaded;
-        esp_err_t err = read_config(&loaded);
-        if (err == ESP_OK &&
-            loaded.magic == APP_CFG_MAGIC &&
-            loaded.version == APP_CFG_VERSION) {
-            s_cfg = loaded;
-            terminate_config_strings(&s_cfg);
-        } else {
-            ESP_LOGW(TAG, "Using default config: %s",
-                     err == ESP_OK ? "schema mismatch" : esp_err_to_name(err));
-            needs_save = true;
-        }
+    platform_config_t loaded;
+    bool found = false;
+    plat_nvs_load(&loaded, sizeof(loaded), &found);
+    bool needs_save = !found;
+    if (found &&
+        loaded.magic == APP_CFG_MAGIC &&
+        loaded.version == APP_CFG_VERSION) {
+        s_cfg = loaded;
+        terminate_config_strings(&s_cfg);
+    } else if (found) {
+        ESP_LOGW(TAG, "Using default config: schema mismatch");
+        needs_save = true;
     }
 
     if (bind_slots_from_config()) needs_save = true;
@@ -331,8 +282,6 @@ void app_slots_init(void)
 
 void app_slots_save(void)
 {
-    if (!s_nvs_ready) return;
-
     s_cfg.magic = APP_CFG_MAGIC;
     s_cfg.version = APP_CFG_VERSION;
     for (int i = 0; i < APP_SLOT_MAX; i++) {
@@ -348,20 +297,7 @@ void app_slots_save(void)
         s_cfg.apps[i].s.variant = slot->variant;
     }
 
-    nvs_handle_t handle;
-    esp_err_t err = nvs_open(APP_CFG_NAMESPACE, NVS_READWRITE, &handle);
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "NVS open for save failed: %s", esp_err_to_name(err));
-        return;
-    }
-
-    err = nvs_set_blob(handle, APP_CFG_KEY, &s_cfg, sizeof(s_cfg));
-    if (err == ESP_OK) err = nvs_commit(handle);
-    nvs_close(handle);
-
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "NVS save failed: %s", esp_err_to_name(err));
-    }
+    plat_nvs_save(&s_cfg, sizeof(s_cfg));
 }
 
 int app_slots_count(void)

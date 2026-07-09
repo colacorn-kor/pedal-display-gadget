@@ -6,6 +6,7 @@
 #include "app.h"
 #include "app_slots.h"
 #include "gadget_app.h"
+#include "platform.h"
 #include "renderer.h"
 #include "theme.h"
 
@@ -826,6 +827,7 @@ float sm_get_tempo(void)
 
 void sm_init(void)
 {
+    plat_init();
     renderers_init();
     apps_init();
     app_slots_init();
