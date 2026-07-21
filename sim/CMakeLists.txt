@@ -48,7 +48,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/UI_SOURCES.cmake")
 
 add_executable(pedal_sim
     "${CMAKE_CURRENT_LIST_DIR}/platform_sim.c"
+    "${CMAKE_CURRENT_LIST_DIR}/sim_audio.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_main.c"
+    "${PROJECT_ROOT}/music_events.c"
+    "${PROJECT_ROOT}/tuner.c"
     ${PEDAL_UI_SOURCES}
 )
 
@@ -61,6 +64,8 @@ target_compile_definitions(pedal_sim PRIVATE SDL_MAIN_HANDLED)
 
 if(MSVC)
     target_compile_options(pedal_sim PRIVATE /W4)
+    target_compile_options(pedal_sim PRIVATE "$<$<COMPILE_LANGUAGE:C>:/std:c11>")
+    target_compile_options(pedal_sim PRIVATE "$<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>")
     target_compile_options(pedal_sim PRIVATE /utf-8 /wd4819)
     target_compile_options(lvgl PRIVATE /utf-8 /wd4819 /wd5287)
     target_compile_definitions(pedal_sim PRIVATE _CRT_SECURE_NO_WARNINGS)

@@ -6,12 +6,14 @@
 #include "content_screen.h"
 #include "platform.h"
 
+bool plat_sim_configure(int argc, char **argv);
+bool plat_sim_should_exit_after_args(void);
 bool plat_sim_should_quit(void);
 
 int main(int argc, char **argv)
 {
-    (void)argc;
-    (void)argv;
+    if (!plat_sim_configure(argc, argv)) return 1;
+    if (plat_sim_should_exit_after_args()) return 0;
 
     lv_init();
 

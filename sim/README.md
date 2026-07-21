@@ -22,11 +22,31 @@ On Windows, the command prompt also needs a host C/C++ compiler in `PATH`
 
 - Arrow keys: `EV_UP`, `EV_DOWN`, `EV_LEFT`, `EV_RIGHT`
 - Enter: `EV_OK`
-- `H`: `EV_HOME`; hold for 500 ms sends `EV_HOME_HOLD`
-- `F`: `EV_FOOTSW`; hold for 500 ms sends `EV_FOOTSW_HOLD`
-- Space: injects a synthetic music onset for Bounce
-- Mouse X: synthetic pitch from E2 to E5
-- `Q` or Escape: quit
+- Backspace: `EV_HOME`; hold for 500 ms sends `EV_HOME_HOLD`
+- Space: `EV_FOOTSW`; hold for 500 ms sends `EV_FOOTSW_HOLD`
+- `O`: injects a synthetic music onset when audio capture is unavailable
+- Mouse X: synthetic pitch from E2 to E5 when audio capture is unavailable
+- Escape: quit
+
+## Audio Input
+
+The simulator opens the default SDL2 capture device and feeds the shared tuner
+and music-event DSP code. To list capture inputs:
+
+```powershell
+.\sim\build\pedal_sim.exe --list-audio
+```
+
+To select a device by index:
+
+```powershell
+.\sim\build\pedal_sim.exe --audio-device 1
+```
+
+On Windows, choose a microphone, audio interface input, or a loopback source
+such as Stereo Mix if your driver exposes it. If no capture device can be
+opened, the simulator prints `W (sim) no capture device; synthetic audio
+fallback` and keeps the synthetic visualizer, mouse pitch, and `O` onset path.
 
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current
 working directory.
