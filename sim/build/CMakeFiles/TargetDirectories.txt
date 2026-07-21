@@ -1,0 +1,12 @@
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/CMakeFiles/pedal_sim.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/CMakeFiles/edit_cache.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/CMakeFiles/rebuild_cache.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/CMakeFiles/list_install_components.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/CMakeFiles/install.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/CMakeFiles/install/local.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/CMakeFiles/lvgl.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/CMakeFiles/edit_cache.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/CMakeFiles/rebuild_cache.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/CMakeFiles/list_install_components.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/CMakeFiles/install.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/CMakeFiles/install/local.dir

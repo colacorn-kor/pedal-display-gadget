@@ -1,0 +1,3 @@
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/lvgl-populate.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/edit_cache.dir
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/cmake_install.cmake",
+		"C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

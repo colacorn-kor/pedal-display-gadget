@@ -1,0 +1,14 @@
+# Target labels
+ lvgl-populate
+# Source files and their labels
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/lvgl-populate
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/lvgl-populate.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/lvgl-populate-complete.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-build.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-configure.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-download.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-install.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-mkdir.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-patch.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-test.rule
+C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-update.rule

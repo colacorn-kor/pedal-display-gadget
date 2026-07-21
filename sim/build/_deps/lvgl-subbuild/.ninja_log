@@ -1,0 +1,21 @@
+# ninja log v7
+2	50	8063230356224084	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-mkdir	1fe45ed8c43d1914
+2	50	8063230356224084	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-mkdir	1fe45ed8c43d1914
+51	95	8063230356715235	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-download	2f5b9b23b1258eb4
+51	95	8063230356715235	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-download	2f5b9b23b1258eb4
+95	140	8063230357122314	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-update	3830d146c5d95c5f
+95	140	8063230357122314	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-update	3830d146c5d95c5f
+140	189	8063230357578055	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-patch	c4c14a49c0ab5b9
+140	189	8063230357578055	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-patch	c4c14a49c0ab5b9
+189	233	8063230358088584	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-configure	10998659e339e5dc
+189	233	8063230358088584	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-configure	10998659e339e5dc
+233	276	8063230358526127	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-build	c336f6110147f6a5
+233	276	8063230358526127	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-build	c336f6110147f6a5
+276	320	8063230358945720	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-install	44bd7e111c037b48
+276	320	8063230358945720	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-install	44bd7e111c037b48
+320	368	8063230359418068	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-test	47ba856bdfea2f69
+320	368	8063230359418068	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-test	47ba856bdfea2f69
+368	438	8063230360118657	CMakeFiles/lvgl-populate-complete	c916fac87ff59328
+368	438	8063230360118657	lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-done	c916fac87ff59328
+368	438	8063230360118657	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/CMakeFiles/lvgl-populate-complete	c916fac87ff59328
+368	438	8063230360118657	C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/build/_deps/lvgl-subbuild/lvgl-populate-prefix/src/lvgl-populate-stamp/lvgl-populate-done	c916fac87ff59328
