@@ -43,7 +43,6 @@ else()
     target_include_directories(lvgl PUBLIC "${PEDAL_SDL_INCLUDE_DIR}")
     target_link_libraries(lvgl PUBLIC "${PEDAL_SDL_LIBRARY}")
 endif()
-target_compile_definitions(lvgl PUBLIC SDL_MAIN_HANDLED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/UI_SOURCES.cmake")
 
@@ -62,6 +61,9 @@ target_compile_definitions(pedal_sim PRIVATE SDL_MAIN_HANDLED)
 
 if(MSVC)
     target_compile_options(pedal_sim PRIVATE /W4)
+    target_compile_options(pedal_sim PRIVATE /utf-8 /wd4819)
+    target_compile_options(lvgl PRIVATE /utf-8 /wd4819 /wd5287)
+    target_compile_definitions(pedal_sim PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
     target_compile_options(pedal_sim PRIVATE -Wall -Wextra)
     if(NOT WIN32)

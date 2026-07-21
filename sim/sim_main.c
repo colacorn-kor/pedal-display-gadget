@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "content_screen.h"
+#include "platform.h"
 
 bool plat_sim_should_quit(void);
 
