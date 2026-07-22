@@ -41,6 +41,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     "C:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/lv_version.h"
     "C:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/lvgl.h"
     "C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/lv_conf.h"
+    "C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/sim_audio.h"
     )
 endif()
 
@@ -53,6 +54,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     "C:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/lv_version.h"
     "C:/Users/User/Documents/GitHub/pedal-display-gadget/managed_components/lvgl__lvgl/lvgl.h"
     "C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/lv_conf.h"
+    "C:/Users/User/Documents/GitHub/pedal-display-gadget/sim/sim_audio.h"
     )
 endif()
 
