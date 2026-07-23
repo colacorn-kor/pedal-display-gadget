@@ -13,6 +13,34 @@ static lv_obj_t *s_root,*s_body,*s_eyeL,*s_eyeR,*s_mouth;
 static viz_theme_t s_t;
 static float s_prevlvl=0, s_onset=0;
 
+typedef struct {
+    int w, h, x, y, radius;
+    uint32_t color;
+} obj_state_t;
+
+static obj_state_t s_body_state, s_eyeL_state, s_eyeR_state, s_mouth_state;
+
+static void invalidate_state(obj_state_t *state){
+    state->w=-1; state->h=-1; state->x=-1; state->y=-1; state->radius=-1;
+    state->color=UINT32_MAX;
+}
+
+static void update_geometry(lv_obj_t *obj,obj_state_t *state,
+                            int w,int h,int x,int y,int radius){
+    if(state->w!=w||state->h!=h){
+        lv_obj_set_size(obj,w,h);
+        state->w=w; state->h=h;
+    }
+    if(state->radius!=radius){
+        lv_obj_set_style_radius(obj,radius,0);
+        state->radius=radius;
+    }
+    if(state->x!=x||state->y!=y){
+        lv_obj_set_pos(obj,x,y);
+        state->x=x; state->y=y;
+    }
+}
+
 static uint32_t lerp_rgb(uint32_t a,uint32_t b,float t){
     if (t < 0) t = 0;
     if (t > 1) t = 1;
@@ -28,6 +56,8 @@ static void rs(lv_obj_t*o,uint32_t c){
 
 static void r_create(lv_obj_t*parent,const viz_theme_t*t){
     s_t=*t; s_prevlvl=0; s_onset=0;
+    invalidate_state(&s_body_state); invalidate_state(&s_eyeL_state);
+    invalidate_state(&s_eyeR_state); invalidate_state(&s_mouth_state);
     s_root=lv_obj_create(parent); lv_obj_set_size(s_root,480,320); lv_obj_set_pos(s_root,0,0); rs(s_root,t->bg);
     s_body =lv_obj_create(s_root); rs(s_body, t->accent);
     s_mouth=lv_obj_create(s_root); rs(s_mouth,t->bg);
@@ -49,19 +79,27 @@ static void r_update(const viz_frame_t*f){
     int base=90, sz=base+(int)(level*90);
     int w=sz+(int)(s_onset*30), h=sz-(int)(s_onset*20);
     int cx=240, cy=170-(int)(s_onset*24);
-    lv_obj_set_size(s_body,w,h); lv_obj_set_style_radius(s_body,h/2,0);
-    lv_obj_set_pos(s_body,cx-w/2,cy-h/2);
-    lv_obj_set_style_bg_color(s_body,lv_color_hex(lerp_rgb(0xFF7A4A,0x4AC8FF,cen)),0);
+    update_geometry(s_body,&s_body_state,w,h,cx-w/2,cy-h/2,h/2);
+    uint32_t body_color=lerp_rgb(0xFF7A4A,0x4AC8FF,cen);
+    if(s_body_state.color!=body_color){
+        lv_obj_set_style_bg_color(s_body,lv_color_hex(body_color),0);
+        s_body_state.color=body_color;
+    }
 
     /* 눈: 깜빡(온셋), 시선(센트로이드) */
     int eye=18, eh=eye-(int)(s_onset*14); if(eh<2)eh=2;
     int ey=cy-h/8-(int)(cen*10);
-    lv_obj_set_size(s_eyeL,eye,eh); lv_obj_set_style_radius(s_eyeL,eh/2,0); lv_obj_set_pos(s_eyeL,cx-w/5-eye/2,ey);
-    lv_obj_set_size(s_eyeR,eye,eh); lv_obj_set_style_radius(s_eyeR,eh/2,0); lv_obj_set_pos(s_eyeR,cx+w/5-eye/2,ey);
+    update_geometry(s_eyeL,&s_eyeL_state,eye,eh,cx-w/5-eye/2,ey,eh/2);
+    update_geometry(s_eyeR,&s_eyeR_state,eye,eh,cx+w/5-eye/2,ey,eh/2);
 
     /* 입: 레벨에 벌어짐 */
     int mw=w/3, mh=6+(int)(level*40);
-    lv_obj_set_size(s_mouth,mw,mh); lv_obj_set_style_radius(s_mouth,mh/2,0); lv_obj_set_pos(s_mouth,cx-mw/2,cy+h/6);
+    update_geometry(s_mouth,&s_mouth_state,mw,mh,cx-mw/2,cy+h/6,mh/2);
 }
-static void r_destroy(void){ if(s_root){ lv_obj_delete(s_root); s_root=0; } }
+static void r_destroy(void){
+    if(s_root){ lv_obj_delete(s_root); s_root=0; }
+    s_body=0; s_eyeL=0; s_eyeR=0; s_mouth=0;
+    invalidate_state(&s_body_state); invalidate_state(&s_eyeL_state);
+    invalidate_state(&s_eyeR_state); invalidate_state(&s_mouth_state);
+}
 const renderer_t RENDERER_REACTIVE = { "reactive", r_create, r_update, r_destroy };

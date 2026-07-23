@@ -16,6 +16,17 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/i2s_std.h"
+#ifndef INPUT_TRS_LADDER
+#define INPUT_TRS_LADDER 1
+#endif
+#ifndef INPUT_TRS_LOG
+#define INPUT_TRS_LOG 1
+#endif
+#if INPUT_TRS_LADDER
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
+#include "esp_adc/adc_oneshot.h"
+#endif
 #include "esp_attr.h"
 #include "esp_err.h"
 #include "esp_log.h"
@@ -48,6 +59,26 @@
 #define INPUT_HOLD_MS         500
 #define INPUT_REPEAT_DELAY_MS 400
 #define INPUT_REPEAT_RATE_MS  120
+
+#if INPUT_TRS_LADDER
+#define INPUT_TRS_ADC_SAMPLES 32
+#define INPUT_TRS_IDLE_MIN    0.85f
+#define INPUT_TRS_IDLE_TRACK  0.01f
+
+/* Rkey 0/150/470/1k/2k/10k with Rtop 4.7k; measured-window margins are 70%. */
+#define INPUT_TRS_UP_CENTER     0.00000f
+#define INPUT_TRS_UP_WINDOW     0.0070f
+#define INPUT_TRS_DOWN_CENTER   0.03093f
+#define INPUT_TRS_DOWN_WINDOW   0.0081f
+#define INPUT_TRS_LEFT_CENTER   0.09091f
+#define INPUT_TRS_LEFT_WINDOW   0.0093f
+#define INPUT_TRS_RIGHT_CENTER  0.17544f
+#define INPUT_TRS_RIGHT_WINDOW  0.0296f
+#define INPUT_TRS_OK_CENTER     0.29851f
+#define INPUT_TRS_OK_WINDOW     0.0431f
+#define INPUT_TRS_HOME_CENTER   0.68027f
+#define INPUT_TRS_HOME_WINDOW   0.1119f
+#endif
 
 static const char *TAG = "app";
 
@@ -364,8 +395,226 @@ static void dispatch_ui_action(const ui_action_t *action)
     lvgl_port_unlock();
 }
 
+typedef enum {
+    INPUT_LADDER_NONE = -1,
+    INPUT_LADDER_UP,
+    INPUT_LADDER_DOWN,
+    INPUT_LADDER_LEFT,
+    INPUT_LADDER_RIGHT,
+    INPUT_LADDER_OK,
+    INPUT_LADDER_HOME,
+    INPUT_LADDER_COUNT,
+} input_ladder_key_t;
+
+#if INPUT_TRS_LADDER
+typedef struct {
+    float center;
+    float window;
+    const char *name;
+} input_ladder_band_t;
+
+static const input_ladder_band_t s_input_ladder_bands[INPUT_LADDER_COUNT] = {
+    [INPUT_LADDER_UP] = {
+        .center = INPUT_TRS_UP_CENTER, .window = INPUT_TRS_UP_WINDOW, .name = "UP",
+    },
+    [INPUT_LADDER_DOWN] = {
+        .center = INPUT_TRS_DOWN_CENTER, .window = INPUT_TRS_DOWN_WINDOW, .name = "DOWN",
+    },
+    [INPUT_LADDER_LEFT] = {
+        .center = INPUT_TRS_LEFT_CENTER, .window = INPUT_TRS_LEFT_WINDOW, .name = "LEFT",
+    },
+    [INPUT_LADDER_RIGHT] = {
+        .center = INPUT_TRS_RIGHT_CENTER, .window = INPUT_TRS_RIGHT_WINDOW, .name = "RIGHT",
+    },
+    [INPUT_LADDER_OK] = {
+        .center = INPUT_TRS_OK_CENTER, .window = INPUT_TRS_OK_WINDOW, .name = "OK",
+    },
+    [INPUT_LADDER_HOME] = {
+        .center = INPUT_TRS_HOME_CENTER, .window = INPUT_TRS_HOME_WINDOW, .name = "HOME",
+    },
+};
+
+static const char *INPUT_TAG = "input";
+static adc_oneshot_unit_handle_t s_input_adc;
+static adc_cali_handle_t s_input_adc_cali;
+static bool s_input_adc_calibrated;
+static float s_input_idle_ref_raw;
+static float s_input_idle_ref_mv;
+static input_ladder_key_t s_input_latched = INPUT_LADDER_NONE;
+#if INPUT_TRS_LOG
+static TickType_t s_input_last_log;
+#endif
+static TickType_t s_input_last_error_log;
+
+#if INPUT_TRS_LOG
+static const char *input_ladder_key_name(input_ladder_key_t key)
+{
+    if (key < INPUT_LADDER_UP || key >= INPUT_LADDER_COUNT) return "NONE";
+    return s_input_ladder_bands[key].name;
+}
+
+static const char *input_ladder_result_name(input_ladder_key_t key, bool idle)
+{
+    if (idle) return "IDLE";
+    if (key == INPUT_LADDER_NONE) return "DEADZONE";
+    return input_ladder_key_name(key);
+}
+#endif
+
+static void input_ladder_init(void)
+{
+    const adc_oneshot_unit_init_cfg_t unit_cfg = {
+        .unit_id = ADC_UNIT_1,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&unit_cfg, &s_input_adc));
+
+    const adc_oneshot_chan_cfg_t channel_cfg = {
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(
+        s_input_adc, ADC_CHANNEL_3, &channel_cfg));
+
+    const adc_cali_curve_fitting_config_t cali_cfg = {
+        .unit_id = ADC_UNIT_1,
+        .chan = ADC_CHANNEL_3,
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+    esp_err_t err =
+        adc_cali_create_scheme_curve_fitting(&cali_cfg, &s_input_adc_cali);
+    s_input_adc_calibrated = (err == ESP_OK);
+    if (s_input_adc_calibrated) {
+        ESP_LOGI(INPUT_TAG, "TRS ladder ADC calibration: curve fitting enabled");
+    } else {
+        ESP_LOGW(INPUT_TAG,
+                 "TRS ladder ADC calibration unavailable (%s); using raw ratio",
+                 esp_err_to_name(err));
+    }
+}
+
+static esp_err_t input_ladder_read_average(int *raw, int *mv)
+{
+    int sum = 0;
+    for (int i = 0; i < INPUT_TRS_ADC_SAMPLES; i++) {
+        int sample = 0;
+        esp_err_t err = adc_oneshot_read(s_input_adc, ADC_CHANNEL_3, &sample);
+        if (err != ESP_OK) return err;
+        sum += sample;
+    }
+
+    *raw = (sum + INPUT_TRS_ADC_SAMPLES / 2) / INPUT_TRS_ADC_SAMPLES;
+    *mv = -1;
+    if (s_input_adc_calibrated) {
+        (void)adc_cali_raw_to_voltage(s_input_adc_cali, *raw, mv);
+    }
+    return ESP_OK;
+}
+
+static input_ladder_key_t input_ladder_decode(float ratio, bool *idle)
+{
+    *idle = ratio >= INPUT_TRS_IDLE_MIN;
+    if (*idle) return INPUT_LADDER_NONE;
+
+    for (int key = INPUT_LADDER_UP; key < INPUT_LADDER_COUNT; key++) {
+        const input_ladder_band_t *band = &s_input_ladder_bands[key];
+        if (fabsf(ratio - band->center) <= band->window) {
+            return (input_ladder_key_t)key;
+        }
+    }
+    return INPUT_LADDER_NONE;
+}
+
+static void input_ladder_log(int raw, int mv, float ratio,
+                             input_ladder_key_t decoded, bool idle)
+{
+#if INPUT_TRS_LOG
+    TickType_t now = xTaskGetTickCount();
+    if ((now - s_input_last_log) < pdMS_TO_TICKS(1000)) return;
+    s_input_last_log = now;
+
+    if (mv >= 0 && s_input_idle_ref_mv > 0.0f) {
+        ESP_LOGI(INPUT_TAG,
+                 "ladder raw=%d mV=%d ratio=%.4f -> %s "
+                 "(latch=%s idle_ref=%dmV)",
+                 raw, mv, (double)ratio,
+                 input_ladder_result_name(decoded, idle),
+                 input_ladder_key_name(s_input_latched),
+                 (int)(s_input_idle_ref_mv + 0.5f));
+    } else {
+        ESP_LOGI(INPUT_TAG,
+                 "ladder raw=%d mV=n/a ratio=%.4f -> %s "
+                 "(latch=%s idle_ref_raw=%.0f)",
+                 raw, (double)ratio,
+                 input_ladder_result_name(decoded, idle),
+                 input_ladder_key_name(s_input_latched),
+                 (double)s_input_idle_ref_raw);
+    }
+#else
+    (void)raw;
+    (void)mv;
+    (void)ratio;
+    (void)decoded;
+    (void)idle;
+#endif
+}
+
+static void input_ladder_poll(void)
+{
+    int raw = 0;
+    int mv = -1;
+    esp_err_t err = input_ladder_read_average(&raw, &mv);
+    if (err != ESP_OK) {
+        TickType_t now = xTaskGetTickCount();
+        if ((now - s_input_last_error_log) >= pdMS_TO_TICKS(1000)) {
+            s_input_last_error_log = now;
+            ESP_LOGW(INPUT_TAG, "TRS ladder ADC read failed: %s",
+                     esp_err_to_name(err));
+        }
+        return;
+    }
+
+    if (s_input_idle_ref_raw <= 0.0f) s_input_idle_ref_raw = (float)raw;
+    if (mv >= 0 && s_input_idle_ref_mv <= 0.0f) s_input_idle_ref_mv = (float)mv;
+    float ratio;
+    if (mv >= 0 && s_input_idle_ref_mv > 0.0f) {
+        ratio = (float)mv / s_input_idle_ref_mv;
+    } else {
+        ratio = s_input_idle_ref_raw > 0.0f
+                    ? (float)raw / s_input_idle_ref_raw
+                    : 1.0f;
+    }
+    bool idle = false;
+    input_ladder_key_t decoded = input_ladder_decode(ratio, &idle);
+
+    if (s_input_latched == INPUT_LADDER_NONE) {
+        if (decoded != INPUT_LADDER_NONE) s_input_latched = decoded;
+    } else if (idle) {
+        s_input_latched = INPUT_LADDER_NONE;
+    } else if (decoded != INPUT_LADDER_NONE &&
+               decoded != s_input_latched &&
+               s_input_ladder_bands[decoded].center >
+                   s_input_ladder_bands[s_input_latched].center) {
+        s_input_latched = decoded;
+    }
+
+    if (idle) {
+        s_input_idle_ref_raw =
+            s_input_idle_ref_raw * (1.0f - INPUT_TRS_IDLE_TRACK) +
+            (float)raw * INPUT_TRS_IDLE_TRACK;
+        if (mv >= 0) {
+            s_input_idle_ref_mv =
+                s_input_idle_ref_mv * (1.0f - INPUT_TRS_IDLE_TRACK) +
+                (float)mv * INPUT_TRS_IDLE_TRACK;
+        }
+    }
+    input_ladder_log(raw, mv, ratio, decoded, idle);
+}
+#endif
+
 typedef struct {
     gpio_num_t pin;
+    input_ladder_key_t ladder_key;
     ui_event_t ev_short;
     ui_event_t ev_hold;
     bool has_hold;
@@ -377,6 +626,16 @@ typedef struct {
     int repeat_ms;
     bool hold_fired;
 } input_button_t;
+
+static int input_button_read_raw(const input_button_t *button)
+{
+#if INPUT_TRS_LADDER
+    if (button->ladder_key != INPUT_LADDER_NONE) {
+        return button->ladder_key == s_input_latched ? 0 : 1;
+    }
+#endif
+    return gpio_get_level(button->pin);
+}
 
 static void dispatch_input_event(ui_event_t event)
 {
@@ -404,7 +663,7 @@ static void input_button_released(input_button_t *button)
 
 static void input_button_update(input_button_t *button)
 {
-    int raw = gpio_get_level(button->pin);
+    int raw = input_button_read_raw(button);
     if (raw != button->raw_level) {
         button->raw_level = raw;
         button->debounce_ms = 0;
@@ -443,29 +702,44 @@ static void input_task(void *arg)
     xSemaphoreTake(s_ui_ready, portMAX_DELAY);
 
     input_button_t buttons[] = {
-        { .pin = BTN_UP_IO, .ev_short = EV_UP, .repeats = true },
-        { .pin = BTN_DOWN_IO, .ev_short = EV_DOWN, .repeats = true },
-        { .pin = BTN_LEFT_IO, .ev_short = EV_LEFT, .repeats = true },
-        { .pin = BTN_RIGHT_IO, .ev_short = EV_RIGHT, .repeats = true },
-        { .pin = BTN_OK_IO, .ev_short = EV_OK },
-        { .pin = BTN_HOME_IO, .ev_short = EV_HOME,
+        { .pin = BTN_UP_IO, .ladder_key = INPUT_LADDER_UP,
+          .ev_short = EV_UP, .repeats = true },
+        { .pin = BTN_DOWN_IO, .ladder_key = INPUT_LADDER_DOWN,
+          .ev_short = EV_DOWN, .repeats = true },
+        { .pin = BTN_LEFT_IO, .ladder_key = INPUT_LADDER_LEFT,
+          .ev_short = EV_LEFT, .repeats = true },
+        { .pin = BTN_RIGHT_IO, .ladder_key = INPUT_LADDER_RIGHT,
+          .ev_short = EV_RIGHT, .repeats = true },
+        { .pin = BTN_OK_IO, .ladder_key = INPUT_LADDER_OK,
+          .ev_short = EV_OK },
+        { .pin = BTN_HOME_IO, .ladder_key = INPUT_LADDER_HOME,
+          .ev_short = EV_HOME,
           .ev_hold = EV_HOME_HOLD, .has_hold = true },
-        { .pin = FOOTSW_IO, .ev_short = EV_FOOTSW,
+        { .pin = FOOTSW_IO, .ladder_key = INPUT_LADDER_NONE,
+          .ev_short = EV_FOOTSW,
           .ev_hold = EV_FOOTSW_HOLD, .has_hold = true },
     };
     const int button_count = (int)(sizeof(buttons) / sizeof(buttons[0]));
     const gpio_config_t input_cfg = {
+#if INPUT_TRS_LADDER
+        .pin_bit_mask = (1ULL << FOOTSW_IO),
+#else
         .pin_bit_mask = (1ULL << BTN_UP_IO) | (1ULL << BTN_DOWN_IO) |
                         (1ULL << BTN_LEFT_IO) | (1ULL << BTN_RIGHT_IO) |
                         (1ULL << BTN_OK_IO) | (1ULL << BTN_HOME_IO) |
                         (1ULL << FOOTSW_IO),
+#endif
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
     };
     ESP_ERROR_CHECK(gpio_config(&input_cfg));
 
+#if INPUT_TRS_LADDER
+    input_ladder_init();
+    input_ladder_poll();
+#endif
     for (int i = 0; i < button_count; i++) {
-        int level = gpio_get_level(buttons[i].pin);
+        int level = input_button_read_raw(&buttons[i]);
         buttons[i].raw_level = level;
         buttons[i].stable_level = level;
         buttons[i].debounce_ms = INPUT_DEBOUNCE_MS;
@@ -477,6 +751,9 @@ static void input_task(void *arg)
             dispatch_ui_action(&queued);
         }
 
+#if INPUT_TRS_LADDER
+        input_ladder_poll();
+#endif
         for (int i = 0; i < button_count; i++) input_button_update(&buttons[i]);
         vTaskDelay(pdMS_TO_TICKS(INPUT_POLL_MS));
     }

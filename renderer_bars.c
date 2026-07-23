@@ -19,6 +19,9 @@ static lv_obj_t *s_root, *s_bar[NB], *s_peak[NB];
 static viz_theme_t s_t;
 static const float slot=(float)PW/NB;
 static const int bw=(int)((float)PW/NB-2.4f+0.5f);
+static int s_prev_h[NB], s_prev_peak_y[NB];
+static uint32_t s_prev_color[NB];
+static bool s_prev_peak_hidden[NB];
 
 static void rectstyle(lv_obj_t*o,uint32_t c){
     lv_obj_remove_flag(o,LV_OBJ_FLAG_SCROLLABLE);
@@ -39,6 +42,10 @@ static void b_create(lv_obj_t*parent,const viz_theme_t*t){
         s_peak[b]=lv_obj_create(s_root); lv_obj_set_size(s_peak[b],bw,2);
         lv_obj_set_pos(s_peak[b],x,PY+PH); rectstyle(s_peak[b],t->peak);
         lv_obj_add_flag(s_peak[b],LV_OBJ_FLAG_HIDDEN);
+        s_prev_h[b]=1;
+        s_prev_color[b]=t->lo;
+        s_prev_peak_y[b]=PY+PH;
+        s_prev_peak_hidden[b]=true;
     }
 }
 static void b_update(const viz_frame_t*f){
@@ -55,12 +62,37 @@ static void b_update(const viz_frame_t*f){
         if(v<0)v=0; else if(v>1)v=1;
         if(pkv<0)pkv=0; else if(pkv>1)pkv=1;
         int h=(int)(v*PH+0.5f); if(h<1)h=1;
-        lv_obj_set_size(s_bar[b],bw,h); lv_obj_set_y(s_bar[b],PY+PH-h);
-        lv_obj_set_style_bg_color(s_bar[b],lv_color_hex(levelc(v)),0);
-        if(pkv>0.001f){ lv_obj_set_y(s_peak[b],PY+(int)((1-pkv)*PH));
-            lv_obj_remove_flag(s_peak[b],LV_OBJ_FLAG_HIDDEN); }
-        else lv_obj_add_flag(s_peak[b],LV_OBJ_FLAG_HIDDEN);
+        if(h!=s_prev_h[b]){
+            lv_obj_set_size(s_bar[b],bw,h); lv_obj_set_y(s_bar[b],PY+PH-h);
+            s_prev_h[b]=h;
+        }
+        uint32_t color=levelc(v);
+        if(color!=s_prev_color[b]){
+            lv_obj_set_style_bg_color(s_bar[b],lv_color_hex(color),0);
+            s_prev_color[b]=color;
+        }
+        if(pkv>0.001f){
+            int peak_y=PY+(int)((1-pkv)*PH);
+            if(peak_y!=s_prev_peak_y[b]){
+                lv_obj_set_y(s_peak[b],peak_y);
+                s_prev_peak_y[b]=peak_y;
+            }
+            if(s_prev_peak_hidden[b]){
+                lv_obj_remove_flag(s_peak[b],LV_OBJ_FLAG_HIDDEN);
+                s_prev_peak_hidden[b]=false;
+            }
+        } else if(!s_prev_peak_hidden[b]){
+            lv_obj_add_flag(s_peak[b],LV_OBJ_FLAG_HIDDEN);
+            s_prev_peak_hidden[b]=true;
+        }
     }
 }
-static void b_destroy(void){ if(s_root){ lv_obj_delete(s_root); s_root=0; } }
+static void b_destroy(void){
+    if(s_root){ lv_obj_delete(s_root); s_root=0; }
+    for(int b=0;b<NB;b++){
+        s_bar[b]=0; s_peak[b]=0;
+        s_prev_h[b]=-1; s_prev_color[b]=UINT32_MAX;
+        s_prev_peak_y[b]=-1; s_prev_peak_hidden[b]=true;
+    }
+}
 const renderer_t RENDERER_BARS = { "bars", b_create, b_update, b_destroy };
