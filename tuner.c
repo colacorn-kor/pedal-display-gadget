@@ -12,7 +12,7 @@
 #define DEC               6
 #define SR                (AUDIO_SAMPLE_RATE / DEC)
 #define WIN               1536
-#define HOP               192
+#define HOP               384
 #define FMIN              30.0f
 #define FMAX              1300.0f
 

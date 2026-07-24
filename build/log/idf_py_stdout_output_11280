@@ -1,0 +1,1500 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x28 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x1564
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xd24
+load:0x403cb700,len:0x2ed4
+entry 0x403c8928
+[0;32mI (27) boot: ESP-IDF v5.4.4 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Jul  9 2026 18:37:21[0m
+[0;32mI (27) boot: Multicore bootloader[0m
+[0;32mI (27) boot: chip revision: v0.2[0m
+[0;32mI (30) boot: efuse block revision: v1.4[0m
+[0;32mI (34) boot.esp32s3: Boot SPI Speed : 80MHz[0m
+[0;32mI (37) boot.esp32s3: SPI Mode       : DIO[0m
+[0;32mI (41) boot.esp32s3: SPI Flash Size : 16MB[0m
+[0;32mI (45) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (52) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (58) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (65) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (71) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (78) boot: End of partition table[0m
+[0;32mI (81) esp_image: segment 0: paddr=00010020 vaddr=3c080020 size=366fch (222972) map[0m
+[0;32mI (128) esp_image: segment 1: paddr=00046724 vaddr=3fc97600 size=035b0h ( 13744) load[0m
+[0;32mI (131) esp_image: segment 2: paddr=00049cdc vaddr=40374000 size=0633ch ( 25404) load[0m
+[0;32mI (137) esp_image: segment 3: paddr=00050020 vaddr=42000020 size=70020h (458784) map[0m
+[0;32mI (220) esp_image: segment 4: paddr=000c0048 vaddr=4037a33c size=0d218h ( 53784) load[0m
+[0;32mI (232) esp_image: segment 5: paddr=000cd268 vaddr=50000000 size=0001ch (    28) load[0m
+[0;32mI (240) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (240) boot: Disabling RNG early entropy source...[0m
+[0;32mI (251) octal_psram: vendor id    : 0x0d (AP)[0m
+[0;32mI (251) octal_psram: dev id       : 0x02 (generation 3)[0m
+[0;32mI (251) octal_psram: density      : 0x03 (64 Mbit)[0m
+[0;32mI (253) octal_psram: good-die     : 0x01 (Pass)[0m
+[0;32mI (257) octal_psram: Latency      : 0x01 (Fixed)[0m
+[0;32mI (262) octal_psram: VCC          : 0x01 (3V)[0m
+[0;32mI (266) octal_psram: SRF          : 0x01 (Fast Refresh)[0m
+[0;32mI (271) octal_psram: BurstType    : 0x01 (Hybrid Wrap)[0m
+[0;32mI (275) octal_psram: BurstLen     : 0x01 (32 Byte)[0m
+[0;32mI (280) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)[0m
+[0;32mI (285) octal_psram: DriveStrength: 0x00 (1/1)[0m
+[0;32mI (289) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (293) esp_psram: Speed: 40MHz[0m
+[0;32mI (296) cpu_start: Multicore app[0m
+[0;32mI (1030) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1038) cpu_start: GPIO 44 and 43 are used as console UART I/O pins[0m
+[0;32mI (1039) cpu_start: Pro cpu start user code[0m
+[0;32mI (1039) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1041) app_init: Application information:[0m
+[0;32mI (1045) app_init: Project name:     pedal_display[0m
+[0;32mI (1049) app_init: App version:      9602877-dirty[0m
+[0;32mI (1054) app_init: Compile time:     Jul 24 2026 08:20:53[0m
+[0;32mI (1059) app_init: ELF file SHA256:  b906718fe...[0m
+[0;32mI (1063) app_init: ESP-IDF:          v5.4.4[0m
+[0;32mI (1067) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1071) efuse_init: Max chip rev:     v0.99 [0m
+[0;32mI (1075) efuse_init: Chip rev:         v0.2[0m
+[0;32mI (1079) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1085) heap_init: At 3FCBCB68 len 0002CBA8 (178 KiB): RAM[0m
+[0;32mI (1091) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM[0m
+[0;32mI (1096) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM[0m
+[0;32mI (1101) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM[0m
+[0;32mI (1107) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator[0m
+[0;32mI (1114) spi_flash: detected chip: boya[0m
+[0;32mI (1117) spi_flash: flash io: dio[0m
+[0;32mI (1120) sleep_gpio: Configure to isolate all GPIO pins in sleep state[0m
+[0;32mI (1126) sleep_gpio: Enable automatic switching of GPIO sleep configuration[0m
+[0;32mI (1133) main_task: Started on CPU0[0m
+[0;32mI (1163) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1163) main_task: Calling app_main()[0m
+[0;32mI (1163) gpio: GPIO[1]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 [0m
+[0;32mI (1173) st7796: version: 1.4.0[0m
+[0;32mI (1173) gpio: GPIO[14]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 [0m
+[0;32mI (1183) st7796_general: LCD panel create success, version: 1.4.0[0m
+[0;32mI (1193) app: boot complete[0m
+[0;32mI (1193) main_task: Returned from app_main()[0m
+[0;32mI (1423) LVGL: Starting LVGL task[0m
+[0;33mW (1453) app: I2S RX queue overflow count: 1[0m
+[0;32mI (1533) gpio: GPIO[17]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 [0m
+[0;32mI (1533) input: TRS ladder ADC calibration: curve fitting enabled[0m
+[0;32mI (2133) input: ladder raw=4090 mV=3209 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (2623) curve: fps=17 dirty=444x157[0m
+[0;32mI (3133) input: ladder raw=4091 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (3663) curve: fps=17 dirty=444x158[0m
+[0;32mI (4133) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (4703) curve: fps=17 dirty=443x155[0m
+[0;32mI (5133) input: ladder raw=4082 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (5733) curve: fps=17 dirty=444x146[0m
+[0;32mI (6133) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[1;31mE (6403) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (6403) task_wdt:  - IDLE0 (CPU 0)[0m
+[1;31mE (6403) task_wdt: Tasks currently running:[0m
+[1;31mE (6403) task_wdt: CPU 0: taskLVGL[0m
+[1;31mE (6403) task_wdt: CPU 1: IDLE1[0m
+[1;31mE (6403) task_wdt: Print CPU 0 (current core) backtrace[0m
+
+
+Backtrace: 0x42053736:0x3FC989B0 0x42053B4C:0x3FC989D0 0x4037793D:0x3FC98A00 0x4201B238:0x3FCD5840 0x4201AEF9:0x3FCD59A0 0x4201B504:0x3FCD5A90 0x4201B65A:0x3FCD5AB0 0x4201B78C:0x3FCD5AE0 0x4201B9AC:0x3FCD5B20 0x4201BADB:0x3FCD5B60 0x4202580D:0x3FCD5B80 0x420258B5:0x3FCD5BA0 0x42012138:0x3FCD5BC0 0x4037D8F1:0x3FCD5BE0
+
+[0;32mI (6733) curve: fps=16 dirty=444x153[0m
+[0;32mI (7133) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (7783) curve: fps=17 dirty=444x156[0m
+[0;32mI (8133) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (8813) curve: fps=17 dirty=444x159[0m
+[0;32mI (9133) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (9843) curve: fps=17 dirty=444x157[0m
+[0;32mI (10133) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (10883) curve: fps=17 dirty=444x156[0m
+[0;32mI (11133) input: ladder raw=4078 mV=3205 ratio=0.9992 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[1;31mE (11403) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (11403) task_wdt:  - IDLE0 (CPU 0)[0m
+[1;31mE (11403) task_wdt: Tasks currently running:[0m
+[1;31mE (11403) task_wdt: CPU 0: taskLVGL[0m
+[1;31mE (11403) task_wdt: CPU 1: IDLE1[0m
+[1;31mE (11403) task_wdt: Print CPU 0 (current core) backtrace[0m
+
+
+Backtrace: 0x42053736:0x3FC989B0 0x42053B4C:0x3FC989D0 0x4037793D:0x3FC98A00 0x42015A71:0x3FCD5590 0x42015BAE:0x3FCD55B0 0x4201B219:0x3FCD55F0 0x4201AEF9:0x3FCD5750 0x4201B2C4:0x3FCD5840 0x4201AEF9:0x3FCD59A0 0x4201B504:0x3FCD5A90 0x4201B65A:0x3FCD5AB0 0x4201B78C:0x3FCD5AE0 0x4201B9AC:0x3FCD5B20 0x4201BADB:0x3FCD5B60 0x4202580D:0x3FCD5B80 0x420258B5:0x3FCD5BA0 0x42012138:0x3FCD5BC0 0x4037D8F1:0x3FCD5BE0
+
+[0;32mI (11903) curve: fps=16 dirty=444x156[0m
+[0;32mI (12133) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (12923) curve: fps=17 dirty=444x156[0m
+[0;32mI (13133) input: ladder raw=356 mV=329 ratio=0.1026 -> DEADZONE (latch=LEFT idle_ref=3208mV)[0m
+[0;32mI (14133) input: ladder raw=4086 mV=3209 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (15133) input: ladder raw=4095 mV=3210 ratio=1.0009 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (16133) input: ladder raw=4087 mV=3208 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (17133) input: ladder raw=4090 mV=3209 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (17603) curve: fps=17 dirty=444x153[0m
+[0;32mI (18133) input: ladder raw=364 mV=337 ratio=0.1051 -> DEADZONE (latch=LEFT idle_ref=3207mV)[0m
+[0;32mI (18603) curve: fps=18 dirty=444x106[0m
+[0;32mI (19133) input: ladder raw=360 mV=333 ratio=0.1038 -> DEADZONE (latch=LEFT idle_ref=3207mV)[0m
+[0;32mI (19623) curve: fps=27 dirty=444x122[0m
+[0;32mI (20133) input: ladder raw=4077 mV=3205 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (20653) curve: fps=18 dirty=444x142[0m
+[0;32mI (21183) input: ladder raw=4085 mV=3207 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;33mW (21403) app: I2S RX queue overflow count: 13[0m
+[0;33mW (21503) app: I2S RX queue overflow count: 26[0m
+[0;33mW (21593) app: I2S RX queue overflow count: 38[0m
+[0;33mW (21683) app: I2S RX queue overflow count: 51[0m
+[0;33mW (21773) app: I2S RX queue overflow count: 64[0m
+[0;33mW (21873) app: I2S RX queue overflow count: 77[0m
+[0;33mW (21963) app: I2S RX queue overflow count: 90[0m
+[0;33mW (22053) app: I2S RX queue overflow count: 102[0m
+[0;33mW (22143) app: I2S RX queue overflow count: 115[0m
+[0;32mI (22183) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (22233) app: I2S RX queue overflow count: 128[0m
+[0;33mW (22323) app: I2S RX queue overflow count: 141[0m
+[0;33mW (22423) app: I2S RX queue overflow count: 154[0m
+[0;33mW (22513) app: I2S RX queue overflow count: 166[0m
+[0;33mW (22603) app: I2S RX queue overflow count: 179[0m
+[0;33mW (22693) app: I2S RX queue overflow count: 192[0m
+[0;33mW (22793) app: I2S RX queue overflow count: 205[0m
+[0;33mW (22883) app: I2S RX queue overflow count: 218[0m
+[0;33mW (22973) app: I2S RX queue overflow count: 230[0m
+[0;33mW (23063) app: I2S RX queue overflow count: 243[0m
+[0;32mI (23183) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (24183) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (24223) curve: fps=17 dirty=444x156[0m
+[0;33mW (24553) app: I2S RX queue overflow count: 255[0m
+[0;33mW (24643) app: I2S RX queue overflow count: 268[0m
+[0;33mW (24743) app: I2S RX queue overflow count: 281[0m
+[0;33mW (24833) app: I2S RX queue overflow count: 293[0m
+[0;33mW (24923) app: I2S RX queue overflow count: 306[0m
+[0;33mW (25013) app: I2S RX queue overflow count: 319[0m
+[0;33mW (25103) app: I2S RX queue overflow count: 332[0m
+[0;32mI (25183) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (25203) app: I2S RX queue overflow count: 344[0m
+[0;33mW (25293) app: I2S RX queue overflow count: 357[0m
+[0;33mW (25383) app: I2S RX queue overflow count: 370[0m
+[0;33mW (25473) app: I2S RX queue overflow count: 383[0m
+[0;32mI (26183) input: ladder raw=4070 mV=3204 ratio=0.9989 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (26793) app: I2S RX queue overflow count: 395[0m
+[0;33mW (26883) app: I2S RX queue overflow count: 408[0m
+[0;33mW (26973) app: I2S RX queue overflow count: 420[0m
+[0;33mW (27073) app: I2S RX queue overflow count: 433[0m
+[0;33mW (27163) app: I2S RX queue overflow count: 446[0m
+[0;32mI (27183) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (27253) app: I2S RX queue overflow count: 458[0m
+[0;33mW (27343) app: I2S RX queue overflow count: 472[0m
+[0;33mW (28083) app: I2S RX queue overflow count: 484[0m
+[0;33mW (28173) app: I2S RX queue overflow count: 497[0m
+[0;32mI (28253) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (29253) input: ladder raw=681 mV=619 ratio=0.1930 -> RIGHT (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (29323) curve: fps=18 dirty=444x134[0m
+[0;32mI (30253) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (31253) input: ladder raw=4091 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (32253) input: ladder raw=4075 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (33253) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (34253) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (35253) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (36253) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (37253) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (38253) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (39253) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (40293) input: ladder raw=1140 mV=1018 ratio=0.3174 -> OK (latch=OK idle_ref=3208mV)[0m
+[0;32mI (41293) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (42293) input: ladder raw=4069 mV=3203 ratio=0.9986 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (43293) input: ladder raw=4075 mV=3204 ratio=0.9989 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (44293) input: ladder raw=4081 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (45293) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (46293) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (47293) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (48293) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (49293) input: ladder raw=4079 mV=3204 ratio=0.9989 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (50293) input: ladder raw=4094 mV=3210 ratio=1.0018 -> IDLE (latch=NONE idle_ref=3204mV)[0m
+[0;32mI (51293) input: ladder raw=4084 mV=3207 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (52293) input: ladder raw=4093 mV=3209 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (53293) input: ladder raw=4084 mV=3207 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (54293) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (55293) input: ladder raw=58 mV=55 ratio=0.0171 -> DEADZONE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (56293) input: ladder raw=139 mV=131 ratio=0.0408 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (57293) input: ladder raw=124 mV=117 ratio=0.0365 -> DOWN (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (58293) input: ladder raw=4095 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (59293) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (60293) input: ladder raw=385 mV=355 ratio=0.1107 -> DEADZONE (latch=LEFT idle_ref=3208mV)[0m
+[0;32mI (61293) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (62353) input: ladder raw=170 mV=159 ratio=0.0496 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (63353) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (64353) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (65353) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (66353) input: ladder raw=701 mV=635 ratio=0.1980 -> RIGHT (latch=RIGHT idle_ref=3207mV)[0m
+[0;32mI (67353) input: ladder raw=4082 mV=3206 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (68353) input: ladder raw=4088 mV=3208 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (69353) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (70353) input: ladder raw=38 mV=36 ratio=0.0112 -> DEADZONE (latch=DOWN idle_ref=3205mV)[0m
+[0;32mI (71353) input: ladder raw=4091 mV=3209 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (72353) input: ladder raw=4083 mV=3207 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (73353) input: ladder raw=54 mV=51 ratio=0.0159 -> DEADZONE (latch=NONE idle_ref=3204mV)[0m
+[0;32mI (74353) input: ladder raw=4085 mV=3207 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (75353) input: ladder raw=47 mV=44 ratio=0.0137 -> DEADZONE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (76353) input: ladder raw=4082 mV=3206 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (77353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (78353) input: ladder raw=40 mV=38 ratio=0.0118 -> DEADZONE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (79353) input: ladder raw=4095 mV=3210 ratio=1.0017 -> IDLE (latch=NONE idle_ref=3204mV)[0m
+[0;32mI (80353) input: ladder raw=4089 mV=3208 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (81353) input: ladder raw=4094 mV=3210 ratio=1.0010 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (82353) input: ladder raw=39 mV=37 ratio=0.0115 -> DEADZONE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (83353) input: ladder raw=4042 mV=3196 ratio=0.9964 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (84353) input: ladder raw=4089 mV=3208 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (85353) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (86353) input: ladder raw=31 mV=28 ratio=0.0087 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (87353) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (88353) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (89353) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (90353) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (91353) input: ladder raw=40 mV=38 ratio=0.0118 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (92353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (93353) input: ladder raw=48 mV=45 ratio=0.0140 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (94353) input: ladder raw=4084 mV=3207 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3205mV)[0m
+[0;32mI (95353) input: ladder raw=4076 mV=3205 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (96353) input: ladder raw=43 mV=40 ratio=0.0125 -> DEADZONE (latch=DOWN idle_ref=3207mV)[0m
+[0;32mI (97353) input: ladder raw=4091 mV=3209 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (98353) input: ladder raw=4090 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (99353) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (100353) input: ladder raw=4095 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (101353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (102353) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (103353) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (104353) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (105353) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (106353) input: ladder raw=4072 mV=3203 ratio=0.9986 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (107353) input: ladder raw=4080 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (108353) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (109353) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (110353) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (111353) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (112353) input: ladder raw=373 mV=344 ratio=0.1072 -> DEADZONE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (113353) input: ladder raw=4086 mV=3209 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (114353) input: ladder raw=4093 mV=3209 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (115353) input: ladder raw=4077 mV=3205 ratio=0.9992 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (116353) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (117353) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (118353) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (119353) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (120353) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (121353) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (122353) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (123353) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (124353) input: ladder raw=4076 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (125353) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (126353) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (127353) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (128353) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (129353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (130353) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (131353) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (132353) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (133353) input: ladder raw=1788 mV=1580 ratio=0.4925 -> DEADZONE (latch=OK idle_ref=3208mV)[0m
+[0;32mI (134353) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (135353) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (136353) input: ladder raw=4092 mV=3209 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (137353) input: ladder raw=4086 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (138353) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (139353) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (140353) input: ladder raw=2577 mV=2263 ratio=0.7055 -> HOME (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (141353) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (142353) input: ladder raw=4078 mV=3205 ratio=0.9992 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (143353) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (144353) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (145353) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (146353) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (147353) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (148353) input: ladder raw=4079 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (149353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (150353) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (151353) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (152353) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (153353) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (154353) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (155353) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (156353) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (157353) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (158353) input: ladder raw=4076 mV=3205 ratio=0.9992 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (159353) input: ladder raw=4095 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (160353) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (161353) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (162353) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (163353) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (164353) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (165353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (166353) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (167353) input: ladder raw=4094 mV=3210 ratio=1.0018 -> IDLE (latch=NONE idle_ref=3204mV)[0m
+[0;32mI (168353) input: ladder raw=4094 mV=3210 ratio=1.0012 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (169353) input: ladder raw=4080 mV=3206 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (170353) input: ladder raw=4076 mV=3205 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (171353) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (172353) input: ladder raw=4095 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (173353) input: ladder raw=4094 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (174353) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (175353) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (176353) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (177353) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (178353) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (179353) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (180353) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (181353) input: ladder raw=2641 mV=2317 ratio=0.7223 -> HOME (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (182353) input: ladder raw=4081 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (183353) input: ladder raw=4089 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (184353) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (185353) input: ladder raw=2600 mV=2282 ratio=0.7114 -> HOME (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (186353) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (187353) input: ladder raw=51 mV=47 ratio=0.0147 -> DEADZONE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (188353) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (189353) input: ladder raw=4086 mV=3209 ratio=1.0011 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (190353) input: ladder raw=354 mV=327 ratio=0.1020 -> DEADZONE (latch=LEFT idle_ref=3207mV)[0m
+[0;32mI (191353) input: ladder raw=372 mV=343 ratio=0.1069 -> DEADZONE (latch=LEFT idle_ref=3207mV)[0m
+[0;32mI (192353) input: ladder raw=4090 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (193353) input: ladder raw=4090 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (194353) input: ladder raw=4093 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (195353) input: ladder raw=370 mV=342 ratio=0.1066 -> DEADZONE (latch=LEFT idle_ref=3207mV)[0m
+[0;32mI (196353) input: ladder raw=4090 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (197353) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (198353) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (199353) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (200353) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (201353) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (202353) input: ladder raw=350 mV=325 ratio=0.1013 -> DEADZONE (latch=LEFT idle_ref=3208mV)[0m
+[0;32mI (203353) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (204353) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (205353) input: ladder raw=38 mV=36 ratio=0.0112 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (206353) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (207353) input: ladder raw=34 mV=31 ratio=0.0097 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (208353) input: ladder raw=52 mV=48 ratio=0.0150 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (209353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (210353) input: ladder raw=42 mV=39 ratio=0.0122 -> DEADZONE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (211353) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (212353) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (213353) input: ladder raw=29 mV=27 ratio=0.0084 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (214353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (215353) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (216353) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (217353) input: ladder raw=4073 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (218353) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (219353) input: ladder raw=4082 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (220353) input: ladder raw=157 mV=148 ratio=0.0461 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (221353) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (222353) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (223353) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (224353) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (225353) input: ladder raw=50 mV=47 ratio=0.0147 -> DEADZONE (latch=UP idle_ref=3206mV)[0m
+[0;32mI (226353) input: ladder raw=62 mV=58 ratio=0.0181 -> DEADZONE (latch=UP idle_ref=3206mV)[0m
+[0;32mI (227353) input: ladder raw=29 mV=27 ratio=0.0084 -> DEADZONE (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (228373) input: ladder raw=32 mV=29 ratio=0.0090 -> DEADZONE (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (229373) input: ladder raw=37 mV=35 ratio=0.0109 -> DEADZONE (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (230373) input: ladder raw=45 mV=42 ratio=0.0131 -> DEADZONE (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (231413) input: ladder raw=22 mV=20 ratio=0.0062 -> UP (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (232413) input: ladder raw=46 mV=43 ratio=0.0134 -> DEADZONE (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (233413) input: ladder raw=37 mV=35 ratio=0.0109 -> DEADZONE (latch=DOWN idle_ref=3206mV)[0m
+[0;32mI (234413) input: ladder raw=4094 mV=3210 ratio=1.0011 -> IDLE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (235413) input: ladder raw=4073 mV=3204 ratio=0.9989 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (236413) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (237413) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (238413) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (239413) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (240413) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (241413) input: ladder raw=4085 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (242413) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (243413) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (244413) input: ladder raw=4093 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (245413) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (246413) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (247413) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (248413) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (249413) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (250413) input: ladder raw=4074 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (251413) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (252413) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (253413) input: ladder raw=4070 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (254413) input: ladder raw=4090 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (255413) input: ladder raw=33 mV=30 ratio=0.0094 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (256413) input: ladder raw=49 mV=46 ratio=0.0143 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (257413) input: ladder raw=32 mV=29 ratio=0.0090 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (258423) input: ladder raw=41 mV=38 ratio=0.0118 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (259423) input: ladder raw=53 mV=50 ratio=0.0156 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (260423) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (261423) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (262423) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (263423) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (264423) input: ladder raw=133 mV=125 ratio=0.0390 -> DOWN (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (265423) input: ladder raw=166 mV=156 ratio=0.0486 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (266463) input: ladder raw=130 mV=123 ratio=0.0383 -> DOWN (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (267463) input: ladder raw=139 mV=131 ratio=0.0408 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (268463) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (269463) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (270463) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (271463) input: ladder raw=25 mV=23 ratio=0.0072 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (272483) input: ladder raw=32 mV=29 ratio=0.0090 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (273483) input: ladder raw=41 mV=38 ratio=0.0118 -> DEADZONE (latch=UP idle_ref=3208mV)[0m
+[0;32mI (274483) input: ladder raw=4065 mV=3201 ratio=0.9979 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (275483) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (276483) input: ladder raw=113 mV=106 ratio=0.0330 -> DOWN (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (277483) input: ladder raw=150 mV=141 ratio=0.0440 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (278493) input: ladder raw=142 mV=133 ratio=0.0415 -> DEADZONE (latch=DOWN idle_ref=3208mV)[0m
+[0;32mI (279493) input: ladder raw=4063 mV=3202 ratio=0.9982 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (280493) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (281493) input: ladder raw=384 mV=354 ratio=0.1104 -> DEADZONE (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (282493) input: ladder raw=352 mV=326 ratio=0.1016 -> DEADZONE (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (283493) input: ladder raw=328 mV=304 ratio=0.0948 -> LEFT (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (284493) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (285493) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (286493) input: ladder raw=699 mV=633 ratio=0.1973 -> RIGHT (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (287493) input: ladder raw=693 mV=628 ratio=0.1958 -> RIGHT (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (288503) input: ladder raw=673 mV=610 ratio=0.1902 -> RIGHT (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (289503) input: ladder raw=4077 mV=3205 ratio=0.9992 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (290503) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (291503) input: ladder raw=1126 mV=1004 ratio=0.3130 -> OK (latch=OK idle_ref=3208mV)[0m
+[0;32mI (292503) input: ladder raw=1102 mV=984 ratio=0.3067 -> OK (latch=OK idle_ref=3208mV)[0m
+[0;32mI (293503) input: ladder raw=1150 mV=1025 ratio=0.3195 -> OK (latch=OK idle_ref=3208mV)[0m
+[0;32mI (294503) input: ladder raw=4060 mV=3201 ratio=0.9978 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (295503) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (296503) input: ladder raw=2601 mV=2282 ratio=0.7113 -> HOME (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (297503) input: ladder raw=2599 mV=2281 ratio=0.7110 -> HOME (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (298503) input: ladder raw=2610 mV=2291 ratio=0.7141 -> HOME (latch=HOME idle_ref=3208mV)[0m
+[0;32mI (299503) input: ladder raw=4085 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (300503) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (301503) input: ladder raw=476 mV=437 ratio=0.1362 -> DEADZONE (latch=OK idle_ref=3208mV)[0m
+[0;32mI (302503) input: ladder raw=471 mV=433 ratio=0.1350 -> DEADZONE (latch=OK idle_ref=3208mV)[0m
+[0;32mI (303503) input: ladder raw=452 mV=415 ratio=0.1294 -> DEADZONE (latch=OK idle_ref=3208mV)[0m
+[0;32mI (304503) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (305503) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (306503) input: ladder raw=697 mV=631 ratio=0.1967 -> RIGHT (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (307503) input: ladder raw=683 mV=620 ratio=0.1933 -> RIGHT (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (308533) input: ladder raw=481 mV=441 ratio=0.1375 -> DEADZONE (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (309533) input: ladder raw=489 mV=449 ratio=0.1400 -> DEADZONE (latch=RIGHT idle_ref=3208mV)[0m
+[0;32mI (310533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (311533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (312533) input: ladder raw=4088 mV=3208 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (313533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (314533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (315533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (316533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (317533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (318533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (319533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (320533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (321533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (322533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (323533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (324533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (325533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (326533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (327533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (328533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (329533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (330533) input: ladder raw=4070 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (331533) input: ladder raw=4091 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (332533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (333533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (334533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (335533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (336533) input: ladder raw=4082 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (337533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (338533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (339533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (340533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (341533) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (342533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (343533) input: ladder raw=4081 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (344533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (345533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (346533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (347533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (348533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (349533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (350533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (351533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (352533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (353533) input: ladder raw=4089 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (354533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (355533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (356533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (357533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (358533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (359533) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (360533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (361533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (362533) input: ladder raw=4076 mV=3205 ratio=0.9990 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (363533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (364533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (365533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (366533) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (367533) input: ladder raw=4089 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (368533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (369533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (370533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (371533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (372533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (373533) input: ladder raw=4056 mV=3198 ratio=0.9969 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (374533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (375533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (376533) input: ladder raw=4095 mV=3210 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (377533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (378533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (379533) input: ladder raw=4076 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (380533) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (381533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (382533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (383533) input: ladder raw=4057 mV=3200 ratio=0.9976 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (384533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (385533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (386533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (387533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (388533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (389533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (390533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (391533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (392533) input: ladder raw=4069 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (393533) input: ladder raw=4091 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (394533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (395533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (396533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (397533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (398533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (399533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (400533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (401533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (402533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (403533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (404533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (405533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (406533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (407533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (408533) input: ladder raw=4072 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (409533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (410533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (411533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (412533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (413533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (414533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (415533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (416533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (417533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (418533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (419533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (420533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (421533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (422533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (423533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (424533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (425533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (426533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (427533) input: ladder raw=4080 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (428533) input: ladder raw=4085 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (429533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (430533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (431533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (432533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (433533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (434533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (435533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (436533) input: ladder raw=4079 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (437533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (438533) input: ladder raw=4077 mV=3205 ratio=0.9992 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (439533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (440533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (441533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (442533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (443533) input: ladder raw=4081 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (444533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (445533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (446533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (447533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (448533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (449533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (450533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (451533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (452533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (453533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (454533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (455533) input: ladder raw=4089 mV=3208 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (456533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (457533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (458533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (459533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (460533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (461533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (462533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (463533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (464533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (465533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (466533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (467533) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (468533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (469533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (470533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (471533) input: ladder raw=4071 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (472533) input: ladder raw=4076 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (473533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (474533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (475533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (476533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (477533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (478533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (479533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (480533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (481533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (482533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (483533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (484533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (485533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (486533) input: ladder raw=4080 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (487533) input: ladder raw=4079 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (488533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (489533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (490533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (491533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (492533) input: ladder raw=4071 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (493533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (494533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (495533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (496533) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (497533) input: ladder raw=4072 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (498533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (499533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (500533) input: ladder raw=4073 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (501533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (502533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (503533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (504533) input: ladder raw=4075 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (505533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (506533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (507533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (508533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (509533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (510533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (511533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (512533) input: ladder raw=4078 mV=3205 ratio=0.9990 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (513533) input: ladder raw=4074 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (514533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (515533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (516533) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (517533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (518533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (519533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (520533) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (521533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (522533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (523533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (524533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (525533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (526533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (527533) input: ladder raw=4085 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (528533) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (529533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (530533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (531533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (532533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (533533) input: ladder raw=4065 mV=3201 ratio=0.9978 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (534533) input: ladder raw=4081 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (535533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (536533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (537533) input: ladder raw=4074 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (538533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (539533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (540533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (541533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (542533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (543533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (544533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (545533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (546533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (547533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (548533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (549533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (550533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (551533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (552533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (553533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (554533) input: ladder raw=4093 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (555533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (556533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (557533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (558533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (559533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (560533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (561533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (562533) input: ladder raw=4090 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (563533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (564533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (565533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (566533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (567533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (568533) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (569533) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (570533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (571533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (572533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (573533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (574533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (575533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (576533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (577533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (578533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (579533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (580533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (581533) input: ladder raw=4075 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (582533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (583533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (584533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (585533) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (586533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (587533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (588533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (589533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (590533) input: ladder raw=4077 mV=3205 ratio=0.9990 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (591533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (592533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (593533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (594533) input: ladder raw=4095 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (595533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (596533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (597533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (598533) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (599533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (600533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (601533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (602533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (603533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (604533) input: ladder raw=4082 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (605533) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (606533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (607533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (608533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (609533) input: ladder raw=4068 mV=3202 ratio=0.9982 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (610533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (611533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (612533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (613533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (614533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (615533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (616533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (617533) input: ladder raw=4075 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (618533) input: ladder raw=4075 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (619533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (620533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (621533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (622533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (623533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (624533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (625533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (626533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (627533) input: ladder raw=4072 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (628533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (629533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (630533) input: ladder raw=4075 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (631533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (632533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (633533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (634533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (635533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (636533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (637533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (638533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (639533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (640533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (641533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (642533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (643533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (644533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (645533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (646533) input: ladder raw=4073 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (647533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (648533) input: ladder raw=4088 mV=3208 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (649533) input: ladder raw=4089 mV=3208 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (650533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (651533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (652533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (653533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (654533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (655533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (656533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (657533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (658533) input: ladder raw=4076 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (659533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (660533) input: ladder raw=4076 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (661533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (662533) input: ladder raw=4091 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (663533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (664533) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (665533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (666533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (667533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (668533) input: ladder raw=4069 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (669533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (670533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (671533) input: ladder raw=4069 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (672533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (673533) input: ladder raw=4074 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (674533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (675533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (676533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (677533) input: ladder raw=4095 mV=3210 ratio=1.0008 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (678533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (679533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (680533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (681533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (682533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (683533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (684533) input: ladder raw=4071 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (685533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (686533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (687533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (688533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (689533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (690533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (691533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (692533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (693533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (694533) input: ladder raw=4085 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (695533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (696533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (697533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (698533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (699533) input: ladder raw=4087 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (700533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (701533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (702533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (703533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (704533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (705533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (706533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (707533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (708533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (709533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (710533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (711533) input: ladder raw=4089 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (712533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (713533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (714533) input: ladder raw=4072 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (715533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (716533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (717533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (718533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (719533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (720533) input: ladder raw=4081 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (721533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (722533) input: ladder raw=4084 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (723533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (724533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (725533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (726533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (727533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (728533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (729533) input: ladder raw=4080 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (730533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (731533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (732533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (733533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (734533) input: ladder raw=4071 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (735533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (736533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (737533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (738533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (739533) input: ladder raw=4089 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (740533) input: ladder raw=4081 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (741533) input: ladder raw=4072 mV=3203 ratio=0.9985 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (742533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (743533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (744533) input: ladder raw=4075 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (745533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (746533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (747533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (748533) input: ladder raw=4093 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (749533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (750533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (751533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (752533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (753533) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (754533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (755533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (756533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (757533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (758533) input: ladder raw=4067 mV=3202 ratio=0.9982 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (759533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (760533) input: ladder raw=4082 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (761533) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (762533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (763533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (764533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (765533) input: ladder raw=4073 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (766533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (767533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (768533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (769533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (770533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (771533) input: ladder raw=4087 mV=3208 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (772533) input: ladder raw=4079 mV=3204 ratio=0.9989 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (773533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (774533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (775533) input: ladder raw=4070 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (776533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (777533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (778533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (779533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (780533) input: ladder raw=4091 mV=3209 ratio=1.0005 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (781533) input: ladder raw=4081 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (782533) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (783533) input: ladder raw=4090 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (784533) input: ladder raw=4084 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (785533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (786533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (787533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (788533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (789533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (790533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (791533) input: ladder raw=4069 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (792533) input: ladder raw=4085 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (793533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (794533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (795533) input: ladder raw=4090 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (796533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (797533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (798533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (799533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (800533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (801533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (802533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (803533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (804533) input: ladder raw=4093 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (805533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (806533) input: ladder raw=4084 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (807533) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (808533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (809533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (810533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (811533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (812533) input: ladder raw=4077 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (813533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (814533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (815533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (816533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (817533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (818533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (819533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (820533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (821533) input: ladder raw=4081 mV=3206 ratio=0.9995 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (822533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (823533) input: ladder raw=4092 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (824533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (825533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (826533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (827533) input: ladder raw=4069 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (828533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (829533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (830533) input: ladder raw=4087 mV=3208 ratio=0.9999 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (831533) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (832533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (833533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (834533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (835533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (836533) input: ladder raw=4083 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (837533) input: ladder raw=4084 mV=3207 ratio=0.9997 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (838533) input: ladder raw=4080 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (839533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (840533) input: ladder raw=4086 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (841533) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (842533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (843533) input: ladder raw=4069 mV=3203 ratio=0.9986 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (844533) input: ladder raw=4091 mV=3209 ratio=1.0004 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (845533) input: ladder raw=4082 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (846533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (847533) input: ladder raw=4076 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (848533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (849533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (850533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (851533) input: ladder raw=4085 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (852533) input: ladder raw=4079 mV=3204 ratio=0.9988 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (853533) input: ladder raw=4094 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (854533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (855533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (856533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (857533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (858533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (859533) input: ladder raw=4063 mV=3202 ratio=0.9981 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (860533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (861533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (862533) input: ladder raw=4082 mV=3206 ratio=0.9994 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (863533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (864533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (865533) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (866533) input: ladder raw=4074 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (867533) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (868533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (869533) input: ladder raw=4089 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (870533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (871533) input: ladder raw=4075 mV=3204 ratio=0.9987 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (872533) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (873533) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (874533) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (875533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (876533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (877533) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (878533) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (879533) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (880563) input: ladder raw=4083 mV=3207 ratio=0.9998 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;32mI (881563) input: ladder raw=61 mV=57 ratio=0.0178 -> DEADZONE (latch=NONE idle_ref=3206mV)[0m
+[0;32mI (882563) input: ladder raw=32 mV=29 ratio=0.0091 -> DEADZONE (latch=NONE idle_ref=3204mV)[0m
+[0;32mI (883563) input: ladder raw=69 mV=65 ratio=0.0203 -> DEADZONE (latch=NONE idle_ref=3207mV)[0m
+[0;32mI (884563) input: ladder raw=4090 mV=3209 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;33mW (885153) app: I2S RX queue overflow count: 509[0m
+[0;33mW (885253) app: I2S RX queue overflow count: 523[0m
+[0;33mW (885343) app: I2S RX queue overflow count: 536[0m
+[0;33mW (885453) app: I2S RX queue overflow count: 550[0m
+[0;33mW (885543) app: I2S RX queue overflow count: 564[0m
+[0;32mI (885563) input: ladder raw=4078 mV=3205 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3207mV)[0m
+[0;33mW (885643) app: I2S RX queue overflow count: 578[0m
+[0;33mW (885733) app: I2S RX queue overflow count: 591[0m
+[0;33mW (885833) app: I2S RX queue overflow count: 604[0m
+[0;33mW (885923) app: I2S RX queue overflow count: 616[0m
+[0;33mW (886013) app: I2S RX queue overflow count: 629[0m
+[0;33mW (886103) app: I2S RX queue overflow count: 642[0m
+[0;33mW (886203) app: I2S RX queue overflow count: 655[0m
+[0;33mW (886293) app: I2S RX queue overflow count: 668[0m
+[0;33mW (886383) app: I2S RX queue overflow count: 680[0m
+[0;33mW (886473) app: I2S RX queue overflow count: 693[0m
+[0;32mI (886563) input: ladder raw=4088 mV=3208 ratio=1.0001 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (886563) app: I2S RX queue overflow count: 706[0m
+[0;33mW (886653) app: I2S RX queue overflow count: 719[0m
+[0;33mW (886753) app: I2S RX queue overflow count: 731[0m
+[0;33mW (886843) app: I2S RX queue overflow count: 744[0m
+[0;33mW (886933) app: I2S RX queue overflow count: 757[0m
+[0;33mW (887023) app: I2S RX queue overflow count: 770[0m
+[0;33mW (887123) app: I2S RX queue overflow count: 783[0m
+[0;33mW (887213) app: I2S RX queue overflow count: 795[0m
+[0;33mW (887303) app: I2S RX queue overflow count: 808[0m
+[0;33mW (887393) app: I2S RX queue overflow count: 821[0m
+[0;33mW (887493) app: I2S RX queue overflow count: 834[0m
+[0;32mI (887563) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (887583) app: I2S RX queue overflow count: 847[0m
+[0;33mW (887673) app: I2S RX queue overflow count: 859[0m
+[0;33mW (887763) app: I2S RX queue overflow count: 872[0m
+[0;33mW (887863) app: I2S RX queue overflow count: 885[0m
+[0;33mW (887953) app: I2S RX queue overflow count: 898[0m
+[0;33mW (888043) app: I2S RX queue overflow count: 910[0m
+[0;33mW (888133) app: I2S RX queue overflow count: 924[0m
+[0;33mW (888233) app: I2S RX queue overflow count: 936[0m
+[0;33mW (888323) app: I2S RX queue overflow count: 949[0m
+[0;33mW (888413) app: I2S RX queue overflow count: 962[0m
+[0;33mW (888503) app: I2S RX queue overflow count: 975[0m
+[0;32mI (888563) input: ladder raw=4081 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (888593) app: I2S RX queue overflow count: 987[0m
+[0;33mW (888693) app: I2S RX queue overflow count: 1001[0m
+[0;33mW (888783) app: I2S RX queue overflow count: 1013[0m
+[0;33mW (888873) app: I2S RX queue overflow count: 1026[0m
+[0;33mW (888973) app: I2S RX queue overflow count: 1039[0m
+[0;33mW (889063) app: I2S RX queue overflow count: 1052[0m
+[0;33mW (889153) app: I2S RX queue overflow count: 1064[0m
+[0;33mW (889243) app: I2S RX queue overflow count: 1078[0m
+[0;33mW (889343) app: I2S RX queue overflow count: 1090[0m
+[0;33mW (889433) app: I2S RX queue overflow count: 1103[0m
+[0;33mW (889523) app: I2S RX queue overflow count: 1116[0m
+[0;32mI (889563) input: ladder raw=4092 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (889613) app: I2S RX queue overflow count: 1129[0m
+[0;33mW (889703) app: I2S RX queue overflow count: 1142[0m
+[0;33mW (889793) app: I2S RX queue overflow count: 1154[0m
+[0;33mW (889893) app: I2S RX queue overflow count: 1167[0m
+[0;33mW (889983) app: I2S RX queue overflow count: 1180[0m
+[1;31mE (890073) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (890073) task_wdt:  - IDLE1 (CPU 1)[0m
+[1;31mE (890073) task_wdt: Tasks currently running:[0m
+[1;31mE (890073) task_wdt: CPU 0: display[0m
+[1;31mE (890073) task_wdt: CPU 1: audio[0m
+[1;31mE (890073) task_wdt: Print CPU 1 backtrace[0m
+
+
+Backtrace: 0x40378FDE:0x3FC98FE0 0x4037793D:0x3FC99000 0x42007C18:0x3FCCBB30 0x42008B2B:0x3FCCBB60 0x4200A3E6:0x3FCCBB80 0x42060D96:0x3FCCBBA0 0x42009DB8:0x3FCCBBC0 0x4200A3E6:0x3FCCBBE0 0x42060756:0x3FCCBC00 0x4205FDED:0x3FCCBC20 0x4205FE3F:0x3FCCBC40 0x42060509:0x3FCCBC60 0x4206705B:0x3FCCBC90 0x42066F52:0x3FCCBCB0 0x420607CD:0x3FCCBFD0 0x4038509E:0x3FCCC000 0x40385069:0x3FCCC030 0x4200BA2F:0x3FCCC080 0x4037D8F1:0x3FCCC0C0
+
+[0;33mW (890073) app: I2S RX queue overflow count: 1192[0m
+[0;33mW (890133) app: I2S RX queue overflow count: 1196[0m
+[0;33mW (890223) app: I2S RX queue overflow count: 1210[0m
+[0;33mW (890313) app: I2S RX queue overflow count: 1223[0m
+[0;33mW (890403) app: I2S RX queue overflow count: 1236[0m
+[0;33mW (890503) app: I2S RX queue overflow count: 1248[0m
+[0;32mI (890563) input: ladder raw=4083 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (890593) app: I2S RX queue overflow count: 1261[0m
+[0;33mW (890683) app: I2S RX queue overflow count: 1274[0m
+[0;33mW (890773) app: I2S RX queue overflow count: 1287[0m
+[0;33mW (890873) app: I2S RX queue overflow count: 1300[0m
+[0;33mW (890963) app: I2S RX queue overflow count: 1312[0m
+[0;33mW (891053) app: I2S RX queue overflow count: 1325[0m
+[0;33mW (891143) app: I2S RX queue overflow count: 1338[0m
+[0;33mW (891243) app: I2S RX queue overflow count: 1351[0m
+[0;33mW (891333) app: I2S RX queue overflow count: 1364[0m
+[0;33mW (891423) app: I2S RX queue overflow count: 1376[0m
+[0;33mW (891513) app: I2S RX queue overflow count: 1389[0m
+[0;32mI (891563) input: ladder raw=39 mV=37 ratio=0.0115 -> DEADZONE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (891613) app: I2S RX queue overflow count: 1402[0m
+[0;33mW (891703) app: I2S RX queue overflow count: 1415[0m
+[0;33mW (891793) app: I2S RX queue overflow count: 1428[0m
+[0;33mW (891883) app: I2S RX queue overflow count: 1441[0m
+[0;33mW (891983) app: I2S RX queue overflow count: 1454[0m
+[0;33mW (892073) app: I2S RX queue overflow count: 1466[0m
+[0;33mW (892163) app: I2S RX queue overflow count: 1479[0m
+[0;33mW (892253) app: I2S RX queue overflow count: 1492[0m
+[0;33mW (892353) app: I2S RX queue overflow count: 1505[0m
+[0;33mW (892443) app: I2S RX queue overflow count: 1518[0m
+[0;33mW (892533) app: I2S RX queue overflow count: 1530[0m
+[0;32mI (892563) input: ladder raw=30 mV=28 ratio=0.0087 -> DEADZONE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (892623) app: I2S RX queue overflow count: 1543[0m
+[0;33mW (892713) app: I2S RX queue overflow count: 1556[0m
+[0;33mW (892803) app: I2S RX queue overflow count: 1569[0m
+[0;33mW (892903) app: I2S RX queue overflow count: 1582[0m
+[0;33mW (892993) app: I2S RX queue overflow count: 1595[0m
+[0;33mW (893083) app: I2S RX queue overflow count: 1607[0m
+[0;33mW (893173) app: I2S RX queue overflow count: 1620[0m
+[0;33mW (893273) app: I2S RX queue overflow count: 1633[0m
+[0;33mW (893363) app: I2S RX queue overflow count: 1646[0m
+[0;33mW (893453) app: I2S RX queue overflow count: 1658[0m
+[0;33mW (893543) app: I2S RX queue overflow count: 1671[0m
+[0;32mI (893563) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (893643) app: I2S RX queue overflow count: 1684[0m
+[0;33mW (893733) app: I2S RX queue overflow count: 1697[0m
+[0;33mW (893823) app: I2S RX queue overflow count: 1709[0m
+[0;33mW (893913) app: I2S RX queue overflow count: 1723[0m
+[0;33mW (894013) app: I2S RX queue overflow count: 1735[0m
+[0;33mW (894103) app: I2S RX queue overflow count: 1748[0m
+[0;33mW (894193) app: I2S RX queue overflow count: 1761[0m
+[0;33mW (894283) app: I2S RX queue overflow count: 1774[0m
+[0;33mW (894383) app: I2S RX queue overflow count: 1787[0m
+[0;33mW (894473) app: I2S RX queue overflow count: 1799[0m
+[0;32mI (894563) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (894563) app: I2S RX queue overflow count: 1812[0m
+[0;33mW (894653) app: I2S RX queue overflow count: 1825[0m
+[0;33mW (894753) app: I2S RX queue overflow count: 1838[0m
+[0;33mW (894843) app: I2S RX queue overflow count: 1851[0m
+[0;33mW (894933) app: I2S RX queue overflow count: 1863[0m
+[0;33mW (895023) app: I2S RX queue overflow count: 1877[0m
+[1;31mE (895073) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (895073) task_wdt:  - IDLE1 (CPU 1)[0m
+[1;31mE (895073) task_wdt: Tasks currently running:[0m
+[1;31mE (895073) task_wdt: CPU 0: display[0m
+[1;31mE (895073) task_wdt: CPU 1: audio[0m
+[1;31mE (895073) task_wdt: Print CPU 1 backtrace[0m
+
+
+Backtrace: 0x40378FDE:0x3FC98FE0 0x4037793D:0x3FC99000 0x4200CE06:0x3FCCC010 0x4200D19D:0x3FCCC060 0x4200BB15:0x3FCCC080 0x4037D8F1:0x3FCCC0C0
+
+[0;33mW (895123) app: I2S RX queue overflow count: 1890[0m
+[0;33mW (895223) app: I2S RX queue overflow count: 1903[0m
+[0;33mW (895313) app: I2S RX queue overflow count: 1916[0m
+[0;33mW (895403) app: I2S RX queue overflow count: 1929[0m
+[0;33mW (895503) app: I2S RX queue overflow count: 1942[0m
+[0;32mI (895563) input: ladder raw=4076 mV=3205 ratio=0.9989 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (895593) app: I2S RX queue overflow count: 1954[0m
+[0;33mW (895683) app: I2S RX queue overflow count: 1967[0m
+[0;33mW (895773) app: I2S RX queue overflow count: 1980[0m
+[0;33mW (895873) app: I2S RX queue overflow count: 1993[0m
+[0;33mW (895963) app: I2S RX queue overflow count: 2006[0m
+[0;33mW (896053) app: I2S RX queue overflow count: 2018[0m
+[0;33mW (896143) app: I2S RX queue overflow count: 2032[0m
+[0;33mW (896243) app: I2S RX queue overflow count: 2044[0m
+[0;33mW (896333) app: I2S RX queue overflow count: 2057[0m
+[0;33mW (896423) app: I2S RX queue overflow count: 2069[0m
+[0;33mW (896513) app: I2S RX queue overflow count: 2083[0m
+[0;32mI (896563) input: ladder raw=4090 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (896613) app: I2S RX queue overflow count: 2096[0m
+[0;33mW (896703) app: I2S RX queue overflow count: 2108[0m
+[0;33mW (896793) app: I2S RX queue overflow count: 2121[0m
+[0;33mW (896883) app: I2S RX queue overflow count: 2134[0m
+[0;33mW (896973) app: I2S RX queue overflow count: 2147[0m
+[0;33mW (897063) app: I2S RX queue overflow count: 2160[0m
+[0;33mW (897163) app: I2S RX queue overflow count: 2172[0m
+[0;33mW (897253) app: I2S RX queue overflow count: 2185[0m
+[0;33mW (897343) app: I2S RX queue overflow count: 2198[0m
+[0;33mW (897433) app: I2S RX queue overflow count: 2211[0m
+[0;33mW (897533) app: I2S RX queue overflow count: 2223[0m
+[0;32mI (897563) input: ladder raw=4078 mV=3205 ratio=0.9990 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (897623) app: I2S RX queue overflow count: 2236[0m
+[0;33mW (897713) app: I2S RX queue overflow count: 2249[0m
+[0;33mW (897803) app: I2S RX queue overflow count: 2262[0m
+[0;33mW (897903) app: I2S RX queue overflow count: 2275[0m
+[0;33mW (897993) app: I2S RX queue overflow count: 2287[0m
+[0;33mW (898083) app: I2S RX queue overflow count: 2300[0m
+[0;33mW (898173) app: I2S RX queue overflow count: 2313[0m
+[0;33mW (898273) app: I2S RX queue overflow count: 2326[0m
+[0;33mW (898363) app: I2S RX queue overflow count: 2339[0m
+[0;33mW (898453) app: I2S RX queue overflow count: 2351[0m
+[0;33mW (898543) app: I2S RX queue overflow count: 2365[0m
+[0;32mI (898563) input: ladder raw=4071 mV=3203 ratio=0.9984 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (898643) app: I2S RX queue overflow count: 2377[0m
+[0;33mW (898733) app: I2S RX queue overflow count: 2390[0m
+[0;33mW (898823) app: I2S RX queue overflow count: 2403[0m
+[0;33mW (898913) app: I2S RX queue overflow count: 2416[0m
+[0;33mW (899013) app: I2S RX queue overflow count: 2429[0m
+[0;33mW (899103) app: I2S RX queue overflow count: 2441[0m
+[0;33mW (899193) app: I2S RX queue overflow count: 2454[0m
+[0;33mW (899283) app: I2S RX queue overflow count: 2467[0m
+[0;33mW (899373) app: I2S RX queue overflow count: 2480[0m
+[0;33mW (899463) app: I2S RX queue overflow count: 2493[0m
+[0;32mI (899563) input: ladder raw=4091 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (899563) app: I2S RX queue overflow count: 2505[0m
+[0;33mW (899653) app: I2S RX queue overflow count: 2518[0m
+[0;33mW (899743) app: I2S RX queue overflow count: 2531[0m
+[0;33mW (899833) app: I2S RX queue overflow count: 2544[0m
+[0;33mW (899933) app: I2S RX queue overflow count: 2557[0m
+[0;33mW (900023) app: I2S RX queue overflow count: 2569[0m
+[1;31mE (900073) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (900073) task_wdt:  - IDLE1 (CPU 1)[0m
+[1;31mE (900073) task_wdt: Tasks currently running:[0m
+[1;31mE (900073) task_wdt: CPU 0: display[0m
+[1;31mE (900073) task_wdt: CPU 1: audio[0m
+[1;31mE (900073) task_wdt: Print CPU 1 backtrace[0m
+
+
+Backtrace: 0x40378FDE:0x3FC98FE0 0x4037793D:0x3FC99000 0x4200CDF5:0x3FCCC010 0x4200D19D:0x3FCCC060 0x4200BB15:0x3FCCC080 0x4037D8F1:0x3FCCC0C0
+
+[0;33mW (900123) app: I2S RX queue overflow count: 2583[0m
+[0;33mW (900213) app: I2S RX queue overflow count: 2596[0m
+[0;33mW (900303) app: I2S RX queue overflow count: 2608[0m
+[0;33mW (900403) app: I2S RX queue overflow count: 2621[0m
+[0;33mW (900493) app: I2S RX queue overflow count: 2634[0m
+[0;32mI (900563) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (900583) app: I2S RX queue overflow count: 2647[0m
+[0;33mW (900673) app: I2S RX queue overflow count: 2659[0m
+[0;33mW (900773) app: I2S RX queue overflow count: 2673[0m
+[0;33mW (900863) app: I2S RX queue overflow count: 2685[0m
+[0;33mW (900953) app: I2S RX queue overflow count: 2698[0m
+[0;33mW (901043) app: I2S RX queue overflow count: 2711[0m
+[0;33mW (901143) app: I2S RX queue overflow count: 2724[0m
+[0;33mW (901233) app: I2S RX queue overflow count: 2736[0m
+[0;33mW (901323) app: I2S RX queue overflow count: 2749[0m
+[0;33mW (901413) app: I2S RX queue overflow count: 2762[0m
+[0;33mW (901513) app: I2S RX queue overflow count: 2775[0m
+[0;32mI (901563) input: ladder raw=4083 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (901603) app: I2S RX queue overflow count: 2788[0m
+[0;33mW (901693) app: I2S RX queue overflow count: 2800[0m
+[0;33mW (901783) app: I2S RX queue overflow count: 2813[0m
+[0;33mW (901873) app: I2S RX queue overflow count: 2826[0m
+[0;33mW (901973) app: I2S RX queue overflow count: 2839[0m
+[0;33mW (902063) app: I2S RX queue overflow count: 2852[0m
+[0;33mW (902153) app: I2S RX queue overflow count: 2864[0m
+[0;33mW (902243) app: I2S RX queue overflow count: 2877[0m
+[0;33mW (902343) app: I2S RX queue overflow count: 2890[0m
+[0;33mW (902433) app: I2S RX queue overflow count: 2903[0m
+[0;33mW (902523) app: I2S RX queue overflow count: 2915[0m
+[0;32mI (902563) input: ladder raw=4086 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (902613) app: I2S RX queue overflow count: 2929[0m
+[0;33mW (902713) app: I2S RX queue overflow count: 2941[0m
+[0;33mW (902803) app: I2S RX queue overflow count: 2954[0m
+[0;33mW (902893) app: I2S RX queue overflow count: 2967[0m
+[0;33mW (902983) app: I2S RX queue overflow count: 2980[0m
+[0;33mW (903083) app: I2S RX queue overflow count: 2993[0m
+[0;33mW (903173) app: I2S RX queue overflow count: 3006[0m
+[0;33mW (903263) app: I2S RX queue overflow count: 3018[0m
+[0;33mW (903353) app: I2S RX queue overflow count: 3031[0m
+[0;33mW (903453) app: I2S RX queue overflow count: 3044[0m
+[0;33mW (903533) app: I2S RX queue overflow count: 3057[0m
+[0;32mI (903563) input: ladder raw=4081 mV=3206 ratio=0.9993 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (903633) app: I2S RX queue overflow count: 3070[0m
+[0;33mW (903723) app: I2S RX queue overflow count: 3082[0m
+[0;33mW (903813) app: I2S RX queue overflow count: 3095[0m
+[0;33mW (903903) app: I2S RX queue overflow count: 3108[0m
+[0;33mW (904003) app: I2S RX queue overflow count: 3121[0m
+[0;33mW (904093) app: I2S RX queue overflow count: 3134[0m
+[0;33mW (904183) app: I2S RX queue overflow count: 3146[0m
+[0;33mW (904273) app: I2S RX queue overflow count: 3159[0m
+[0;33mW (904373) app: I2S RX queue overflow count: 3172[0m
+[0;33mW (904463) app: I2S RX queue overflow count: 3185[0m
+[0;33mW (904553) app: I2S RX queue overflow count: 3197[0m
+[0;32mI (904563) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (904643) app: I2S RX queue overflow count: 3210[0m
+[0;33mW (904743) app: I2S RX queue overflow count: 3223[0m
+[0;33mW (904833) app: I2S RX queue overflow count: 3236[0m
+[0;33mW (904923) app: I2S RX queue overflow count: 3249[0m
+[0;33mW (905013) app: I2S RX queue overflow count: 3262[0m
+[1;31mE (905073) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (905073) task_wdt:  - IDLE1 (CPU 1)[0m
+[1;31mE (905073) task_wdt: Tasks currently running:[0m
+[1;31mE (905073) task_wdt: CPU 0: taskLVGL[0m
+[1;31mE (905073) task_wdt: CPU 1: audio[0m
+[1;31mE (905073) task_wdt: Print CPU 1 backtrace[0m
+
+
+Backtrace: 0x40378FDE:0x3FC98FE0 0x4037793D:0x3FC99000 0x4200CDF5:0x3FCCC010 0x4200D19D:0x3FCCC060 0x4200BB15:0x3FCCC080 0x4037D8F1:0x3FCCC0C0
+
+[0;33mW (905123) app: I2S RX queue overflow count: 3275[0m
+[0;33mW (905213) app: I2S RX queue overflow count: 3288[0m
+[0;33mW (905303) app: I2S RX queue overflow count: 3301[0m
+[0;33mW (905393) app: I2S RX queue overflow count: 3314[0m
+[0;33mW (905493) app: I2S RX queue overflow count: 3327[0m
+[0;32mI (905563) input: ladder raw=4094 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (905583) app: I2S RX queue overflow count: 3340[0m
+[0;33mW (905673) app: I2S RX queue overflow count: 3352[0m
+[0;33mW (905763) app: I2S RX queue overflow count: 3366[0m
+[0;33mW (905863) app: I2S RX queue overflow count: 3378[0m
+[0;33mW (905953) app: I2S RX queue overflow count: 3391[0m
+[0;33mW (906043) app: I2S RX queue overflow count: 3404[0m
+[0;33mW (906133) app: I2S RX queue overflow count: 3417[0m
+[0;33mW (906223) app: I2S RX queue overflow count: 3429[0m
+[0;33mW (906323) app: I2S RX queue overflow count: 3442[0m
+[0;33mW (906413) app: I2S RX queue overflow count: 3455[0m
+[0;33mW (906503) app: I2S RX queue overflow count: 3468[0m
+[0;32mI (906563) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (906593) app: I2S RX queue overflow count: 3480[0m
+[0;33mW (906693) app: I2S RX queue overflow count: 3494[0m
+[0;33mW (906783) app: I2S RX queue overflow count: 3506[0m
+[0;33mW (906873) app: I2S RX queue overflow count: 3519[0m
+[0;33mW (906963) app: I2S RX queue overflow count: 3532[0m
+[0;33mW (907063) app: I2S RX queue overflow count: 3545[0m
+[0;33mW (907153) app: I2S RX queue overflow count: 3557[0m
+[0;33mW (907243) app: I2S RX queue overflow count: 3570[0m
+[0;33mW (907333) app: I2S RX queue overflow count: 3583[0m
+[0;33mW (907423) app: I2S RX queue overflow count: 3596[0m
+[0;33mW (907523) app: I2S RX queue overflow count: 3608[0m
+[0;32mI (907563) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (907613) app: I2S RX queue overflow count: 3621[0m
+[0;33mW (907703) app: I2S RX queue overflow count: 3634[0m
+[0;33mW (907793) app: I2S RX queue overflow count: 3647[0m
+[0;33mW (907893) app: I2S RX queue overflow count: 3660[0m
+[0;33mW (907983) app: I2S RX queue overflow count: 3673[0m
+[0;33mW (908073) app: I2S RX queue overflow count: 3685[0m
+[0;33mW (908163) app: I2S RX queue overflow count: 3698[0m
+[0;33mW (908263) app: I2S RX queue overflow count: 3711[0m
+[0;33mW (908353) app: I2S RX queue overflow count: 3724[0m
+[0;33mW (908443) app: I2S RX queue overflow count: 3736[0m
+[0;33mW (908533) app: I2S RX queue overflow count: 3750[0m
+[0;32mI (908563) input: ladder raw=4078 mV=3205 ratio=0.9990 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (908633) app: I2S RX queue overflow count: 3762[0m
+[0;33mW (908723) app: I2S RX queue overflow count: 3775[0m
+[0;33mW (908813) app: I2S RX queue overflow count: 3788[0m
+[0;33mW (908903) app: I2S RX queue overflow count: 3801[0m
+[0;33mW (909003) app: I2S RX queue overflow count: 3814[0m
+[0;33mW (909093) app: I2S RX queue overflow count: 3827[0m
+[0;33mW (909183) app: I2S RX queue overflow count: 3839[0m
+[0;33mW (909273) app: I2S RX queue overflow count: 3852[0m
+[0;33mW (909363) app: I2S RX queue overflow count: 3865[0m
+[0;33mW (909453) app: I2S RX queue overflow count: 3878[0m
+[0;33mW (909553) app: I2S RX queue overflow count: 3890[0m
+[0;32mI (909563) input: ladder raw=4089 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (909643) app: I2S RX queue overflow count: 3903[0m
+[0;33mW (909733) app: I2S RX queue overflow count: 3916[0m
+[0;33mW (909823) app: I2S RX queue overflow count: 3929[0m
+[0;33mW (909923) app: I2S RX queue overflow count: 3942[0m
+[0;33mW (910013) app: I2S RX queue overflow count: 3954[0m
+[1;31mE (910073) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (910073) task_wdt:  - IDLE1 (CPU 1)[0m
+[1;31mE (910073) task_wdt: Tasks currently running:[0m
+[1;31mE (910073) task_wdt: CPU 0: taskLVGL[0m
+[1;31mE (910073) task_wdt: CPU 1: audio[0m
+[1;31mE (910073) task_wdt: Print CPU 1 backtrace[0m
+
+
+Backtrace: 0x40378FDE:0x3FC98FE0 0x4037793D:0x3FC99000 0x4200CE15:0x3FCCC010 0x4200D19D:0x3FCCC060 0x4200BB15:0x3FCCC080 0x4037D8F1:0x3FCCC0C0
+
+[0;33mW (910113) app: I2S RX queue overflow count: 3968[0m
+[0;33mW (910203) app: I2S RX queue overflow count: 3981[0m
+[0;33mW (910303) app: I2S RX queue overflow count: 3994[0m
+[0;33mW (910393) app: I2S RX queue overflow count: 4007[0m
+[0;33mW (910483) app: I2S RX queue overflow count: 4019[0m
+[0;32mI (910563) input: ladder raw=4088 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (910573) app: I2S RX queue overflow count: 4032[0m
+[0;33mW (910673) app: I2S RX queue overflow count: 4045[0m
+[0;33mW (910763) app: I2S RX queue overflow count: 4058[0m
+[0;33mW (910853) app: I2S RX queue overflow count: 4070[0m
+[0;33mW (910943) app: I2S RX queue overflow count: 4084[0m
+[0;33mW (911043) app: I2S RX queue overflow count: 4096[0m
+[0;33mW (911133) app: I2S RX queue overflow count: 4109[0m
+[0;33mW (911223) app: I2S RX queue overflow count: 4122[0m
+[0;33mW (911313) app: I2S RX queue overflow count: 4135[0m
+[0;33mW (911413) app: I2S RX queue overflow count: 4148[0m
+[0;33mW (911503) app: I2S RX queue overflow count: 4160[0m
+[0;32mI (911563) input: ladder raw=4093 mV=3209 ratio=1.0003 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (911593) app: I2S RX queue overflow count: 4173[0m
+[0;33mW (911683) app: I2S RX queue overflow count: 4186[0m
+[0;33mW (911773) app: I2S RX queue overflow count: 4199[0m
+[0;33mW (911863) app: I2S RX queue overflow count: 4212[0m
+[0;33mW (911963) app: I2S RX queue overflow count: 4224[0m
+[0;33mW (912053) app: I2S RX queue overflow count: 4237[0m
+[0;33mW (912143) app: I2S RX queue overflow count: 4250[0m
+[0;33mW (912233) app: I2S RX queue overflow count: 4263[0m
+[0;33mW (912333) app: I2S RX queue overflow count: 4276[0m
+[0;33mW (912423) app: I2S RX queue overflow count: 4288[0m
+[0;33mW (912513) app: I2S RX queue overflow count: 4301[0m
+[0;32mI (912563) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (912603) app: I2S RX queue overflow count: 4314[0m
+[0;33mW (912703) app: I2S RX queue overflow count: 4327[0m
+[0;33mW (912793) app: I2S RX queue overflow count: 4340[0m
+[0;33mW (912883) app: I2S RX queue overflow count: 4352[0m
+[0;33mW (912973) app: I2S RX queue overflow count: 4365[0m
+[0;33mW (913073) app: I2S RX queue overflow count: 4378[0m
+[0;33mW (913163) app: I2S RX queue overflow count: 4391[0m
+[0;33mW (913253) app: I2S RX queue overflow count: 4403[0m
+[0;33mW (913343) app: I2S RX queue overflow count: 4417[0m
+[0;33mW (913443) app: I2S RX queue overflow count: 4429[0m
+[0;33mW (913533) app: I2S RX queue overflow count: 4442[0m
+[0;32mI (913563) input: ladder raw=4095 mV=3210 ratio=1.0007 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (913623) app: I2S RX queue overflow count: 4455[0m
+[0;33mW (913713) app: I2S RX queue overflow count: 4468[0m
+[0;33mW (913813) app: I2S RX queue overflow count: 4481[0m
+[0;33mW (913903) app: I2S RX queue overflow count: 4493[0m
+[0;33mW (913993) app: I2S RX queue overflow count: 4506[0m
+[0;33mW (914083) app: I2S RX queue overflow count: 4519[0m
+[0;33mW (914173) app: I2S RX queue overflow count: 4532[0m
+[0;33mW (914263) app: I2S RX queue overflow count: 4545[0m
+[0;33mW (914363) app: I2S RX queue overflow count: 4557[0m
+[0;33mW (914453) app: I2S RX queue overflow count: 4570[0m
+[0;33mW (914543) app: I2S RX queue overflow count: 4583[0m
+[0;32mI (914563) input: ladder raw=4087 mV=3208 ratio=1.0000 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (914633) app: I2S RX queue overflow count: 4596[0m
+[0;33mW (914733) app: I2S RX queue overflow count: 4609[0m
+[0;33mW (914823) app: I2S RX queue overflow count: 4621[0m
+[0;33mW (914913) app: I2S RX queue overflow count: 4634[0m
+[0;33mW (915003) app: I2S RX queue overflow count: 4647[0m
+[1;31mE (915073) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:[0m
+[1;31mE (915073) task_wdt:  - IDLE1 (CPU 1)[0m
+[1;31mE (915073) task_wdt: Tasks currently running:[0m
+[1;31mE (915073) task_wdt: CPU 0: display[0m
+[1;31mE (915073) task_wdt: CPU 1: audio[0m
+[1;31mE (915073) task_wdt: Print CPU 1 backtrace[0m
+
+
+Backtrace: 0x40378FDE:0x3FC98FE0 0x4037793D:0x3FC99000 0x4200CE15:0x3FCCC010 0x4200D19D:0x3FCCC060 0x4200BB15:0x3FCCC080 0x4037D8F1:0x3FCCC0C0
+
+[0;33mW (915113) app: I2S RX queue overflow count: 4661[0m
+[0;33mW (915203) app: I2S RX queue overflow count: 4674[0m
+[0;33mW (915303) app: I2S RX queue overflow count: 4687[0m
+[0;33mW (915393) app: I2S RX queue overflow count: 4701[0m
+[0;33mW (915483) app: I2S RX queue overflow count: 4713[0m
+[0;32mI (915563) input: ladder raw=4083 mV=3207 ratio=0.9996 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (915573) app: I2S RX queue overflow count: 4726[0m
+[0;33mW (915673) app: I2S RX queue overflow count: 4739[0m
+[0;33mW (915763) app: I2S RX queue overflow count: 4752[0m
+[0;33mW (915853) app: I2S RX queue overflow count: 4764[0m
+[0;33mW (915943) app: I2S RX queue overflow count: 4777[0m
+[0;33mW (916043) app: I2S RX queue overflow count: 4790[0m
+[0;33mW (916133) app: I2S RX queue overflow count: 4803[0m
+[0;33mW (916223) app: I2S RX queue overflow count: 4815[0m
+[0;33mW (916313) app: I2S RX queue overflow count: 4829[0m
+[0;33mW (916413) app: I2S RX queue overflow count: 4841[0m
+[0;33mW (916503) app: I2S RX queue overflow count: 4854[0m
+[0;32mI (916563) input: ladder raw=4095 mV=3210 ratio=1.0006 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (916593) app: I2S RX queue overflow count: 4866[0m
+[0;33mW (916683) app: I2S RX queue overflow count: 4880[0m
+[0;33mW (916773) app: I2S RX queue overflow count: 4892[0m
+[0;33mW (916873) app: I2S RX queue overflow count: 4905[0m
+[0;33mW (916963) app: I2S RX queue overflow count: 4918[0m
+[0;33mW (917053) app: I2S RX queue overflow count: 4930[0m
+[0;33mW (917143) app: I2S RX queue overflow count: 4943[0m
+[0;33mW (917233) app: I2S RX queue overflow count: 4956[0m
+[0;33mW (917333) app: I2S RX queue overflow count: 4969[0m
+[0;33mW (917423) app: I2S RX queue overflow count: 4982[0m
+[0;33mW (917513) app: I2S RX queue overflow count: 4994[0m
+[0;32mI (917563) input: ladder raw=4078 mV=3205 ratio=0.9991 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (917603) app: I2S RX queue overflow count: 5007[0m
+[0;33mW (917703) app: I2S RX queue overflow count: 5020[0m
+[0;33mW (917793) app: I2S RX queue overflow count: 5033[0m
+[0;33mW (917883) app: I2S RX queue overflow count: 5045[0m
+[0;33mW (917973) app: I2S RX queue overflow count: 5059[0m
+[0;33mW (918073) app: I2S RX queue overflow count: 5071[0m
+[0;33mW (918163) app: I2S RX queue overflow count: 5084[0m
+[0;33mW (918253) app: I2S RX queue overflow count: 5097[0m
+[0;33mW (918343) app: I2S RX queue overflow count: 5110[0m
+[0;33mW (918443) app: I2S RX queue overflow count: 5123[0m
+[0;33mW (918533) app: I2S RX queue overflow count: 5136[0m
+[0;32mI (918563) input: ladder raw=4091 mV=3209 ratio=1.0002 -> IDLE (latch=NONE idle_ref=3208mV)[0m
+[0;33mW (918623) app: I2S RX queue overflow count: 5148[0m
+[0;33mW (918713) a

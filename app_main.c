@@ -64,20 +64,28 @@
 #define INPUT_TRS_ADC_SAMPLES 32
 #define INPUT_TRS_IDLE_MIN    0.85f
 #define INPUT_TRS_IDLE_TRACK  0.01f
+#define INPUT_TRS_STABLE_COUNT 3
 
-/* Rkey 0/150/470/1k/2k/10k with Rtop 4.7k; measured-window margins are 70%. */
-#define INPUT_TRS_UP_CENTER     0.00000f
-#define INPUT_TRS_UP_WINDOW     0.0070f
-#define INPUT_TRS_DOWN_CENTER   0.03093f
-#define INPUT_TRS_DOWN_WINDOW   0.0081f
-#define INPUT_TRS_LEFT_CENTER   0.09091f
-#define INPUT_TRS_LEFT_WINDOW   0.0093f
-#define INPUT_TRS_RIGHT_CENTER  0.17544f
-#define INPUT_TRS_RIGHT_WINDOW  0.0296f
-#define INPUT_TRS_OK_CENTER     0.29851f
-#define INPUT_TRS_OK_WINDOW     0.0431f
-#define INPUT_TRS_HOME_CENTER   0.68027f
-#define INPUT_TRS_HOME_WINDOW   0.1119f
+/* Rtop 10k; ranges include 0-100 ohm switch/contact resistance.
+ * Expected voltages use the measured 3208 mV idle reference. */
+/* UP: Rkey 0 ohm, 0-54 mV. */
+#define INPUT_TRS_UP_CENTER     0.0051f
+#define INPUT_TRS_UP_WINDOW     0.0117f
+/* DOWN: Rkey 470 ohm, 131-193 mV. */
+#define INPUT_TRS_DOWN_CENTER   0.0505f
+#define INPUT_TRS_DOWN_WINDOW   0.0096f
+/* LEFT: Rkey 1k, 279-344 mV. */
+#define INPUT_TRS_LEFT_CENTER   0.0970f
+#define INPUT_TRS_LEFT_WINDOW   0.0101f
+/* RIGHT: Rkey 2k, 433-681 mV. */
+#define INPUT_TRS_RIGHT_CENTER  0.1736f
+#define INPUT_TRS_RIGHT_WINDOW  0.0387f
+/* OK: Rkey 4.7k, 926-1182 mV. */
+#define INPUT_TRS_OK_CENTER     0.3285f
+#define INPUT_TRS_OK_WINDOW     0.0400f
+/* HOME: Rkey 10k, 1512-1769 mV. */
+#define INPUT_TRS_HOME_CENTER   0.5113f
+#define INPUT_TRS_HOME_WINDOW   0.0400f
 #endif
 
 static const char *TAG = "app";
@@ -229,7 +237,7 @@ static bool IRAM_ATTR i2s_rx_overflow_cb(i2s_chan_handle_t handle,
 static void audio_init(void)
 {
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-    chan_cfg.dma_desc_num = 4;
+    chan_cfg.dma_desc_num = 8;
     chan_cfg.dma_frame_num = DMA_FRAMES;
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &s_rx));
 
@@ -271,6 +279,9 @@ static void audio_task(void *arg)
     viz_mode_t active_viz = (viz_mode_t)atomic_load_explicit(&s_viz_mode, memory_order_acquire);
     fft_map_set_mode(active_viz);
     unsigned reported_overflows = 0;
+    unsigned processed_blocks = 0;
+    static TickType_t last_overflow_log;
+    static TickType_t last_invalid_count_log;
 
     for (;;) {
         size_t got = 0;
@@ -280,17 +291,35 @@ static void audio_task(void *arg)
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
         }
+        if (++processed_blocks >= 64U) {
+            processed_blocks = 0;
+            vTaskDelay(1);
+        }
         if (got == 0 || (got % sizeof(raw[0])) != 0) {
-            ESP_LOGW(TAG, "I2S returned an invalid byte count: %u", (unsigned)got);
+            TickType_t now = xTaskGetTickCount();
+            if ((now - last_invalid_count_log) >= pdMS_TO_TICKS(2000)) {
+                ESP_LOGW(TAG, "I2S returned an invalid byte count: %u",
+                         (unsigned)got);
+                last_invalid_count_log = now;
+            }
             continue;
         }
 
         portENTER_CRITICAL(&s_rx_overflow_mux);
         unsigned overflows = s_rx_overflows;
         portEXIT_CRITICAL(&s_rx_overflow_mux);
-        if (overflows != reported_overflows) {
-            ESP_LOGW(TAG, "I2S RX queue overflow count: %u", overflows);
+        TickType_t now = xTaskGetTickCount();
+        TickType_t elapsed = now - last_overflow_log;
+        if (overflows != reported_overflows &&
+            elapsed >= pdMS_TO_TICKS(2000)) {
+            unsigned delta = overflows - reported_overflows;
+            unsigned elapsed_ms =
+                (unsigned)(((uint64_t)elapsed * 1000U) / configTICK_RATE_HZ);
+            ESP_LOGW(TAG,
+                     "I2S RX overflow: total=%u (+%u in last %ums)",
+                     overflows, delta, elapsed_ms);
             reported_overflows = overflows;
+            last_overflow_log = now;
         }
 
         int n = (int)(got / sizeof(raw[0]));
@@ -441,6 +470,9 @@ static bool s_input_adc_calibrated;
 static float s_input_idle_ref_raw;
 static float s_input_idle_ref_mv;
 static input_ladder_key_t s_input_latched = INPUT_LADDER_NONE;
+static input_ladder_key_t s_input_candidate = INPUT_LADDER_NONE;
+static bool s_input_candidate_idle;
+static unsigned s_input_candidate_count;
 #if INPUT_TRS_LOG
 static TickType_t s_input_last_log;
 #endif
@@ -587,15 +619,25 @@ static void input_ladder_poll(void)
     bool idle = false;
     input_ladder_key_t decoded = input_ladder_decode(ratio, &idle);
 
-    if (s_input_latched == INPUT_LADDER_NONE) {
-        if (decoded != INPUT_LADDER_NONE) s_input_latched = decoded;
-    } else if (idle) {
-        s_input_latched = INPUT_LADDER_NONE;
-    } else if (decoded != INPUT_LADDER_NONE &&
-               decoded != s_input_latched &&
-               s_input_ladder_bands[decoded].center >
-                   s_input_ladder_bands[s_input_latched].center) {
-        s_input_latched = decoded;
+    if (decoded != s_input_candidate || idle != s_input_candidate_idle) {
+        s_input_candidate = decoded;
+        s_input_candidate_idle = idle;
+        s_input_candidate_count = 1;
+    } else if (s_input_candidate_count < INPUT_TRS_STABLE_COUNT) {
+        s_input_candidate_count++;
+    }
+
+    if (s_input_candidate_count >= INPUT_TRS_STABLE_COUNT) {
+        if (s_input_latched == INPUT_LADDER_NONE) {
+            if (decoded != INPUT_LADDER_NONE) s_input_latched = decoded;
+        } else if (idle) {
+            s_input_latched = INPUT_LADDER_NONE;
+        } else if (decoded != INPUT_LADDER_NONE &&
+                   decoded != s_input_latched &&
+                   s_input_ladder_bands[decoded].center >
+                       s_input_ladder_bands[s_input_latched].center) {
+            s_input_latched = decoded;
+        }
     }
 
     if (idle) {
