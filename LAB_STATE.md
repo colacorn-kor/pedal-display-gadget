@@ -6,7 +6,7 @@
 ## 1. 기준 상태
 
 - 저장소 인수 기준: `166141c` (`CLAUDE_HANDOFF.md` 추가)
-- 마지막 실기 펌웨어 기준: 이 변경의 input WDT 핫픽스 로컬 빌드
+- 마지막 실기 펌웨어 기준: Sound Monitor 스펙트럼 개선 로컬 빌드
 - 마지막 확인 포트: COM4
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce 총 4개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
@@ -109,7 +109,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xc5050 bytes, 23% 여유) |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xc5a10 bytes, 23% 여유) |
 | `INPUT_TRS_LADDER=0` 컴파일 | 통과 |
 | 호스트 테스트 3/3 | 통과 (MIDI, tuner, FFT normalization) |
 | PC 시뮬레이터 | 빌드·창 실행 통과, 결정론적 smoke 2/2 통과 |
@@ -148,6 +148,22 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   ladder IDLE 11회, WDT/panic/reset 0회를 확인했다. 외부 9V는 분리된 USB 단독 상태였다.
 - 사용자 육안 확인에서 Settings/Reorder 왕복이 정상 동작하고 선택 테두리와 대각 커서가
   잘 보이는 것을 확인했다.
+
+### 2026-07-26 Sound Monitor 스펙트럼 개편
+
+- Curve 화면을 20Hz~20kHz 로그 축과 `-72..0dBFS` 세로축을 갖는 Spectrum 화면으로
+  교체했다. 현재 스펙트럼은 평활된 선과 반투명 채움, peak는 별도 잔상선으로 표시한다.
+- FFT 표시 기울기를 1kHz 기준 `+4.5dB/oct`로 바로잡고 65ms 파워 평균, 220ms release,
+  느린 peak decay를 적용했다. Core1 발행 구조와 오디오 캡처 경로는 변경하지 않았다.
+- PC 시뮬레이터의 `--synthetic` 입력을 기타 기본음·배음·피킹 대역 형태로 바꿨고,
+  시각 검수와 전체 UI smoke를 통과했다(약 27fps).
+- 기본 TRS 래더와 `INPUT_TRS_LADDER=0` ESP 빌드가 모두 통과했다. 첫 플래시에서 렌더러
+  정적 작업 배열 때문에 내부 DMA RAM이 부족한 것을 부팅 로그로 발견했고, 배열을 PSRAM으로
+  이동한 뒤 재플래시했다.
+- 최종 12초 COM4 로그에서 PSRAM 8MB 테스트, ST7796/LVGL, TRS 입력, Spectrum 렌더러
+  24~25fps 기동을 확인했다. 메모리 오류, WDT, panic, reset은 없었다.
+- 외부 9V가 분리되어 유효한 기타 입력이 없으므로 실제 신호의 주파수 응답과 peak 동작은
+  아직 실기 판정하지 않았다.
 
 ## 7. 다음 작업
 

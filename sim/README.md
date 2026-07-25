@@ -48,6 +48,12 @@ such as Stereo Mix if your driver exposes it. If no capture device can be
 opened, the simulator prints `W (sim) no capture device; synthetic audio
 fallback` and keeps the synthetic visualizer, mouse pitch, and `O` onset path.
 
+To preview the visualizer deterministically without opening a capture device:
+
+```powershell
+.\sim\build\pedal_sim.exe --synthetic
+```
+
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current
 working directory.
 

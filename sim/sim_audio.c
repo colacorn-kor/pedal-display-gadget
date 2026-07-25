@@ -16,10 +16,6 @@
 #define SIM_QUEUE_CAP 8192
 #define SIM_DEQUEUE_FRAMES 512
 #define SIM_SCREEN_W 480.0f
-#define SIM_F_LO 20.0f
-#define SIM_F_HI 20000.0f
-#define SIM_DB_FLOOR (-60.0f)
-#define SIM_DB_TOP 0.0f
 #define SIM_PI 3.14159265358979323846f
 
 static SDL_AudioDeviceID s_capture_device;
@@ -67,7 +63,7 @@ static void usage(void)
 {
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
-            " [--smoke-test]\n");
+            " [--synthetic] [--smoke-test]\n");
 }
 
 static bool parse_device_index(const char *text, int *out)
@@ -103,7 +99,8 @@ static bool parse_args(int argc, char **argv, int *device_index)
             continue;
         }
 
-        if (strcmp(arg, "--smoke-test") == 0) {
+        if (strcmp(arg, "--synthetic") == 0 ||
+            strcmp(arg, "--smoke-test") == 0) {
             s_force_synthetic = true;
             continue;
         }
@@ -210,8 +207,9 @@ static bool open_capture_device(int device_index)
 static void init_dft_bins(void)
 {
     const float bin_hz = (float)AUDIO_SAMPLE_RATE / (float)SIM_BLOCK_SIZE;
-    const float ratio = powf(SIM_F_HI / SIM_F_LO, 1.0f / (float)VIZ_POINTS);
-    float frequency = SIM_F_LO;
+    const float ratio = powf(VIZ_FREQ_HI_HZ / VIZ_FREQ_LO_HZ,
+                             1.0f / (float)VIZ_POINTS);
+    float frequency = VIZ_FREQ_LO_HZ;
 
     for (int i = 0; i < VIZ_POINTS; i++) {
         const float low_frequency = frequency;
@@ -332,7 +330,12 @@ static void update_visualizer_from_block(const float *block, float level)
         }
 
         float db = 20.0f * log10f(max_mag + 1e-7f);
-        float value = (db - SIM_DB_FLOOR) / (SIM_DB_TOP - SIM_DB_FLOOR);
+        float tilt = VIZ_MONITOR_TILT_DB_OCT *
+                     log2f(sqrtf((float)s_band_lo[i] * s_band_hi[i]) *
+                           ((float)AUDIO_SAMPLE_RATE / SIM_BLOCK_SIZE) /
+                           VIZ_TILT_PIVOT_HZ);
+        float value = (db + tilt - VIZ_DB_FLOOR) /
+                      (VIZ_DB_TOP - VIZ_DB_FLOOR);
         value = clampf(value, 0.0f, 1.0f);
 
         s_viz.peaks[i] *= 0.96f;
@@ -469,18 +472,43 @@ static void synthetic_viz_get(audio_viz_snapshot_t *out)
 {
     const float t = (float)SDL_GetTicks() * 0.001f;
     const float kick = synthetic_onset_decay(SDL_GetTicks());
+    const float f0 = synthetic_pitch_hz();
     float level = 0.34f + 0.18f * sinf(t * 2.4f) + 0.42f * kick;
 
     level = clampf(level, 0.0f, 1.0f);
     for (int i = 0; i < VIZ_POINTS; i++) {
         float x = (float)i / (float)(VIZ_POINTS - 1);
-        float sweep = 0.5f + 0.5f * sinf(t * 3.0f + x * 23.0f);
-        float ripple = 0.5f + 0.5f * sinf(t * 9.0f + x * 71.0f);
-        float tilt = 1.0f - 0.55f * x;
-        float value = (0.08f + 0.72f * sweep + 0.18f * ripple) * tilt;
+        float frequency = VIZ_FREQ_LO_HZ *
+                          powf(VIZ_FREQ_HI_HZ / VIZ_FREQ_LO_HZ, x);
+        float db = -67.0f + 2.0f * sinf(t * 0.7f + x * 17.0f);
 
-        value = clampf(value * (0.45f + level), 0.0f, 1.0f);
-        s_synthetic_peaks[i] *= 0.965f;
+        /* Guitar-like harmonic peaks make the spectrum preview meaningful. */
+        for (int harmonic = 1; harmonic <= 18; harmonic++) {
+            float center = f0 * harmonic;
+            if (center > VIZ_FREQ_HI_HZ) break;
+
+            float distance_oct = log2f(frequency / center);
+            float width_oct = 0.045f + 0.003f * harmonic;
+            float shape = expf(-0.5f * distance_oct * distance_oct /
+                               (width_oct * width_oct));
+            float harmonic_db = -20.0f -
+                                4.8f * log2f((float)harmonic) +
+                                1.5f * sinf(t * 1.3f + harmonic * 1.7f);
+            float contribution = harmonic_db +
+                                 36.0f * (shape - 1.0f);
+            if (contribution > db) db = contribution;
+        }
+
+        float pick_distance = log2f(frequency / 3200.0f);
+        float pick_shape = expf(-0.5f * pick_distance * pick_distance /
+                                (0.55f * 0.55f));
+        float pick_db = -58.0f + (15.0f + 12.0f * kick) * pick_shape;
+        if (pick_db > db) db = pick_db;
+
+        float value = (db - VIZ_DB_FLOOR) /
+                      (VIZ_DB_TOP - VIZ_DB_FLOOR);
+        value = clampf(value, 0.0f, 1.0f);
+        s_synthetic_peaks[i] *= 0.985f;
         if (value > s_synthetic_peaks[i]) s_synthetic_peaks[i] = value;
         out->bars[i] = value;
         out->peaks[i] = s_synthetic_peaks[i];

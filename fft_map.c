@@ -11,11 +11,7 @@
 
 #define FFT_SIZE   2048
 #define HOP        512
-#define F_LO       20.0f
-#define F_HI       20000.0f
 #define BIN_HZ     ((float)AUDIO_SAMPLE_RATE / FFT_SIZE)
-#define DB_FLOOR   (-60.0f)
-#define DB_TOP     0.0f
 #define FRAME_SEC  ((float)HOP / AUDIO_SAMPLE_RATE)
 
 typedef struct {
@@ -29,8 +25,8 @@ typedef struct {
 
 /* Values are expressed in real time, not frames, so HOP can change safely. */
 static const viz_preset_t PRESETS[] = {
-    { 0.0f, 130.0f, 0.0f,  0.0f, 1, 1.40f },  /* monitor */
-    { 4.0f,   0.0f, 0.0f, 48.0f, 0, 4.70f },  /* decorative */
+    { VIZ_MONITOR_TILT_DB_OCT, 65.0f, 0.0f, 220.0f, 1, 0.22f },
+    { 3.0f,                     0.0f, 0.0f,  55.0f, 0, 4.70f },
 };
 
 static viz_mode_t s_mode = VIZ_MONITOR;
@@ -69,7 +65,8 @@ static void recalc_preset(void)
     s_release_coef = smoothing_coef(s_preset.release_ms);
     s_peak_decay = s_preset.peak_decay_per_second * FRAME_SEC;
     for (int i = 0; i < VIZ_POINTS; i++) {
-        s_tilt[i] = s_preset.tilt_db_oct * log2f(s_center[i] / F_LO);
+        s_tilt[i] = s_preset.tilt_db_oct *
+                    log2f(s_center[i] / VIZ_TILT_PIVOT_HZ);
     }
 }
 
@@ -107,8 +104,9 @@ esp_err_t fft_map_init(void)
     for (int i = 0; i < FFT_SIZE; i++) s_window_sum += s_window[i];
     if (!(s_window_sum > 0.0f)) return ESP_ERR_INVALID_STATE;
 
-    float ratio = powf(F_HI / F_LO, 1.0f / VIZ_POINTS);
-    float frequency = F_LO;
+    float ratio = powf(VIZ_FREQ_HI_HZ / VIZ_FREQ_LO_HZ,
+                       1.0f / VIZ_POINTS);
+    float frequency = VIZ_FREQ_LO_HZ;
     for (int i = 0; i < VIZ_POINTS; i++) {
         float low_frequency = frequency;
         float high_frequency = frequency * ratio;
@@ -160,7 +158,8 @@ static void compute_frame(float *out, float *peak_out)
 
         float db = 10.0f * log10f(fmaxf(s_power_average[band], 1e-12f)) +
                    s_tilt[band];
-        float normalized = (db - DB_FLOOR) / (DB_TOP - DB_FLOOR);
+        float normalized = (db - VIZ_DB_FLOOR) /
+                           (VIZ_DB_TOP - VIZ_DB_FLOOR);
         if (normalized < 0.0f) normalized = 0.0f;
         else if (normalized > 1.0f) normalized = 1.0f;
 
@@ -211,6 +210,7 @@ int fft_map_num_points(void)
 float fft_map_db_to_norm(float db)
 {
     if (!isfinite(db)) return 0.0f;
-    float normalized = (db - DB_FLOOR) / (DB_TOP - DB_FLOOR);
+    float normalized = (db - VIZ_DB_FLOOR) /
+                       (VIZ_DB_TOP - VIZ_DB_FLOOR);
     return normalized < 0.0f ? 0.0f : (normalized > 1.0f ? 1.0f : normalized);
 }

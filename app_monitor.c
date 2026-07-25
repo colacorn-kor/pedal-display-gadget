@@ -10,8 +10,8 @@ typedef struct {
 } monitor_preset_t;
 
 static const monitor_preset_t PRESETS[] = {
-    { "Curve (Blue)",  "curve",    1 },
-    { "Curve (Green)", "curve",    0 },
+    { "Spectrum (Blue)",  "curve",    1 },
+    { "Spectrum (Green)", "curve",    0 },
     { "Bar (Multi)",   "bars",     0 },
     { "Bar (Blue)",    "bars",     1 },
     { "Talk (Blue)",   "reactive", 1 },
