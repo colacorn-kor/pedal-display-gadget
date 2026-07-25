@@ -109,10 +109,16 @@ SD_CS      : U1.G47, J3.CS       ← SD 전용
 ## 7. TRS 6키 저항 래더 / 풋스위치
 
 ```
-TRS_LADDER_ADC : U1.G4 (ADC1_CH3), TRS_MAIN.Tip
-TRS_MAIN.Ring  : +3V3
-TRS_MAIN.Sleeve: GND
+TRS_SIG         : U1.G4 (Basic=ADC1_CH3, Smart=디지털 통신), R_TRS_TIP_220.2
+TRS_MAIN.Tip    : R_TRS_TIP_220.1
+TRS_MAIN.Ring   : R_TRS_RING_100.1
+TRS_RING_3V3    : +3V3, R_TRS_RING_100.2
+TRS_MAIN.Sleeve : GND
 
++3V3 ─ 100Ω ─ TRS_MAIN.Ring
+TRS_MAIN.Tip ─ 220Ω ─ TRS_SIG ─ U1.G4
+
+컨트롤러 내부:
 Ring(+3V3) ─ Rtop 10k ─ Tip
 Tip ─ 각 키 ─ Sleeve(GND):
   UP=0Ω, DOWN=470Ω, LEFT=1kΩ, RIGHT=2kΩ, OK=4.7kΩ, HOME=10kΩ
@@ -122,9 +128,12 @@ GPIO_RESERVED  : U1.G5, U1.G6, U1.G7, U1.G15, U1.G16
 FOOTSW          : U1.G17, SW7.1 (SW7.2 → GND)
 ```
 
-검토 규칙: 기존 본체 GPIO 버튼 6개는 제거한다. G4는 디지털 입력이 아닌 ADC 입력이며
-Rtop 10k가 외부 풀업을 겸한다. G5/G6/G7/G15/G16은 연결하지 않는다. FOOTSW만 내부
-풀업을 쓰는 active-low GPIO 입력이다.
+검토 규칙: 기존 본체 GPIO 버튼 6개는 제거한다. G4의 `TRS_SIG`는 Basic에서 ADC 입력,
+Smart에서 디지털 통신으로 재사용하며 과도한 RC 필터를 달지 않는다. Rtop 10k는 분압과
+Smart 오픈드레인 풀업을 겸한다. Ring 전압은 **+3V3 고정이며 5V 연결 금지**다. Tip 직렬
+220Ω은 G4를 보호하고, Ring 직렬 100Ω은 TS 플러그 삽입 시 Ring-Sleeve 단락 전류를
+제한한다. G5/G6/G7/G15/G16은 연결하지 않는다. FOOTSW만 내부 풀업을 쓰는 active-low
+GPIO 입력이다.
 
 ---
 

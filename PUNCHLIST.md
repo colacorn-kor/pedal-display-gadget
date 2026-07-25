@@ -13,9 +13,11 @@
 8. 온셋 검출 상수(임계 1.8×·불응 80ms) 실기 튜닝
 
 ## 🟢 관찰
-9. I2S 워치독 대응 반영(DMA 8, 튜너 HOP 384, 로그 2초 제한, 64블록 yield).
-   실기에서 튜너 5분 이상 무리셋·오버플로 로그 2초당 1줄 이하 재검증 대기.
+9. ~~I2S RX overflow·워치독 폭주~~ **해결:** DMA 8, 튜너 HOP 384, 로그 2초 제한,
+   64블록 yield 반영.
 10. NVS v1→v2 범프 시 1회 기본값 리셋 발생(정상) — 배치 다시 잡으면 됨
+11. ~~sdkconfig/build 추적 오염~~ **해결:** `build/`·`managed_components/`·파생
+    `sdkconfig*` 추적 제거, `.gitignore`와 하드웨어 `sdkconfig.defaults` 추가.
 
 ## Codex 투입 순서 (재확인)
 3BC 런처·테마 → music_events+Bounce → S1 시뮬레이터 → (병행소형) backlog_minor 건①

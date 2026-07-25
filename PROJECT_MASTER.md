@@ -9,6 +9,7 @@
 | `ARCHITECTURE.md` | 펌웨어 인앱 구조(코어분리·앱모델·입력규약) |
 | `hardware/NETLIST_SPEC.md` | 회로 넷 연결(KiCad 대조 기준) |
 | `ASSEMBLY.md` | 브레드보드 조립(게인스위치·TRS·코덱자리 포함) |
+| `CONTROLLER_DESIGN.md` | Basic 저항 래더·Smart MCU 6키 컨트롤러 계약 |
 | `LAUNCHER_DESIGN.md` | 런처·슬롯·영속성·열린플랫폼 |
 | `UI_DESIGN.md` | 디자인시스템·테마토큰·.ggt 포맷 |
 | **본 문서** | 로드맵·워크플로우·확장 트랙 |
@@ -25,6 +26,7 @@
 [지시서 발행됨] ③-B/C 런처+테마 → music_events+Bounce   ← 다음 Codex 투입분
 [다음] S1 플랫폼 추상화 + PC 시뮬레이터  ← CODEX_INSTRUCTION_pc_simulator.md
 [그후] S2 코덱 오디오출력 → S3 WiFi 업로더/OTA → S4 MIDI(UART+BLE) → S5 스크립트 앱로더
+       → S6 스마트 컨트롤러(MCU 6키)
 병행: bars/reactive 부분갱신, TRS 6키 ADC 리워크(케이블 연결 시점)
 ```
 
@@ -56,11 +58,17 @@
 - LAUNCHER_DESIGN §6 확장점 준수됨(동적등록·id키잉) → 인터프리터(Lua류)가
   `gadget_app_t` thunk로 등록. 배포는 S3 웹업로더/SD. 가장 마지막.
 
+### S6. 스마트 컨트롤러 (MCU 6키)
+- 현재 Basic 저항 래더와 같은 TRS 잭·G4 `TRS_SIG`·입력 이벤트 계층을 재사용한다.
+- MCU 기반 6키 스캔과 오픈드레인 반이중 통신, 테마 연동 LED를 추가한다.
+- 전기 계약과 자동 판별, 보호 회로의 SSOT는 `CONTROLLER_DESIGN.md`다.
+
 ## 4. 하드웨어 태윤 TODO (소프트웨어와 비동기)
 - [ ] 코덱 모듈 선정(PCM5102A vs ES8388) — S2 착수 조건
 - [ ] 3.5mm 스테레오 잭 2개(헤드폰/AUX)·TRS잭·게인스위치 등 ASSEMBLY대로 조립 계속
 - [ ] KiCad Phase1 스키매틱(연습) → .net export → AI 검토 루프
 - [ ] (PCB 리비전 시) MIDI 부품, 코덱 확정 반영
+- [ ] (S6 착수 시) Smart 컨트롤러 MCU·LED 전력 예산과 Ring 검출 후 급전 회로 확정
 
 ## 5. 다음 세션(Opus) 시작 절차
 1) 본 문서 §2 로드맵에서 현재 위치 확인 → 2) 해당 지시서 존재 여부 확인(§0 지도) →

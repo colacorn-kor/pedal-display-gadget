@@ -54,8 +54,9 @@
 #define I2S_WS      GPIO_NUM_18
 #define I2S_DIN      GPIO_NUM_10
 
-#define INPUT_POLL_MS         10
+#define INPUT_POLL_MS         5
 #define INPUT_DEBOUNCE_MS     30
+#define INPUT_LADDER_DEBOUNCE_MS 10
 #define INPUT_HOLD_MS         500
 #define INPUT_REPEAT_DELAY_MS 400
 #define INPUT_REPEAT_RATE_MS  120
@@ -664,6 +665,7 @@ typedef struct {
     int raw_level;
     int stable_level;
     int debounce_ms;
+    int debounce_elapsed_ms;
     int held_ms;
     int repeat_ms;
     bool hold_fired;
@@ -708,10 +710,10 @@ static void input_button_update(input_button_t *button)
     int raw = input_button_read_raw(button);
     if (raw != button->raw_level) {
         button->raw_level = raw;
-        button->debounce_ms = 0;
-    } else if (button->debounce_ms < INPUT_DEBOUNCE_MS) {
-        button->debounce_ms += INPUT_POLL_MS;
-        if (button->debounce_ms >= INPUT_DEBOUNCE_MS &&
+        button->debounce_elapsed_ms = 0;
+    } else if (button->debounce_elapsed_ms < button->debounce_ms) {
+        button->debounce_elapsed_ms += INPUT_POLL_MS;
+        if (button->debounce_elapsed_ms >= button->debounce_ms &&
             button->stable_level != button->raw_level) {
             button->stable_level = button->raw_level;
             if (button->stable_level == 0) input_button_pressed(button);
@@ -745,21 +747,40 @@ static void input_task(void *arg)
 
     input_button_t buttons[] = {
         { .pin = BTN_UP_IO, .ladder_key = INPUT_LADDER_UP,
-          .ev_short = EV_UP, .repeats = true },
+          .ev_short = EV_UP, .repeats = true,
+          .debounce_ms = INPUT_TRS_LADDER
+                             ? INPUT_LADDER_DEBOUNCE_MS
+                             : INPUT_DEBOUNCE_MS },
         { .pin = BTN_DOWN_IO, .ladder_key = INPUT_LADDER_DOWN,
-          .ev_short = EV_DOWN, .repeats = true },
+          .ev_short = EV_DOWN, .repeats = true,
+          .debounce_ms = INPUT_TRS_LADDER
+                             ? INPUT_LADDER_DEBOUNCE_MS
+                             : INPUT_DEBOUNCE_MS },
         { .pin = BTN_LEFT_IO, .ladder_key = INPUT_LADDER_LEFT,
-          .ev_short = EV_LEFT, .repeats = true },
+          .ev_short = EV_LEFT, .repeats = true,
+          .debounce_ms = INPUT_TRS_LADDER
+                             ? INPUT_LADDER_DEBOUNCE_MS
+                             : INPUT_DEBOUNCE_MS },
         { .pin = BTN_RIGHT_IO, .ladder_key = INPUT_LADDER_RIGHT,
-          .ev_short = EV_RIGHT, .repeats = true },
+          .ev_short = EV_RIGHT, .repeats = true,
+          .debounce_ms = INPUT_TRS_LADDER
+                             ? INPUT_LADDER_DEBOUNCE_MS
+                             : INPUT_DEBOUNCE_MS },
         { .pin = BTN_OK_IO, .ladder_key = INPUT_LADDER_OK,
-          .ev_short = EV_OK },
+          .ev_short = EV_OK,
+          .debounce_ms = INPUT_TRS_LADDER
+                             ? INPUT_LADDER_DEBOUNCE_MS
+                             : INPUT_DEBOUNCE_MS },
         { .pin = BTN_HOME_IO, .ladder_key = INPUT_LADDER_HOME,
           .ev_short = EV_HOME,
-          .ev_hold = EV_HOME_HOLD, .has_hold = true },
+          .ev_hold = EV_HOME_HOLD, .has_hold = true,
+          .debounce_ms = INPUT_TRS_LADDER
+                             ? INPUT_LADDER_DEBOUNCE_MS
+                             : INPUT_DEBOUNCE_MS },
         { .pin = FOOTSW_IO, .ladder_key = INPUT_LADDER_NONE,
           .ev_short = EV_FOOTSW,
-          .ev_hold = EV_FOOTSW_HOLD, .has_hold = true },
+          .ev_hold = EV_FOOTSW_HOLD, .has_hold = true,
+          .debounce_ms = INPUT_DEBOUNCE_MS },
     };
     const int button_count = (int)(sizeof(buttons) / sizeof(buttons[0]));
     const gpio_config_t input_cfg = {
@@ -784,7 +805,7 @@ static void input_task(void *arg)
         int level = input_button_read_raw(&buttons[i]);
         buttons[i].raw_level = level;
         buttons[i].stable_level = level;
-        buttons[i].debounce_ms = INPUT_DEBOUNCE_MS;
+        buttons[i].debounce_elapsed_ms = buttons[i].debounce_ms;
     }
 
     for (;;) {
