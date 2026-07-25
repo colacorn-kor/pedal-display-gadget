@@ -9,7 +9,8 @@
 ## P1 - 다음 실측
 
 1. **신회로 TRS 6키 판정표 재보정**
-   - IDLE과 6키를 각 3초씩 기록하고 특히 UP 최대와 DOWN 최소 간격을 확인
+   - IDLE, DOWN, LEFT, RIGHT, OK, HOME 실측 통과
+   - 남은 항목은 UP 전압 표본과 UP 최대/Down 최소 간격 계산
    - 간격 40mV 미만이면 저항 재튜닝, 충분하면 실측 중심으로 window 확정
 2. **Basic 컨트롤러 체감 평가**
    - 6키, UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게

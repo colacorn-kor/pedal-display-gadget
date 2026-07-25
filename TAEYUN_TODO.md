@@ -5,9 +5,9 @@
 
 ## 1. TRS 6키 묶음 실측
 
-- Codex가 COM4 기록을 시작하면 UP, DOWN, LEFT, RIGHT, OK, HOME을 각 3초씩 누른다.
-- 이어서 HOME 길게와 FOOTSW 길게를 각각 1회 확인한다.
-- 개별 확인을 여러 번 요청하지 않고 이 한 번의 입력 순서로 ADC 보정 자료를 수집한다.
+- DOWN, LEFT, RIGHT, OK, HOME 전압 표본 수집은 완료됐다.
+- 다음 메시지를 보낸 직후 UP을 10초간 계속 눌러 마지막 전압 표본을 수집한다.
+- HOME 길게와 FOOTSW 길게 뒤 실제 화면이 어떻게 바뀌었는지 Codex에 알려 준다.
 
 ## 2. KiCad 풋프린트 배치
 

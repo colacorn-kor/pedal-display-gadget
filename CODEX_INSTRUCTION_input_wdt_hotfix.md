@@ -1,6 +1,6 @@
 # Codex 지시서(핫픽스 v2) - input 태스크 워치독 리셋 수정
 
-> 상태: WDT 로그·정상 UI·FOOTSW 짧게 통과, 6키와 HOME/FOOTSW 롱 확인 대기.
+> 상태: WDT·UI·FOOTSW 짧게와 5키 ADC 통과, UP 전압과 HOME/FOOTSW 롱 결과 대기.
 > 이 파일은 남은 묶음 입력 검증 완료 후 삭제한다. 현재 결과는 `LAB_STATE.md`에 기록한다.
 
 ## 목적
