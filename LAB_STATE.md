@@ -23,6 +23,9 @@
 - 310초 감시 중 ladder 로그 310회, 첫 로그부터 마지막 로그까지 309초
 - task watchdog 0회, panic 0회, 비의도 reset 0회
 - 정상 리셋 뒤 15초 재확인에서도 ladder 15회, WDT/panic 0회
+- 사용자 육안 확인: Tuner와 Sound Monitor UI가 정상 표시됨
+- 실제 FOOTSW 짧게 1회로 Tuner -> Sound Monitor 전환 성공
+- 전환 뒤 20초 추가 감시에서도 ladder 20회, WDT/panic/reset/I2S 오류 0회
 
 핫픽스 전에는 약 5초마다 다음 task watchdog 리셋이 반복됐다.
 
@@ -36,7 +39,19 @@ adc_oneshot_read
 
 당시 화면은 첫 프레임을 완성하지 못한 정적 노이즈 상태였고 버튼은 사용할 수 없었다.
 
-## 3. 인수 감사에서 교정된 원인
+### USB-only 오디오 관찰
+
+외부 9V가 없는 상태에서도 Tuner가 음이름을 표시했고, 브레드보드 소자를 건드리면 음이름이
+바뀌었다. Sound Monitor로 전환한 뒤 그래프는 거의 움직이지 않았다.
+
+이 상태에서는 USB가 DevKit의 5V 레일을 통해 PCM1808을 켜지만, 외부 9V가 필요한 TL072는
+꺼져 있다. 따라서 PCM1808 아날로그 입력이 부유하며 손 접촉에 따른 주기성 잡음을 받을 수
+있다. Tuner의 현재 무음 문턱 `MIN_RMS=0.0002`는 약 -74dBFS라 이 잡음이 clarity 조건까지
+통과하면 음정으로 표시된다. 유효한 오디오 입력 상태가 아니므로 지금 문턱을 조정하지 않고,
+외부 9V 단독 전원과 정상 입력 신호를 연결한 뒤 재측정한다. 무입력 Sound Monitor가 평평한
+것은 현재 관찰과 모순되지 않는다.
+
+## 3. 인수 감사에서 교정된 WDT 원인
 
 현재 `CONFIG_FREERTOS_HZ=100`이므로 한 tick은 10ms다. 기존
 `pdMS_TO_TICKS(INPUT_POLL_MS)`에서 `INPUT_POLL_MS=5`는 0 tick이 된다. 우선순위 5인
@@ -75,20 +90,30 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xc4a10 bytes) |
 | `INPUT_TRS_LADDER=0` 컴파일 | 통과 |
 | 호스트 테스트 3/3 | 통과 (MIDI, tuner, FFT normalization) |
-| PC 시뮬레이터 빌드 | 통과 (`pedal_sim.exe` 생성, 실행은 생략) |
+| PC 시뮬레이터 | 빌드·창 실행 통과, 런처와 방향키 선택 이동 확인 |
 | COM4 탐지 | 2026-07-26 확인 |
 | USB 플래시 | 통과, 외부 9V 분리·USB 단독 상태 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
 | WDT 5분 무발생 | 통과 (310초, ladder 310회, WDT/panic/reset 0) |
-| 정상 UI 표시 | 대기 |
-| 6키·HOME 롱·FOOTSW | 대기 |
+| 정상 UI 표시 | 통과 (Tuner, Sound Monitor 육안 확인) |
+| FOOTSW 짧게 | 통과 (Tuner -> Sound Monitor) |
+| 6키·HOME 롱·FOOTSW 롱 | 대기 |
 | 신회로 7상태 ADC 로그 | 대기 |
+| USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 
-## 6. 다음 실기 절차
+## 6. PC 시뮬레이터 자동 확인
 
-1. 화면이 정상 표시되는지 사용자 육안으로 확인한다.
-2. IDLE, UP, DOWN, LEFT, RIGHT, OK, HOME 순으로 각 3초씩 유지해 ladder 로그를 수집한다.
-3. 방향키 반복, HOME 짧게/길게, FOOTSW 짧게/길게를 확인한다.
-4. UP 최대값과 DOWN 최소값 간격이 40mV 이상인지 계산한다.
-5. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
-6. 결과를 이 문서와 `PUNCHLIST.md`에 반영한다.
+- Codex가 실제 SDL 창을 실행해 런처 표시와 방향키 선택 이동을 확인했다.
+- Windows 입력 자동화에서 방향키는 정상 전달됐지만 Enter/Space/Escape는 SDL 앱 이벤트로
+  확정되지 않았다. 이는 실기 펌웨어 회귀로 판정하지 않는다.
+- 공유 DSP의 MIDI, Tuner, FFT는 호스트 테스트 3/3으로 별도 검증됐다.
+- 향후 물리 조작을 더 줄이려면 시뮬레이터에 GUI 키 주입과 무관한 결정론적 smoke CLI를
+  추가한다.
+
+## 7. 다음 실기 절차
+
+1. 한 번의 묶음 테스트에서 UP, DOWN, LEFT, RIGHT, OK, HOME을 각 3초씩 누른다.
+2. 마지막에 HOME 길게와 FOOTSW 길게를 각각 1회 확인한다.
+3. Codex가 동시에 COM4 ladder 로그를 수집해 7상태와 UP/DOWN 간격을 계산한다.
+4. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+5. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.

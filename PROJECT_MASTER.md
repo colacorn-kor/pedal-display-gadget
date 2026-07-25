@@ -31,8 +31,8 @@
 ```
 [완료] 디스플레이 · 앱플랫폼 · 입력레이어 · 슬롯/NVS · 런처/테마 · music_events/Bounce
        · S1 플랫폼 추상화/PC 시뮬레이터 · 렌더러 최적화 · 저장소 위생
-[현재] input 태스크 WDT 핫픽스 로그 검증 완료 → 정상 UI·버튼 사용자 확인
-[다음] 신회로 TRS 6키 ADC 실측 재보정 → Basic 체감 평가 → Smart 착수 여부 결정
+[완료] input 태스크 WDT 핫픽스: 310초 무재발 · 정상 UI · FOOTSW 전환 확인
+[현재] 신회로 TRS 6키 ADC 묶음 실측 → Basic 체감 평가 → Smart 착수 여부 결정
 [병행 HW] 조립된 TL072 입력 실기 검증 · KiCad 풋프린트/스키매틱 · 미장착 SD/뮤트 회로
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
        → S6 스마트 컨트롤러
