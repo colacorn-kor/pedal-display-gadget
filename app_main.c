@@ -54,7 +54,7 @@
 #define I2S_WS      GPIO_NUM_18
 #define I2S_DIN      GPIO_NUM_10
 
-#define INPUT_POLL_MS         5
+#define INPUT_POLL_MS         10
 #define INPUT_DEBOUNCE_MS     30
 #define INPUT_LADDER_DEBOUNCE_MS 10
 #define INPUT_HOLD_MS         500
@@ -744,6 +744,8 @@ static void input_task(void *arg)
 {
     (void)arg;
     xSemaphoreTake(s_ui_ready, portMAX_DELAY);
+    TickType_t poll_ticks = pdMS_TO_TICKS(INPUT_POLL_MS);
+    if (poll_ticks == 0) poll_ticks = 1;
 
     input_button_t buttons[] = {
         { .pin = BTN_UP_IO, .ladder_key = INPUT_LADDER_UP,
@@ -818,7 +820,7 @@ static void input_task(void *arg)
         input_ladder_poll();
 #endif
         for (int i = 0; i < button_count; i++) input_button_update(&buttons[i]);
-        vTaskDelay(pdMS_TO_TICKS(INPUT_POLL_MS));
+        vTaskDelay(poll_ticks);
     }
 }
 
@@ -835,7 +837,7 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(display_task, "display", 8192, NULL, 4, NULL, 0) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
-    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(input_task, "input", 4096, NULL, 5, NULL, 0) == pdPASS
+    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(input_task, "input", 4096, NULL, 3, NULL, 0) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     ESP_LOGI(TAG, "boot complete");
