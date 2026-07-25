@@ -29,6 +29,7 @@ static bool s_exit_after_args;
 static bool s_capture_active;
 static bool s_synthetic_fallback;
 static bool s_warned_fallback;
+static bool s_force_synthetic;
 
 static float s_queue[SIM_QUEUE_CAP];
 static int s_queue_head;
@@ -65,7 +66,8 @@ static float clampf(float value, float lo, float hi)
 static void usage(void)
 {
     fprintf(stderr,
-            "Usage: pedal_sim.exe [--list-audio] [--audio-device N]\n");
+            "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
+            " [--smoke-test]\n");
 }
 
 static bool parse_device_index(const char *text, int *out)
@@ -98,6 +100,11 @@ static bool parse_args(int argc, char **argv, int *device_index)
                 return false;
             }
             i++;
+            continue;
+        }
+
+        if (strcmp(arg, "--smoke-test") == 0) {
+            s_force_synthetic = true;
             continue;
         }
 
@@ -519,6 +526,13 @@ bool sim_audio_init(int argc, char **argv)
 
     if (argc < 0) argc = 0;
     if (!parse_args(argc, argv, &device_index)) return false;
+
+    if (s_force_synthetic && !s_exit_after_args) {
+        s_capture_active = false;
+        s_synthetic_fallback = true;
+        printf("I (sim) deterministic synthetic audio\n");
+        return true;
+    }
 
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
         enter_synthetic_fallback();

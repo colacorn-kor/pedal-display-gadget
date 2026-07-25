@@ -17,6 +17,15 @@ if(NOT MSVC)
 endif()
 add_test(NAME tuner_detection COMMAND test_tuner)
 
+if(MSVC)
+    target_compile_options(test_midi PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_tuner PRIVATE
+        /utf-8
+        /wd4819
+        /experimental:c11atomics
+    )
+endif()
+
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
     add_test(NAME fft_normalization_reference

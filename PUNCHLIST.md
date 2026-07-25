@@ -8,32 +8,28 @@
 
 ## P1 - 다음 실측
 
-1. **신회로 TRS 6키 판정표 재보정**
-   - IDLE, DOWN, LEFT, RIGHT, OK, HOME 실측 통과
-   - 남은 항목은 UP 전압 표본과 UP 최대/Down 최소 간격 계산
-   - 간격 40mV 미만이면 저항 재튜닝, 충분하면 실측 중심으로 window 확정
-2. **Basic 컨트롤러 체감 평가**
+1. **Basic 컨트롤러 체감 평가**
    - 6키, UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게
    - 결과로 Smart 컨트롤러 착수 여부 결정
-3. **결정론적 PC 시뮬레이터 smoke CLI**
-   - Windows 키 주입 없이 UI 이벤트·합성 오디오·앱 전환을 스크립트로 실행
-   - 물리 버튼 요청 전에 공유 UI/DSP 경로를 자동 검증하는 용도
 
 ## P2 - 하드웨어 및 제품 튜닝
 
-4. KiCad `.pretty` 파일 4개 배치와 추적 확인(`TAEYUN_TODO.md` 참조)
-5. 커스텀 풋프린트 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
-6. 조립된 TL072 오디오 입력의 9V 전원 실기 검증과 노이즈 저감
-7. 튜너 5분 무리셋 및 I2S overflow 로그 실기 검증
-8. 게인 저항 튜닝: INST 2.2k / LINE 15k 시작점
-9. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
-10. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
-11. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
+2. KiCad `.pretty` 파일 4개 배치와 추적 확인(`TAEYUN_TODO.md` 참조)
+3. 커스텀 풋프린트 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
+4. 조립된 TL072 오디오 입력의 9V 전원 실기 검증과 노이즈 저감
+5. 튜너 5분 무리셋 및 I2S overflow 로그 실기 검증
+6. 게인 저항 튜닝: INST 2.2k / LINE 15k 시작점
+7. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
+8. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
+9. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
 
 ## 해결 및 관찰
 
 - input WDT: 10ms 폴, 최소 1 tick, input prio3 적용 후 310초 무재발
 - 정상 UI와 실제 FOOTSW 짧게 전환 확인
+- TRS 6키 전부 판정창 통과, UP/DOWN 실측 간격 110mV
+- HOME 롱은 Launcher, FOOTSW 롱은 Tuner 전환 확인
+- 결정론적 simulator smoke CLI 2/2 통과, A#3 233.59Hz 잠금과 NVS 비변경 확인
 - USB-only 오디오에서는 TL072가 꺼져 PCM1808 입력이 부유하므로 Tuner 판정을 신뢰하지 않음
 - I2S 폭주 대응: DMA 8, 튜너 HOP 384, 로그 2초 제한, 64블록 yield 반영
 - 저장소 위생: `build/`, `managed_components/`, 파생 `sdkconfig*` 추적 제거

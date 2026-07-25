@@ -1,9 +1,11 @@
 #include "platform.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include <SDL.h>
 
+#include "platform_sim.h"
 #include "sim_audio.h"
 
 #define SIM_NVS_FILE "sim_nvs.bin"
@@ -44,6 +46,7 @@ static int s_q_tail;
 static bool s_initialized;
 static bool s_audio_configured;
 static bool s_quit;
+static bool s_smoke_test;
 static audio_mode_t s_audio_mode = AUDIO_SPECTRUM;
 static viz_mode_t s_viz_mode = VIZ_MONITOR;
 static int s_mute;
@@ -165,6 +168,11 @@ static void poll_button_timers(uint32_t now)
 
 bool plat_sim_configure(int argc, char **argv)
 {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--smoke-test") == 0) {
+            s_smoke_test = true;
+        }
+    }
     s_audio_configured = true;
     return sim_audio_init(argc, argv);
 }
@@ -197,7 +205,7 @@ bool plat_input_poll(ui_event_t *ev)
 void plat_nvs_load(void *blob, size_t n, bool *found)
 {
     if (found) *found = false;
-    if (!blob || n == 0) return;
+    if (s_smoke_test || !blob || n == 0) return;
 
     FILE *file = fopen(SIM_NVS_FILE, "rb");
     if (!file) return;
@@ -211,7 +219,7 @@ void plat_nvs_load(void *blob, size_t n, bool *found)
 
 void plat_nvs_save(const void *blob, size_t n)
 {
-    if (!blob || n == 0) return;
+    if (s_smoke_test || !blob || n == 0) return;
 
     FILE *file = fopen(SIM_NVS_FILE, "wb");
     if (!file) {
@@ -245,6 +253,16 @@ void plat_lvgl_unlock(void)
 bool plat_sim_should_quit(void)
 {
     return s_quit;
+}
+
+bool plat_sim_is_smoke_test(void)
+{
+    return s_smoke_test;
+}
+
+bool plat_sim_post_event(ui_event_t event)
+{
+    return queue_push(event);
 }
 
 void audio_set_mode(audio_mode_t mode)

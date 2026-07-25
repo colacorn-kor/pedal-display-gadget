@@ -50,3 +50,16 @@ fallback` and keeps the synthetic visualizer, mouse pitch, and `O` onset path.
 
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current
 working directory.
+
+## Deterministic Smoke Test
+
+Run the launcher, app dispatch, synthetic visualizer, shared tuner DSP, quick
+app, and app cleanup checks without keyboard automation:
+
+```powershell
+.\sim\build\pedal_sim.exe --smoke-test
+```
+
+This mode forces synthetic audio, starts from default launcher state, and does
+not read or write `sim_nvs.bin`. It exits with code 0 and prints `SMOKE PASS`
+when every check succeeds.

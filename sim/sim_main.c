@@ -1,14 +1,160 @@
 #include <SDL.h>
+#include <math.h>
+#include <stdio.h>
 #include "lvgl.h"
 #include "src/drivers/sdl/lv_sdl_window.h"
 
 #include "app.h"
 #include "content_screen.h"
+#include "gadget_app.h"
 #include "platform.h"
+#include "platform_sim.h"
+#include "tuner.h"
 
-bool plat_sim_configure(int argc, char **argv);
-bool plat_sim_should_exit_after_args(void);
-bool plat_sim_should_quit(void);
+#define SMOKE_APP_SCREEN_BASE 1
+
+static bool run_frames_for(uint32_t duration_ms)
+{
+    const uint32_t start = SDL_GetTicks();
+
+    do {
+        ui_event_t ev;
+        while (plat_input_poll(&ev)) {
+            sm_on_event(ev);
+        }
+        sm_render();
+
+        uint32_t wait_ms = lv_timer_handler();
+        if (wait_ms == LV_NO_TIMER_READY || wait_ms > 8) wait_ms = 8;
+        if (wait_ms == 0) wait_ms = 1;
+        SDL_Delay(wait_ms);
+    } while (!plat_sim_should_quit() &&
+             SDL_GetTicks() - start < duration_ms);
+
+    return !plat_sim_should_quit();
+}
+
+static bool smoke_expect_app(const char *id)
+{
+    const int idx = app_registry_find(id);
+    const int actual = sm_current();
+    const int expected = idx < 0 ? -1 : SMOKE_APP_SCREEN_BASE + idx;
+
+    if (idx >= 0 && actual == expected) return true;
+    fprintf(stderr,
+            "SMOKE FAIL: expected app '%s' (screen %d), got screen %d\n",
+            id, expected, actual);
+    return false;
+}
+
+static bool smoke_send(ui_event_t event, const char *label)
+{
+    if (!plat_sim_post_event(event)) {
+        fprintf(stderr, "SMOKE FAIL: event queue full at %s\n", label);
+        return false;
+    }
+    if (!run_frames_for(40)) {
+        fprintf(stderr, "SMOKE FAIL: simulator quit at %s\n", label);
+        return false;
+    }
+    return true;
+}
+
+static bool smoke_visualizer_has_signal(void)
+{
+    audio_viz_snapshot_t snapshot;
+    bool nonzero_bar = false;
+
+    plat_audio_viz_get(&snapshot);
+    for (int i = 0; i < VIZ_POINTS; i++) {
+        if (snapshot.bars[i] > 0.001f) {
+            nonzero_bar = true;
+            break;
+        }
+    }
+    if (snapshot.level > 0.001f && nonzero_bar) return true;
+
+    fprintf(stderr,
+            "SMOKE FAIL: synthetic visualizer is silent (level %.4f)\n",
+            snapshot.level);
+    return false;
+}
+
+static bool smoke_tuner_is_voiced(tuner_result_t *result)
+{
+    tuner_get(result);
+    if (result->voiced && isfinite(result->f0) && result->f0 > 30.0f &&
+        result->f0 < 1300.0f) {
+        return true;
+    }
+    fprintf(stderr,
+            "SMOKE FAIL: tuner did not lock (voiced %d, f0 %.2f, clarity %.3f)\n",
+            result->voiced, result->f0, result->clarity);
+    return false;
+}
+
+static bool run_smoke_test(void)
+{
+    tuner_result_t tuner;
+
+    if (sm_current() != 0) {
+        fprintf(stderr, "SMOKE FAIL: startup did not open launcher\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_OK, "launcher -> monitor") ||
+        !smoke_expect_app("monitor")) return false;
+    if (audio_get_mode() != AUDIO_SPECTRUM) {
+        fprintf(stderr, "SMOKE FAIL: monitor did not select spectrum mode\n");
+        return false;
+    }
+    if (!run_frames_for(250) || !smoke_visualizer_has_signal()) return false;
+
+    if (!smoke_send(EV_HOME_HOLD, "monitor -> launcher") ||
+        sm_current() != 0) {
+        fprintf(stderr, "SMOKE FAIL: HOME hold did not open launcher\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_RIGHT, "select images") ||
+        !smoke_send(EV_OK, "launcher -> images") ||
+        !smoke_expect_app("images")) return false;
+
+    if (!smoke_send(EV_FOOTSW, "images -> tuner") ||
+        !smoke_expect_app("tuner")) return false;
+    if (audio_get_mode() != AUDIO_TUNER || mute_get() != 1) {
+        fprintf(stderr,
+                "SMOKE FAIL: tuner resource state is mode %d, mute %d\n",
+                (int)audio_get_mode(), mute_get());
+        return false;
+    }
+    if (!run_frames_for(500) || !smoke_tuner_is_voiced(&tuner)) return false;
+
+    if (!smoke_send(EV_FOOTSW, "tuner -> bounce") ||
+        !smoke_expect_app("bounce")) return false;
+    if (mute_get() != 0) {
+        fprintf(stderr, "SMOKE FAIL: tuner exit did not release mute\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_FOOTSW_HOLD, "bounce -> quick tuner") ||
+        !smoke_expect_app("tuner") || mute_get() != 1) {
+        fprintf(stderr, "SMOKE FAIL: quick app did not enter muted tuner\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_HOME_HOLD, "tuner -> launcher") ||
+        sm_current() != 0 || mute_get() != 0) {
+        fprintf(stderr,
+                "SMOKE FAIL: launcher return did not clean up tuner\n");
+        return false;
+    }
+
+    printf("SMOKE PASS: launcher, monitor viz, images, live cycle, "
+           "tuner %.2f Hz (%s%d), quick app, cleanup\n",
+           tuner.f0, tuner.name, tuner.octave);
+    return true;
+}
 
 int main(int argc, char **argv)
 {
@@ -24,6 +170,10 @@ int main(int argc, char **argv)
 
     content_fs_register();
     sm_init();
+
+    if (plat_sim_is_smoke_test()) {
+        return run_smoke_test() ? 0 : 1;
+    }
 
     while (!plat_sim_should_quit()) {
         ui_event_t ev;
