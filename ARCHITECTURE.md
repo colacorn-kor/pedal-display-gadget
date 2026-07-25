@@ -44,12 +44,17 @@ Core 1 (무변경): I2S + DSP(fft_map/tuner) + seqlock 발행
         ↓ audio_viz_snapshot_get() / tuner_get()  (일관된 복사본)
 Core 0 (이 문서): LVGL + 앱 플랫폼  ← screen_manager 자리
         - 모든 앱 코드는 lvgl_port_lock 안에서 실행 (현재와 동일)
-        - 입력: input_task → UI queue → 앱 플랫폼 디스패치
+        - 입력: input_task(샘플링·판정) → UI queue
+                → display_task(큐 배출·앱 플랫폼 디스패치·렌더)
 ```
 
 **중요:** 크로스코어 오디오 발행 구조(`s_viz_seq`, `publish_result` 등)는 **건드리지
 않는다.** 앱은 기존 `audio_viz_snapshot_get()` / `tuner_get()`으로만 오디오를 소비한다.
 앱 플랫폼은 순수하게 Core0/LVGL 측 일반화다.
+
+`input_task`는 물리 입력을 샘플링해 이벤트를 큐에 넣는 데까지만 책임진다. 앱 전환,
+LVGL 작업, NVS 쓰기는 `display_task`가 큐를 꺼낸 뒤 수행한다. 따라서 화면 생성이나
+플래시 쓰기가 느려져도 그 구간의 짧은 버튼·풋스위치 입력을 놓치지 않는다.
 
 ---
 
@@ -333,7 +338,11 @@ typedef struct {
 - **Phase 2**: SD JSON 매니페스트 로드/저장(로더는 Phase 2 스텁). 펌웨어 재빌드 없이
   앱 추가/순서/활성화/변형/테마 변경.
 
-저장 대상: 체인 배정 + 순서 + 변형 + 퀵 앱 id.
+저장 대상: 체인 배정 + 순서 + 변형 + 퀵 앱 id + 마지막 화면 + 테마.
+
+마지막 앱 id는 앱 전환 즉시 쓰지 않고, 같은 앱이 1초간 유지된 뒤 저장한다. 빠른 풋스위치
+순환마다 플래시를 쓰지 않으면서 정상 종료·재부팅 복원에는 충분한 안정화 시간이다. 런처
+복귀는 마지막 앱을 비우는 명시적 상태 변경이므로 즉시 저장한다.
 
 ---
 

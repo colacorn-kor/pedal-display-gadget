@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "music_events.h"
 #include "platform.h"
@@ -135,6 +136,9 @@ static int s_gravity_idx = 1;
 static int s_squash_frames;
 static uint32_t s_last_onset_seq;
 static int s_trail_head;
+static int s_theme_idx = -1;
+static bool s_sprite_squash;
+static char s_status_text[64];
 static bool s_trail_active[BOUNCE_TRAILS];
 static float s_trail_x[BOUNCE_TRAILS];
 static float s_trail_y[BOUNCE_TRAILS];
@@ -200,6 +204,8 @@ static void reset_motion(void)
     s_squash_frames = 0;
     s_last_onset_seq = 0;
     s_trail_head = 0;
+    s_sprite_squash = false;
+    s_status_text[0] = '\0';
     for (int i = 0; i < BOUNCE_TRAILS; i++) {
         s_trail_active[i] = false;
         s_trail_x[i] = 0.0f;
@@ -207,12 +213,15 @@ static void reset_motion(void)
     }
 }
 
+static void update_trails(void);
+
 static void drop_trail(void)
 {
     s_trail_active[s_trail_head] = true;
     s_trail_x[s_trail_head] = s_x + 0.5f * BOUNCE_W;
     s_trail_y[s_trail_head] = s_y + BOUNCE_H - 4.0f;
     s_trail_head = (s_trail_head + 1) % BOUNCE_TRAILS;
+    update_trails();
 }
 
 static void bounce_enter(int variant)
@@ -255,6 +264,7 @@ static void bounce_enter(int variant)
     s_sprite = lv_image_create(s_host);
     lv_image_set_src(s_sprite, &BOUNCE_IDLE_IMG);
     lv_image_set_pivot(s_sprite, BOUNCE_W / 2, BOUNCE_H);
+    s_theme_idx = theme_index();
     style_scene();
 }
 
@@ -291,7 +301,11 @@ static void bounce_render(void)
 
     music_snapshot_t snap;
     plat_music_get(&snap);
-    style_scene();
+    const int theme_idx = theme_index();
+    if (theme_idx != s_theme_idx) {
+        s_theme_idx = theme_idx;
+        style_scene();
+    }
 
     if (snap.onset_seq != s_last_onset_seq) {
         s_last_onset_seq = snap.onset_seq;
@@ -311,7 +325,11 @@ static void bounce_render(void)
 
     bool squash = s_squash_frames > 0;
     if (s_squash_frames > 0) s_squash_frames--;
-    lv_image_set_src(s_sprite, squash ? &BOUNCE_SQUASH_IMG : &BOUNCE_IDLE_IMG);
+    if (squash != s_sprite_squash) {
+        s_sprite_squash = squash;
+        lv_image_set_src(
+            s_sprite, squash ? &BOUNCE_SQUASH_IMG : &BOUNCE_IDLE_IMG);
+    }
 
     float pulse = 1.0f + 0.15f * clampf(snap.level, 0.0f, 1.0f);
     uint32_t scale_x = (uint32_t)(LV_SCALE_NONE * pulse * (squash ? 1.12f : 1.0f));
@@ -329,9 +347,10 @@ static void bounce_render(void)
         snprintf(status, sizeof(status), "--  BPM %.0f  G %s",
                  snap.bpm, GRAVITY_LABELS[s_gravity_idx]);
     }
-    lv_label_set_text(s_status, status);
-
-    update_trails();
+    if (strcmp(status, s_status_text) != 0) {
+        snprintf(s_status_text, sizeof(s_status_text), "%s", status);
+        lv_label_set_text(s_status, s_status_text);
+    }
 }
 
 static bool bounce_on_event(ui_event_t event)

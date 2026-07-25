@@ -1,10 +1,12 @@
 #include <SDL.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include "lvgl.h"
 #include "src/drivers/sdl/lv_sdl_window.h"
 
 #include "app.h"
+#include "app_slots.h"
 #include "content_screen.h"
 #include "gadget_app.h"
 #include "platform.h"
@@ -130,6 +132,15 @@ static bool run_smoke_test(void)
         !smoke_expect_app("monitor")) return false;
     if (audio_get_mode() != AUDIO_SPECTRUM) {
         fprintf(stderr, "SMOKE FAIL: monitor did not select spectrum mode\n");
+        return false;
+    }
+    if (app_slots_last_view()[0] != '\0') {
+        fprintf(stderr, "SMOKE FAIL: last view was saved during rapid switch\n");
+        return false;
+    }
+    if (!run_frames_for(1050) ||
+        strcmp(app_slots_last_view(), "monitor") != 0) {
+        fprintf(stderr, "SMOKE FAIL: stable app view was not persisted\n");
         return false;
     }
 

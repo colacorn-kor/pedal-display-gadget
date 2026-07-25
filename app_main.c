@@ -376,6 +376,8 @@ static void audio_task(void *arg)
 }
 
 /* ---------- Core-0 display/input tasks ----------------------------------- */
+static void dispatch_ui_action(const ui_action_t *action);
+
 static void display_task(void *arg)
 {
     (void)arg;
@@ -397,6 +399,11 @@ static void display_task(void *arg)
     xSemaphoreGive(s_ui_ready);
 
     for (;;) {
+        ui_action_t queued;
+        while (xQueueReceive(s_ui_queue, &queued, 0) == pdTRUE) {
+            dispatch_ui_action(&queued);
+        }
+
         if (lvgl_port_lock(0)) {
             sm_render();
             lvgl_port_unlock();
@@ -683,8 +690,10 @@ static int input_button_read_raw(const input_button_t *button)
 
 static void dispatch_input_event(ui_event_t event)
 {
-    const ui_action_t action = { .type = UI_ACTION_EVENT, .event = event };
-    dispatch_ui_action(&action);
+    if (!ui_post_event(event)) {
+        ESP_LOGW(TAG, "UI queue full; dropping input event %d",
+                 (int)event);
+    }
 }
 
 static void input_button_pressed(input_button_t *button)
@@ -811,11 +820,6 @@ static void input_task(void *arg)
     }
 
     for (;;) {
-        ui_action_t queued;
-        while (xQueueReceive(s_ui_queue, &queued, 0) == pdTRUE) {
-            dispatch_ui_action(&queued);
-        }
-
 #if INPUT_TRS_LADDER
         input_ladder_poll();
 #endif

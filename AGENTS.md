@@ -46,6 +46,8 @@
 - Core1만 I2S와 DSP 상태를 변경한다. UI는 발행된 스냅샷만 읽는다.
 - 앱은 `gadget_app_t` 레지스트리와 활성 앱 디스패치 계약을 유지한다.
 - 모든 LVGL 접근은 기존 lock 규약을 지킨다.
+- `input_task`는 물리 입력의 샘플링·판정과 UI 큐 적재만 맡는다. LVGL 디스패치나 NVS
+  쓰기를 동기 호출해 입력 폴링을 막지 않는다.
 - `input_button_read_raw()`는 Basic/Smart 입력 전환 경계이므로 캡슐화를 유지한다.
 - 래더 판정은 비율 기반 window+deadzone 방식이다. 최근접 판정은 사용하지 않는다.
 - 래더 Rtop은 10k이고 Ring은 +3V3 고정이다. 5V 인가는 금지한다.

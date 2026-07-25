@@ -57,6 +57,7 @@ enum {
 #define LIVE_TILE_Y 58
 #define STASH_LABEL_Y 196
 #define STASH_TILE_Y 210
+#define LAST_VIEW_SAVE_DELAY_MS 1000U
 
 static int s_active_app = -1;
 static sm_mode_t s_mode = MODE_LIVE;
@@ -68,6 +69,8 @@ static popup_page_t s_popup_page = POPUP_APP_MENU;
 static popup_origin_t s_popup_origin = POPUP_FROM_APP;
 static sm_mode_t s_popup_return_mode = MODE_LIVE;
 static float s_bpm = 120.0f;
+static bool s_last_view_save_pending;
+static uint32_t s_last_view_save_since;
 
 static int s_cursor_row = ROW_LIVE;
 static int s_cursor_col;
@@ -697,7 +700,8 @@ static void enter_app(int idx, int variant)
     s_active_app = idx;
     s_return_app = app;
     if (app->on_enter) app->on_enter(variant);
-    app_slots_set_last_view(app->id);
+    s_last_view_save_pending = true;
+    s_last_view_save_since = lv_tick_get();
 }
 
 static void enter_app_ptr(const gadget_app_t *app)
@@ -716,6 +720,7 @@ static void enter_launcher(void)
     s_mode = MODE_LAUNCHER;
     s_reorder_picked = false;
     s_reorder_slot = -1;
+    s_last_view_save_pending = false;
     app_slots_set_last_view("");
     build_launcher();
 }
@@ -1106,6 +1111,12 @@ void sm_on_event(ui_event_t event)
 void sm_render(void)
 {
     const gadget_app_t *app = active_app();
+    if (app && s_last_view_save_pending &&
+        (uint32_t)(lv_tick_get() - s_last_view_save_since) >=
+            LAST_VIEW_SAVE_DELAY_MS) {
+        s_last_view_save_pending = false;
+        app_slots_set_last_view(app->id);
+    }
     if (app && app->on_render) app->on_render();
 }
 
