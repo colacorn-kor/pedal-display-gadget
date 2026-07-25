@@ -1,91 +1,131 @@
-# 기타 페달보드 미니 디스플레이 가젯 — 펌웨어
+# GUI/GG - 기타 페달보드 미니 디스플레이 가젯
 
-손바닥 크기 기타 페달보드용 디스플레이 가젯. **튜너 + 사운드 시각화 + 이미지/콘텐츠 표시 + 출력 뮤트**가 기본 기능이고, MIDI는 옵션 확장(리그 통합)이다. "MIDI 컨트롤러가 아니라, MIDI로 똑똑해지는 튜너 겸 비주얼 디스플레이"가 컨셉.
+ESP32-S3 기반 기타 페달보드용 디스플레이 플랫폼이다. 튜너, 사운드 시각화, 이미지,
+Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마 시스템을 통해
+기능을 확장한다. 기타 메인 출력은 소프트웨어를 통과하지 않는 아날로그 패스스루다.
 
-## 타깃 / 툴체인
-- **MCU**: ESP32-S3-WROOM-1 N16R8 (16MB flash / 8MB PSRAM) — 프로토타입은 ESP32-S3-DevKitC-1
-- **디스플레이**: ST7796 3.5" 480×320 SPI (4선)
-- **오디오 ADC**: PCM1808 I2S (24-bit, 48kHz). 인라인 아날로그 버퍼에서 병렬 탭(통과 톤에 영향 없음)
-- **프레임워크**: ESP-IDF v5.x, LVGL v9
-- **컴포넌트**: `lvgl/lvgl^9`, `espressif/esp_lvgl_port^2.6`, `espressif/esp_lcd_st7796`, `espressif/esp-dsp`
+## 현재 상태
 
-## 아키텍처 (데이터 흐름)
+- 하드웨어: ESP32-S3-DevKitC-1 N16R8 브레드보드 프로토타입
+- 디스플레이: ST7796S 3.5인치 480x320 SPI
+- 오디오 입력: PCM1808 I2S와 TL072 프론트엔드 조립 완료, 외부 9V 미연결로 동작 미검증
+- 컨트롤러: TRS 6키 저항 래더 Basic 구현, Smart 컨트롤러는 Phase 2
+- 미장착 하드웨어: SD 카드 모듈, 뮤트 회로
+- PC 시뮬레이터: SDL2 창, 키보드 입력, 실오디오 캡처 지원
+
+가장 최근 장치 상태와 다음 실기 절차는 [`LAB_STATE.md`](LAB_STATE.md), 미결 작업은
+[`PUNCHLIST.md`](PUNCHLIST.md)를 확인한다. 에이전트 작업 규칙은 [`AGENTS.md`](AGENTS.md)에
+있다.
+
+## 아키텍처
+
+```text
+Core1 audio_task
+  I2S RX
+    +-- AUDIO_SPECTRUM -> fft_map -> 시각화 스냅샷 발행
+    +-- AUDIO_TUNER    -> tuner   -> 튜너 결과 발행
+
+Core0 display_task / LVGL
+  발행된 복사본 -> 활성 gadget_app_t -> 화면 렌더
+
+Core0 input_task
+  TRS 래더 + FOOTSW -> ui_event_t -> 활성 앱 우선 디스패치
+
+PC simulator
+  platform_sim + 동일 앱/UI/renderer/tuner/music_events 코드
 ```
-오디오 IN → I2S(Core1 단독) ── audio_task
-   ├─ AUDIO_SPECTRUM: fft_feed() → sequence 보호 스냅샷(bars+peaks+level)
-   └─ AUDIO_TUNER   : anti-alias FIR → MPM/NSDF → sequence 보호 결과
-        ↓ (release/acquire 발행 + 일관된 복사)
-Core0 display_task: lvgl_port_lock → sm_render() → 활성 렌더러/튜너 화면 갱신 → unlock
-Core0 input_task : 버튼/풋스위치/UI queue → lvgl_port_lock → sm_on_event() → unlock
-(Phase 2) MIDI UART RX → midi_feed() → midi_on_message() → UI queue (LVGL 직접 접근 없음)
+
+오디오/DSP 상태는 Core1이 단독 소유한다. UI는
+`audio_viz_snapshot_get()`과 `tuner_get()`으로 일관된 복사본만 읽으며, 모든 LVGL 접근은
+기존 lock 규약을 따른다.
+
+## 등록 앱
+
+| ID | 표시명 | 역할 |
+|---|---|---|
+| `monitor` | Sound Monitor | curve/bars/reactive 렌더러와 테마 순환 |
+| `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
+| `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
+| `bounce` | Bounce | 온셋·피치 이벤트 기반 인터랙티브 앱 |
+
+앱은 `gadget_app_t` 계약과 `gadget_app.c` 레지스트리에 등록된다. 런처 항목은 레지스트리에서
+생성되며 `app_slots.c`가 LIVE/STASH 슬롯과 NVS 설정을 관리한다.
+
+## 입력
+
+Basic 컨트롤러는 G4 `TRS_SIG`의 ADC 비율을 window+deadzone으로 판정한다.
+
+```text
+Ring(+3V3) -- Rtop 10k -- Tip -- 220R -- G4
+Tip -- key resistor -- Sleeve(GND)
+
+UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 ```
 
-### 핵심 설계 원칙
-1. **오디오 무지연**: 오디오 파이프라인과 DSP 상태를 Core1이 단독 소유. 디스플레이/입력이 오디오를 블록하지 않음. 슬롯별 sequence counter와 release/acquire 발행으로 UI는 일관된 프레임만 복사.
-2. **분석 ↔ 렌더 분리**: 오디오는 `viz_frame_t`(스펙트럼 256점 + level)만 만들고, 등록형 `renderer_t`(곡선/막대/반응형)가 그림. 테마 = vtable 구현 + 팔레트. 다운로드 테마의 토대.
-3. **무음 튜닝**: 청취 탭과 통과 경로가 독립 → 출력을 뮤트해도 튜너/시각화는 계속 동작. 풋스위치 = 어디서나 튜너+뮤트 토글.
-4. **MIDI = 리그 통합**: Program Change → 씬(콘텐츠+테마+렌더러) 자동 전환. 옵토 절연이라 그라운드 루프도 없음.
+최근접 판정은 동시 입력을 다른 키로 오인할 수 있어 사용하지 않는다. Ring은 +3V3 고정이며
+5V를 연결하면 안 된다. 회로의 최종 권위는 `hardware/NETLIST_SPEC.md`, 조립 절차는
+`ASSEMBLY.md`, Smart 확장 계약은 `CONTROLLER_DESIGN.md`다.
 
-## 파일 맵
+## 주요 파일
+
 | 파일 | 역할 |
-|------|------|
-| `audio_config.h` | 샘플레이트·시각화 포인트 수 공용 불변식 |
-| `app.h` | 모듈 간 공유 선언: 오디오 스냅샷, UI queue, 뮤트, 화면 매니저 API |
-| `app_main.c` | 부팅 + 3태스크(audio Core1 / display·input Core0) + sequence 스냅샷·UI queue·I2S |
-| `fft_map.{c,h}` | 스펙트럼 매핑: 2048-pt FFT(esp-dsp) → 256점 로그 곡선(20Hz–20kHz), 틸트·평활·피크홀드, Monitor/Visualizer 프리셋 |
-| `tuner.{c,h}` | 시간영역 피치검출(MPM/NSDF), 63-tap LPF + 48k→8k 데시메이션, 30–1300Hz, 음이름+센트 |
-| `renderer.{c,h}` | 렌더러 레지스트리 + 내장 테마(Classic/Robot/Cute) |
-| `renderer_curve.c` | 곡선 렌더러(PSRAM 캔버스 직접 픽셀) |
-| `renderer_bars.c` | 막대 렌더러(256점→32막대 그룹핑) |
-| `renderer_reactive.c` | 반응형 캐릭터 렌더러(level/centroid/onset → 몸·눈·입·색) |
-| `content_screen.{c,h}` | 이미지/GIF/텍스트 표시 + SD 파일시스템 브리지(`S:` → `/sdcard`) |
-| `tuner_screen.{c,h}` | 튜너 화면(음이름 + 센트 니들 + 인튠 존) |
-| `screen_manager.c` | 화면 상태머신(HOME/MONITOR/IMAGES/TUNER) + 렌더러/테마 순환 + 뮤트 + 씬 로딩 |
-| `display_bringup.{c,h}` | ST7796 + esp_lvgl_port 초기화(`bsp_display_init`) + 스모크 테스트 |
-| `midi.{c,h}` | MIDI 1.0 바이트 파서(러닝 스테이터스/리얼타임) |
-| `midi_map.c` | MIDI 이벤트 → 동작 매핑(PC→씬, CC→동작, Clock→BPM) |
-| `*_mockup.svg` | 화면 디자인 목업(코드 아님, 참조용) |
+|---|---|
+| `app_main.c` | ESP 부팅, Core0/Core1 태스크, I2S, 입력, UI queue |
+| `gadget_app.{c,h}` | 앱 인터페이스와 레지스트리 |
+| `app_monitor.c` | Sound Monitor 앱 |
+| `app_images.c` | Images 앱 |
+| `app_tuner.c` | Tuner 앱과 뮤트/오디오 모드 생명주기 |
+| `app_bounce.c` | Bounce 앱 |
+| `app_slots.{c,h}` | LIVE/STASH 슬롯과 NVS 영속성 |
+| `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |
+| `renderer*.c`, `theme.c` | 모니터 렌더러와 테마 |
+| `fft_map.{c,h}` | 2048-point FFT를 256점 로그 스펙트럼으로 매핑 |
+| `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
+| `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
+| `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
+| `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
+| `sim/` | SDL2 PC 시뮬레이터와 `platform_sim` |
+| `tests/` | MIDI, 튜너, FFT 기준 호스트 테스트 |
 
-## 빌드 / 설정
-```bash
-idf.py add-dependency "lvgl/lvgl^9.5.0"
-idf.py add-dependency "espressif/esp_lvgl_port^2.6"
-idf.py add-dependency "espressif/esp_lcd_st7796^1.4.0"
-idf.py add-dependency "espressif/esp-dsp^1.8.2"
-```
-저장소의 `main/idf_component.yml`과 `sdkconfig.defaults`에도 동일한 의존성과 기본 설정이 포함되어 있다.
+## 펌웨어 빌드
 
-`menuconfig` → LVGL: Color depth **16(RGB565)**, 폰트 **Montserrat 12·14·28·48**, **LV_USE_CANVAS**, **LV_USE_GIF** + 필요한 이미지 디코더.
+ESP-IDF v5.4.4 환경에서:
 
-## 불변식 / 결합 (검수 시 확인)
-- `VIZ_POINTS`는 `audio_config.h` 한 곳에서만 정의
-- MIDI 씬은 숫자 인덱스 대신 렌더러 이름(`curve`, `bars`, `reactive`)으로 해석
-- 디스플레이/입력 태스크의 **모든 LVGL 호출은 `lvgl_port_lock/unlock`로 보호** (esp_lvgl_port가 LVGL 태스크를 자체 구동하므로 `lv_timer_handler` 직접 호출 안 함)
-- Core1만 DSP 상태를 변경하며, UI는 `audio_viz_snapshot_get()`/`tuner_get()`의 일관된 복사본만 사용
-- `content_fs_register()`는 `lvgl_port_init()` 이후 LVGL lock 안에서 한 번만 호출
-
-## 의도된 스텁 / Phase 2 (버그 아님)
-- **핀 번호**(I2S/디스플레이/버튼/뮤트)는 플레이스홀더 — 실제 배선에 맞춰 조정
-- **SD 마운트**(`esp_vfs_fat_sdspi_mount`) 미구현 — `content_fs_register`는 `/sdcard` 마운트 가정
-- **MIDI**: 파서+매핑 완료, UART RX/TX + 옵토 절연 회로는 Phase 2 (app_main에 미연결)
-- **BLE**: 미구현 (Phase 2)
-- **테마/씬/이미지 테이블**: 하드코딩 플레이스홀더 — 추후 SD manifest/JSON
-- **mute_set**: GPIO 레벨만 — 소프트 램프는 하드웨어 RC가 담당
-- **입력**: 폴링 디바운스 — 길게누름/ISR은 추후
-- **반응형 렌더러**: centroid/onset를 렌더러 내부에서 계산(파이프라인 비변경)
-
-## 검증
-ESP-IDF 빌드:
-```bash
+```powershell
 idf.py set-target esp32s3
 idf.py build
 ```
 
-호스트 MIDI/튜너 테스트:
-```bash
+`sdkconfig.defaults`가 바뀌었거나 오래된 환경 캐시가 의심되면 파생 설정을 지우고 다시
+구성한다.
+
+```powershell
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+Remove-Item -Force sdkconfig,sdkconfig.old -ErrorAction SilentlyContinue
+idf.py set-target esp32s3
+idf.py build
+```
+
+`build/`, `managed_components/`, `sdkconfig`, `sdkconfig.old`는 Git 추적 대상이 아니다.
+
+## 검증
+
+호스트 테스트:
+
+```powershell
 cmake -S tests -B tests/build
 cmake --build tests/build
 ctest --test-dir tests/build --output-on-failure
 ```
 
-실기에서는 이미지 화면 반복 진입/이탈, MIDI burst 중 화면 전환, I2S overflow count, PSRAM 부족 경로를 추가로 스트레스 테스트한다.
+PC 시뮬레이터의 Visual Studio/vcpkg 빌드와 실행법은
+[`sim/README.md`](sim/README.md)를 따른다.
+
+하드웨어 플래시 전에는 외부 9V를 분리하고 USB만 연결한다. 플래시 전체 삭제, eFuse,
+보안 설정 변경은 일반 개발 절차에 포함하지 않는다.
+
+## 확장 트랙
+
+향후 코덱 오디오 출력, WiFi 업로더/OTA, UART/BLE MIDI, 스크립트 앱 로더,
+Smart MCU 컨트롤러를 추가한다. 순서와 확정 계약은 `PROJECT_MASTER.md`와
+`ARCHITECTURE.md`를 따른다.
