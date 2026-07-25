@@ -4,7 +4,7 @@
 
 static const ui_theme_t THEMES[] = {
     {
-        .name = "CHARCOAL",
+        .name = "BLUE",
         .bg = LV_COLOR_MAKE(0x10, 0x14, 0x18),
         .surface = LV_COLOR_MAKE(0x1C, 0x23, 0x2B),
         .text = LV_COLOR_MAKE(0xE8, 0xEC, 0xF1),
@@ -13,7 +13,7 @@ static const ui_theme_t THEMES[] = {
         .grid = LV_COLOR_MAKE(0x2A, 0x33, 0x3D),
     },
     {
-        .name = "IVORY",
+        .name = "WHITE",
         .bg = LV_COLOR_MAKE(0xF2, 0xEF, 0xE8),
         .surface = LV_COLOR_MAKE(0xFF, 0xFF, 0xFF),
         .text = LV_COLOR_MAKE(0x22, 0x26, 0x2B),
@@ -22,7 +22,7 @@ static const ui_theme_t THEMES[] = {
         .grid = LV_COLOR_MAKE(0xD8, 0xD2, 0xC4),
     },
     {
-        .name = "CRT",
+        .name = "GREEN",
         .bg = LV_COLOR_MAKE(0x06, 0x10, 0x06),
         .surface = LV_COLOR_MAKE(0x0A, 0x1A, 0x0A),
         .text = LV_COLOR_MAKE(0xB7, 0xF5, 0xB7),

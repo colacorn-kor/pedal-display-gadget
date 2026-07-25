@@ -43,13 +43,17 @@ PC simulator
 
 | ID | 표시명 | 역할 |
 |---|---|---|
-| `monitor` | Sound Monitor | curve/bars/reactive 렌더러와 테마 순환 |
+| `monitor` | Sound Monitor | Settings의 6개 curve/bar/talk 색상 프리셋 |
 | `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
 | `bounce` | Bounce | 온셋·피치 이벤트 기반 인터랙티브 앱 |
 
 앱은 `gadget_app_t` 계약과 `gadget_app.c` 레지스트리에 등록된다. 런처 항목은 레지스트리에서
 생성되며 `app_slots.c`가 LIVE/STASH 슬롯과 NVS 설정을 관리한다.
+
+런처는 `LIVE`, `STASH`, `Reorder/Settings`의 3개 행이다. 상·하는 빈 행을 포함해 행 사이를
+이동하고 좌·우는 현재 행 안에서만 이동한다. 앱 화면에서 홈을 누르면
+`Exit/Settings`, 런처의 Settings에는 `Theme/Info`가 열린다.
 
 ## 입력
 

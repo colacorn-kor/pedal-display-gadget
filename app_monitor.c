@@ -3,8 +3,23 @@
 #include "platform.h"
 #include "renderer.h"
 
+typedef struct {
+    const char *name;
+    const char *renderer;
+    int theme;
+} monitor_preset_t;
+
+static const monitor_preset_t PRESETS[] = {
+    { "Curve (Blue)",  "curve",    1 },
+    { "Curve (Green)", "curve",    0 },
+    { "Bar (Multi)",   "bars",     0 },
+    { "Bar (Blue)",    "bars",     1 },
+    { "Talk (Blue)",   "reactive", 1 },
+    { "Talk (Green)",  "reactive", 0 },
+};
+
 static int s_renderer;
-static int s_theme;
+static int s_theme = 1;
 static lv_obj_t *s_host;
 static audio_viz_snapshot_t s_viz_snapshot;
 
@@ -23,6 +38,40 @@ void monitor_app_set_scene(int theme, int renderer)
 
 void monitor_app_refresh(void)
 {
+    monitor_select_renderer();
+}
+
+int monitor_app_preset_count(void)
+{
+    return (int)(sizeof(PRESETS) / sizeof(PRESETS[0]));
+}
+
+const char *monitor_app_preset_name(int idx)
+{
+    return idx >= 0 && idx < monitor_app_preset_count()
+        ? PRESETS[idx].name
+        : "";
+}
+
+int monitor_app_preset_index(void)
+{
+    for (int i = 0; i < monitor_app_preset_count(); i++) {
+        if (renderer_find(PRESETS[i].renderer) == s_renderer &&
+            PRESETS[i].theme == s_theme) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+void monitor_app_set_preset(int idx)
+{
+    if (idx < 0 || idx >= monitor_app_preset_count()) return;
+
+    const int renderer = renderer_find(PRESETS[idx].renderer);
+    if (renderer < 0) return;
+    s_renderer = renderer;
+    s_theme = PRESETS[idx].theme;
     monitor_select_renderer();
 }
 
@@ -61,16 +110,7 @@ static void monitor_render(void)
 
 static bool monitor_on_event(ui_event_t event)
 {
-    if (event == EV_DOWN && renderer_count() > 0) {
-        s_renderer = (s_renderer + 1) % renderer_count();
-        monitor_select_renderer();
-        return true;
-    }
-    if (event == EV_UP && viz_theme_count() > 0) {
-        s_theme = (s_theme + 1) % viz_theme_count();
-        monitor_select_renderer();
-        return true;
-    }
+    (void)event;
     return false;
 }
 

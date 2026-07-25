@@ -56,5 +56,9 @@ extern const gadget_app_t APP_BOUNCE;
 
 void monitor_app_set_scene(int theme, int renderer);
 void monitor_app_refresh(void);
+int monitor_app_preset_count(void);
+const char *monitor_app_preset_name(int idx);
+int monitor_app_preset_index(void);
+void monitor_app_set_preset(int idx);
 void images_app_set_content(int content);
 int images_app_count(void);

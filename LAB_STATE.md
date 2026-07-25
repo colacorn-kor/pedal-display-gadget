@@ -109,7 +109,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xc4a10 bytes) |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xc5050 bytes, 23% 여유) |
 | `INPUT_TRS_LADDER=0` 컴파일 | 통과 |
 | 호스트 테스트 3/3 | 통과 (MIDI, tuner, FFT normalization) |
 | PC 시뮬레이터 | 빌드·창 실행 통과, 결정론적 smoke 2/2 통과 |
@@ -121,6 +121,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | FOOTSW 짧게 | 통과 (Tuner -> Sound Monitor) |
 | 6키 ADC | 전부 통과, UP/DOWN 간격 110mV |
 | HOME 롱·FOOTSW 롱 | 통과 (Launcher / Tuner) |
+| 3행 런처·Settings·Reorder UI | 통과 (사용자 조작·커서 시인성 확인) |
 | 신회로 7상태 ADC 로그 | 통과 |
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 
@@ -134,6 +135,19 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - smoke 모드는 실제 캡처 장치를 열지 않으며 기존 `sim_nvs.bin`의 해시와 수정 시각을
   바꾸지 않았다.
 - 공유 DSP의 MIDI, Tuner, FFT 호스트 테스트도 VS 2026에서 3/3 통과했다.
+
+### 2026-07-26 런처 내비게이션 개편
+
+- `LIVE`, `STASH`, `Reorder/Settings` 3행을 빈 행 포함 상하로 순환하고, 좌우는 현재 행
+  내부에서만 이동하도록 변경했다.
+- Settings 계층(`Theme/Info`)과 Sound Monitor 6개 Theme 프리셋을 추가하고 앱 화면의
+  직접 상·하 렌더러/팔레트 변경을 제거했다.
+- PC smoke는 빈 STASH 경유, `Settings -> Reorder` 복귀, 전역 테마, 모니터 프리셋,
+  기존 라이브 순환/튜너 뮤트/퀵앱까지 통과했다.
+- COM4에 기본 TRS 래더 펌웨어를 플래시했다. 12초 부팅 로그에서 `boot complete`, LVGL 시작,
+  ladder IDLE 11회, WDT/panic/reset 0회를 확인했다. 외부 9V는 분리된 USB 단독 상태였다.
+- 사용자 육안 확인에서 Settings/Reorder 왕복이 정상 동작하고 선택 테두리와 대각 커서가
+  잘 보이는 것을 확인했다.
 
 ## 7. 다음 작업
 

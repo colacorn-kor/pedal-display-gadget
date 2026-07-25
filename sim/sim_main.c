@@ -9,6 +9,7 @@
 #include "gadget_app.h"
 #include "platform.h"
 #include "platform_sim.h"
+#include "theme.h"
 #include "tuner.h"
 
 #define SMOKE_APP_SCREEN_BASE 1
@@ -96,9 +97,32 @@ static bool smoke_tuner_is_voiced(tuner_result_t *result)
 static bool run_smoke_test(void)
 {
     tuner_result_t tuner;
+    const int initial_theme = theme_index();
 
     if (sm_current() != 0) {
         fprintf(stderr, "SMOKE FAIL: startup did not open launcher\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_DOWN, "live row -> empty stash row") ||
+        !smoke_send(EV_DOWN, "empty stash row -> action row") ||
+        !smoke_send(EV_RIGHT, "reorder -> settings") ||
+        !smoke_send(EV_OK, "open launcher settings") ||
+        !smoke_send(EV_OK, "settings -> global theme") ||
+        !smoke_send(EV_RIGHT, "cycle global theme")) {
+        return false;
+    }
+    if (theme_index() != (initial_theme + 1) % theme_count()) {
+        fprintf(stderr, "SMOKE FAIL: global theme selector did not advance\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "theme -> settings") ||
+        !smoke_send(EV_HOME, "settings -> launcher") ||
+        !smoke_send(EV_LEFT, "settings -> reorder") ||
+        !smoke_send(EV_OK, "enter reorder at action row") ||
+        !smoke_send(EV_OK, "exit reorder at action row") ||
+        !smoke_send(EV_UP, "action row -> empty stash row") ||
+        !smoke_send(EV_UP, "empty stash row -> live row")) {
         return false;
     }
 
@@ -108,6 +132,32 @@ static bool run_smoke_test(void)
         fprintf(stderr, "SMOKE FAIL: monitor did not select spectrum mode\n");
         return false;
     }
+
+    const int initial_preset = monitor_app_preset_index();
+    if (!smoke_send(EV_UP, "monitor direct up is inert") ||
+        monitor_app_preset_index() != initial_preset) {
+        fprintf(stderr, "SMOKE FAIL: monitor theme changed outside settings\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "monitor -> app menu") ||
+        !smoke_send(EV_DOWN, "app menu -> settings") ||
+        !smoke_send(EV_OK, "open app settings") ||
+        !smoke_send(EV_OK, "app settings -> monitor theme") ||
+        !smoke_send(EV_DOWN, "select next monitor preset") ||
+        !smoke_send(EV_OK, "apply monitor preset")) {
+        return false;
+    }
+    if (monitor_app_preset_index() !=
+        (initial_preset + 1) % monitor_app_preset_count()) {
+        fprintf(stderr, "SMOKE FAIL: monitor preset was not applied\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "app settings -> app menu") ||
+        !smoke_send(EV_HOME, "close app menu") ||
+        !smoke_expect_app("monitor")) {
+        return false;
+    }
+
     if (!run_frames_for(250) || !smoke_visualizer_has_signal()) return false;
 
     if (!smoke_send(EV_HOME_HOLD, "monitor -> launcher") ||
@@ -150,8 +200,9 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    printf("SMOKE PASS: launcher, monitor viz, images, live cycle, "
-           "tuner %.2f Hz (%s%d), quick app, cleanup\n",
+    printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
+           "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
+           "quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }

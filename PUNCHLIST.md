@@ -11,7 +11,6 @@
 1. **Basic 컨트롤러 체감 평가**
    - 6키, UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게
    - 결과로 Smart 컨트롤러 착수 여부 결정
-
 ## P2 - 하드웨어 및 제품 튜닝
 
 2. KiCad `.pretty` 파일 4개 배치와 추적 확인(`TAEYUN_TODO.md` 참조)
@@ -37,3 +36,4 @@
 - Ring 100Ω / Tip 220Ω은 조립 완료 범위에 포함
 - SD VCC: 순수 어댑터 +3V3 직결로 확정
 - NVS v1 -> v2 최초 부팅 시 1회 기본값 리셋은 정상
+- 3행 런처: 빈 STASH 경유, Settings/Reorder 왕복, 선택 테두리와 대각 커서 실기 통과

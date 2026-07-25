@@ -4,12 +4,11 @@
 > 이 문서를 근거로 작성될 Codex 지시서(단계별)에서 다룬다. 코드 블록은 *설계 의도*를
 > 보여주는 예시이며 최종 구현 디테일은 지시서/Codex가 확정한다.
 >
-> **구현 진척(2026-06 기준):** **①·②단계 완료.** ① `gadget_app_t` 인터페이스 + 레지스트리 +
-> 기존 3화면(monitor/images/tuner) 마이그레이션 + `screen_manager` 디스패처 일반화. ② 입력
-> enum 9종 교체, 6버튼 + 홈/풋스위치 숏롱, 오토리피트, GPIO 3개(1·2·13) 확정, **홈 키 매니저
-> 일원화 + 표준 팝업(최소형: Exit 작동 + Settings/Help/About 스텁)**.
-> **다음 = ③단계(런처 2줄·순서변경·퀵앱·변형·설정 + 팝업 실내용·앱 기여 훅).**
-> §3·§4·§5는 구현을 반영하고, §6~10은 ③ 명세, §12는 카탈로그(다수 미구현).
+> **구현 진척(2026-07-26 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
+> 이벤트와 홈·풋스위치 정책, ③-A 슬롯/NVS, ③-B/C 런처·순서변경·테마를 구현했다.
+> 런처는 `LIVE`·`STASH`·`Reorder/Settings`의 3행 내비게이션이며, 앱 홈 메뉴와
+> `Settings → Theme/Info` 계층도 동작한다. Sound Monitor의 렌더러·팔레트 선택은 앱 화면
+> 방향키에서 `Settings → Theme`의 6개 프리셋으로 이동했다.
 > 진척 상세는 §13 표 참조.
 
 ---
@@ -84,6 +83,7 @@ struct gadget_app {
     const char  *id;            /* "tuner" — 안정적 식별자(설정 키) */
     const char  *name;          /* "Tuner" — 표시명 */
     audio_mode_t audio_mode;    /* 이 앱이 오디오코어에 요구: SPECTRUM/TUNER */
+    const lv_img_dsc_t *icon;   /* 런처 아이콘. NULL이면 이름 첫 글자 */
 
     app_enter_fn  on_enter;     /* 화면 빌드 + 자원 획득(뮤트/오디오모드) */
     app_exit_fn   on_exit;      /* 정리 */
@@ -92,7 +92,7 @@ struct gadget_app {
 
     app_input_source_t input_sources;  /* [Phase 2 예약] 0 = 기본 입력 */
     app_output_route_t output_routes;  /* [Phase 2 예약] 0 = 없음 */
-    int                variant_count;  /* 변형 개수(튜너=2). ③에서 화면 분기에 사용 */
+    int                variant_count;  /* 변형 개수 */
     bool               needs_codec;    /* [Phase 2 예약] 코덱 부재 시 런처 비활성 */
 };
 ```
@@ -111,9 +111,9 @@ void                 apps_init(void);   /* renderers_init() 이후 3앱 등록 *
 `on_exit()`. `renderer_select`가 destroy→create 하던 것과 동일하게, 앱 전환 시 이전 앱
 `on_exit()` 후 새 앱 `on_enter()`.
 
-> **③단계 TODO(향후 변형 작업 시):** 설계상 필요한 `icon`·`variant_names` 필드는 ①②에서
-> 아직 추가되지 않았다. ③에서 런처 변형 표시·아이콘을 구현할 때 구조체에 추가하고,
-> `variant_count`의 "Phase 2 예약" 성격 주석도 "실사용"으로 정정한다.
+> `icon`과 `variant_count`는 현재 슬롯/런처에서 사용한다. 표시용 `variant_names` 및 앱이
+> 설정 항목을 일반적으로 기여하는 계약은 아직 도입하지 않았으며, 현재 Sound Monitor
+> 프리셋은 앱 API를 매니저의 표준 Theme 페이지가 호출하는 좁은 어댑터다.
 
 ---
 
@@ -173,10 +173,10 @@ typedef enum {
 | 풋스위치 롱 | 퀵 앱 오버레이 진입 (이미 오버레이면 무동작) | 퀵 앱 오버레이 진입(직교) | — |
 | 홈 롱 | **즉시 나가기**(=Exit 자동확정, 안전장치) | — | 순서변경 종료 → 런처 |
 | 홈 숏 | **표준 팝업 열기**(첫 항목 Exit, 확인=나가기) | 뒤로 (첫 화면이면 무동작) | 순서변경 종료 → 런처 |
-| 상·하·좌·우·확인 | **전부 활성 앱이 자유 해석** | 커서 이동 / 확인=실행·진입 | 집어듦·이동·줄전환·내려놓음 |
+| 상·하·좌·우·확인 | **전부 활성 앱이 자유 해석** | 상하=행, 좌우=행 내부 / 확인=실행·진입 | 집어듦·이동·줄전환·내려놓음 |
 
 > 홈 키는 **항상 매니저 소유**다. 라이브/오버레이에서 홈 숏 = 표준 팝업(공통 항목
-> Exit·Settings·Help·About, 첫 선택 Exit), 홈 롱 = 즉시 나가기. 런처에서 홈 숏 = 뒤로
+> Exit·Settings, 첫 선택 Exit), 홈 롱 = 즉시 나가기. 런처에서 홈 숏 = 뒤로
 > (첫 화면이면 무동작). 팝업/앱 상태와 무관하게 홈 롱은 항상 런처로 빠져나온다(안전망).
 
 ### 매니저가 가로채는 것 vs 위임하는 것
@@ -184,24 +184,27 @@ typedef enum {
 - **매니저 전담**: `EV_FOOTSW`, `EV_FOOTSW_HOLD`, `EV_HOME`(팝업 열기), `EV_HOME_HOLD`(즉시 나가기).
 - **활성 앱 위임**(라이브): `EV_UP/DOWN/LEFT/RIGHT/OK` → `app->on_event()`. **홈 키는 앱에
   가지 않는다** — 나가기·공통 메뉴는 매니저 표준 팝업이 담당하므로 앱은 메인 화면만 신경 쓴다.
-- **팝업 열림 중**: 방향키 = 항목 이동, 확인 = 실행, 홈 숏 = 닫기, 홈 롱 = 즉시 나가기,
+- **팝업 열림 중**: 상·하 = 세로 항목 이동, 좌·우 = 값 선택 페이지에서만 값 변경,
+  확인 = 실행, 홈 숏 = 한 단계 뒤로, 홈 롱 = 즉시 나가기,
   풋스위치 숏/롱 = 팝업 닫고 앱 순환/튜너 점프.
 - 런처/순서변경 모드에서는 활성 앱이 없으므로 5키를 매니저(런처 UI)가 사용.
 
 → 결과: 매니저는 **"앱 넘기기(풋스위치)" + "홈 키(팝업·나가기)"**. 5키(상하좌우+확인)는
 전부 앱. 핑퐁이든 고급 튜너든 자유롭게 쓰고, 앱이 먹통이어도 홈 롱으로 항상 빠져나온다.
 
-### 표준 팝업 메뉴 (홈 숏 — ②에서 최소형 구현)
+### 표준 팝업 메뉴 (홈 숏)
 
-매니저 소유 표준 컴포넌트. 어떤 앱에서도 홈 숏으로 열린다. 항목 = **Exit · Settings ·
-Help · About**(첫 선택 Exit). 여러 앱에 공통으로 필요하지만 메인 화면에 두면 혼잡한 것들의
+매니저 소유 표준 컴포넌트. 어떤 앱에서도 홈 숏으로 열린다. 첫 페이지 항목은
+**Exit · Settings**(첫 선택 Exit)다. 여러 앱에 공통으로 필요하지만 메인 화면에 두면 혼잡한 것들의
 집 → 앱 메인 화면을 깨끗하게 유지하고, 나가기 동작을 모든 앱에서 동일하게(홈 숏→확인, 또는
 홈 롱) 만든다.
 
-- **②에서 구현된 범위(최소형)**: 오버레이 + 방향키 내비 + Exit 작동 + Settings/Help/About
-  스텁(선택만 되고 내용은 ③). 영문 라벨은 빌트인 Montserrat 폰트 구성에 맞춤.
-- **③**: Settings/Help/About 실내용, 앱별 팝업 추가 항목 기여 훅(`gadget_app_t` 필드/콜백,
-  `variant_names`와 함께 도입). §8 런처의 `[설정]` 구석 항목과의 역할 분담(전역 vs 앱별)도 ③.
+- **Settings**: `Theme · Info`. 런처에서 열면 Theme은 전역 UI 테마
+  `BLUE/WHITE/GREEN`을 좌우로 즉시 바꾼다.
+- **Sound Monitor Settings**: Theme 페이지가 6개 렌더러·팔레트 프리셋을 세로 목록으로
+  제공하고 확인으로 적용한다.
+- 앱별 설정 기여 훅은 아직 일반화하지 않았다. 두 번째 앱이 고유 설정을 요구할 때
+  `gadget_app_t` 계약으로 승격한다.
 
 ### 하드웨어 영향
 
@@ -351,7 +354,7 @@ typedef struct {
 ### Phase 1 (지금 하드웨어로 동작)
 | id | 이름 | audio_mode | 변형 | 비고 |
 |----|------|-----------|------|------|
-| `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t`(곡선/막대/반응형) 중첩. 상=테마/하=렌더러 |
+| `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. 홈→Settings→Theme에서 6개 프리셋 선택 |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
 | `images` | Images | SPECTRUM | — | 이미지·폴더 탐색(좌/우 전환) |
 | `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |
@@ -359,8 +362,9 @@ typedef struct {
 | `level` | Level / Signal | SPECTRUM | — | 기타 탭 레벨 + 클립 |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
 | `settings` | Settings / About | NONE | — | |
+| `bounce` | Bounce | SPECTRUM | — | 음악 이벤트 기반 바운스 시각화 |
 
-> ②까지 실제 등록된 앱 = `monitor`·`images`·`tuner` 3개. 나머지는 카탈로그(③ 이후 추가).
+> 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce` 4개. 나머지는 카탈로그다.
 
 ### Phase 2 (코덱 의존 — 등록하되 `requires_codec=true`로 비활성)
 | id | 이름 | 비고 |
@@ -376,15 +380,15 @@ typedef struct {
 
 | 현재 (`screen_manager.c`) | 앱 모델 | 진척 |
 |---------------------------|---------|------|
-| `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t`/테마 순환은 `on_event`로. vtable 그대로 중첩 | **①·②완료** (②: 상=테마 `EV_UP` / 하=렌더러 `EV_DOWN`) |
+| `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩, 프리셋 API 제공 | **완료** — 앱 직접 상·하 변경을 제거하고 `Settings → Theme` 6개 프리셋으로 통합 |
 | `SCR_IMAGES` + 이미지 순환 | **`images` 앱.** `on_event`로 이미지 전환 | **①·②완료** (②: `EV_LEFT/RIGHT` 순환) |
 | `SCR_TUNER` + 뮤트 특별취급 | **`tuner` 앱.** enter=뮤트, audio=TUNER, variant=2 | **①·②완료** (뮤트/모드 자기소유, 입력 미소비) |
-| `SCR_HOME` 메뉴 | **런처**로 역할 변경(단순 메뉴 → 2줄 체인 + 활성화/순서/설정) | ①·② = 단순 메뉴(새 어휘로 내비). **2줄/순서/설정은 ③** |
-| enum `screen_t` + 거대 switch | **활성 앱 인덱스 + 디스패치** (→ ③에서 `s_slots[]` + 모드) | ①·② = 활성 인덱스 + 팝업 상태 + 디스패치. **slots/모드는 ③** |
+| `SCR_HOME` 메뉴 | **런처**로 역할 변경(단순 메뉴 → 두 체인 + 메뉴 행 + 순서/설정) | **완료** — 빈 행 포함 3행 내비게이션 |
+| enum `screen_t` + 거대 switch | **활성 앱 인덱스 + 디스패치 + `s_slots[]` 모드** | **완료** |
 | `sm_on_event`의 화면별 분기 | 매니저는 풋스위치/홈만, 나머지는 활성 앱 `on_event` 디스패치 | **②완료** — 매니저 전담 `{FOOTSW, FOOTSW_HOLD, HOME, HOME_HOLD}` + 표준 팝업, 5키 앱 위임 |
 | `ui_event_t {PREV,NEXT,SELECT,BACK,FOOTSW}` | `{UP,DOWN,LEFT,RIGHT,OK,HOME,HOME_HOLD,FOOTSW,FOOTSW_HOLD}` | **②완료** — `app.h` 9종 교체, 낡은 enum 잔재 0 |
 | (②신규) `input_task` 입력단 | 6버튼 + 풋스위치 상태기계(디바운스·롱프레스·오토리피트) | **②완료** (GPIO 1/2/4/5/6/13/7) |
-| (②신규) 표준 팝업 | 매니저 소유 공통 메뉴(Exit/Settings/Help/About) | **②= Exit 작동 + 3스텁.** 실내용·앱 기여는 ③ |
+| (②신규) 표준 팝업 | 매니저 소유 공통 메뉴와 설정 계층 | **완료** — Exit/Settings, Theme/Info, 전역·모니터 Theme 페이지 |
 
 **①에서 생성/변경된 파일:** `gadget_app.h`·`gadget_app.c`(인터페이스+레지스트리),
 `app_monitor.c`·`app_images.c`·`app_tuner.c`(3앱), `screen_manager.c`(디스패처로 일반화),
@@ -395,8 +399,7 @@ typedef struct {
 ①의 임시 풋스위치 브릿지 제거), `app_monitor.c`·`app_images.c`(`on_event` 새 어휘),
 `midi_map.c`(CC 리맵). 풋스위치 숏=앱 순환·롱=튜너 점프, 홈 숏=팝업·롱=즉시 나가기.
 
-**②에서 의도적으로 안 한 것(=③ 몫):** 2줄 체인·순서변경·퀵앱 오버레이·변형 화면 분기·
-설정 영속성·팝업 실내용·앱별 팝업 기여 훅.
+**남은 일반화:** 변형 이름/화면 분기, 앱별 팝업 기여 훅, 코덱 의존 앱의 안내 UI.
 
 **①·②에서 보존된 것:** Core1 오디오/seqlock, `renderer_t` 전체, LVGL lock 규약,
 `content_screen`/`tuner_screen`/렌더러 구현(앱이 호출만 함), `sm_*` 공개 시그니처,
@@ -411,12 +414,12 @@ typedef struct {
 | 앱 플랫폼·레지스트리·런처 | ✅ 구현 | — |
 | 6버튼+홈+확인, 풋스위치 숏/롱, 오토리피트 | ✅ 구현 | — |
 | 두 체인·순서변경·퀵 앱·변형 | ✅ 구현 | — |
-| 설정 영속성 | 컴파일 기본값 | SD JSON 로더 |
+| 설정 영속성 | NVS(id 기반 슬롯/순서/테마/마지막 앱/퀵앱) | SD JSON 로더 |
 | `in_sources`/`out_paths` 라우팅 | 필드 예약(0) | 활성(디지털 믹서) |
 | 드럼/AUX 모니터 앱 | 비활성 스텁 | 동작 |
 
 > 이 표는 **하드웨어 Phase 경계**(어느 HW에서 도는지) 기준이며, 소프트웨어 구현 진척과는
-> 별개다. 진척은 §13 참조 — ①·② 완료, ③(런처 2줄·체인·퀵앱·변형·설정·팝업 실내용) 예정.
+> 별개다. 진척은 §13 참조.
 
 ---
 
@@ -426,11 +429,9 @@ typedef struct {
 - 손버튼 GPIO 3개 = **1·2·13** (DevKit 핀맵·온보드 RGB LED 회피 반영).
 - 입력단 파라미터 = **디바운스 30ms / 롱프레스 500ms / 오토리피트 시작 400ms·간격 120ms**.
 
-**③에 남은 것:**
+**남은 것:**
 - "퀵 앱" 뱃지의 시각 표현(화면 구석 작은 인디케이터).
-- 런처 2줄 레이아웃의 구체 픽셀(LVGL).
-- 앱 id 인덱싱 방식(고정 배열 vs 동적 등록 순서) — 설정 키 안정성과 직결.
-- 팝업 패널 레이아웃·실항목 내용, 앱별 팝업 기여 API.
+- 앱별 팝업 기여 API와 변형 표시명 계약.
 
 ---
 
@@ -441,7 +442,7 @@ typedef struct {
 - [x] 매니저 가로채기 = 풋스위치(숏/롱) + **홈(숏=팝업 / 롱=나가기)** *(②)*
 - [x] 6버튼(상하좌우+홈+확인), 방향키 오토리피트, 롱 감지 = 풋스위치·홈 둘만 *(②)*
 - [x] 신성한 원칙 = 출력 enum에 OUT_MAIN 부재 *(①)*
-- [ ] 두 체인 = 한 배열 두 뷰, 활성화 = 줄 옮기기 *(③)*
-- [ ] 퀵 앱 = 직교 오버레이 + 뱃지 + 상태 스냅샷 복귀 *(③)*
-- [ ] 표준 팝업 실내용(Settings/Help/About) + 앱별 기여 훅 *(③)*
+- [x] 두 체인 = 한 배열 두 뷰, 활성화 = 줄 옮기기 *(③-A/C)*
+- [x] 퀵 앱 = 직교 전환 + 상태 복귀 *(뱃지 제외)*
+- [x] 표준 팝업 실내용(Settings/Theme/Info) *(앱별 기여 훅 제외)*
 - [ ] Phase 2 앱은 `requires_codec`로 비활성(라우팅 필드 예약은 ①에서 완료) *(Phase 2)*
