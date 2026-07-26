@@ -47,7 +47,7 @@ PC simulator
 | `monitor` | Sound Monitor | 로그 스펙트럼, 기타·베이스 12밴드, 원형 스펙트럼의 6개 프리셋 |
 | `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
-| `bounce` | Bounce | 온셋·피치 이벤트 기반 인터랙티브 앱 |
+| `bounce` | Bounce | 소리 온셋으로 고양이가 종이컵을 넘는 러너 게임 |
 | `dbmeter` | dB Meter | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu 표시 |
 
 앱은 `gadget_app_t` 계약과 `gadget_app.c` 레지스트리에 등록된다. 런처 항목은 레지스트리에서
@@ -81,7 +81,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `app_monitor.c` | Sound Monitor 앱 |
 | `app_images.c` | Images 앱 |
 | `app_tuner.c` | Tuner 앱과 뮤트/오디오 모드 생명주기 |
-| `app_bounce.c` | Bounce 앱 |
+| `app_bounce.c` | 온셋 기반 고양이 러너 Bounce 앱 |
 | `app_db_meter.c` | dB Meter 앱 |
 | `app_slots.{c,h}` | LIVE/STASH 슬롯과 NVS 영속성 |
 | `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |

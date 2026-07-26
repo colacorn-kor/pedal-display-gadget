@@ -274,6 +274,11 @@ bool plat_sim_post_event(ui_event_t event)
     return queue_push(event);
 }
 
+void plat_sim_trigger_onset(void)
+{
+    sim_audio_trigger_synthetic_onset();
+}
+
 void audio_set_mode(audio_mode_t mode)
 {
     if (mode == AUDIO_SPECTRUM || mode == AUDIO_TUNER) s_audio_mode = mode;

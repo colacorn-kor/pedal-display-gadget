@@ -63,3 +63,8 @@ int monitor_app_preset_index(void);
 void monitor_app_set_preset(int idx);
 void images_app_set_content(int content);
 int images_app_count(void);
+
+#ifdef PEDAL_SIM
+int bounce_app_debug_cat_y(void);
+bool bounce_app_debug_game_over(void);
+#endif

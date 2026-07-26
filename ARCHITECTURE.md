@@ -404,7 +404,7 @@ typedef struct {
 | `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
 | `settings` | Settings / About | NONE | — | |
-| `bounce` | Bounce | TUNER | — | 음악 이벤트 기반 바운스 시각화 |
+| `bounce` | Bounce | SPECTRUM | — | 오디오 온셋으로 고양이가 종이컵을 넘는 러너 게임 |
 
 > 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce`·`dbmeter` 5개.
 > 나머지는 카탈로그다.

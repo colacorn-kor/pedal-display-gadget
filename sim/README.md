@@ -60,6 +60,7 @@ To open a deterministic visual QA screen without NVS state or key input:
 .\sim\build\pedal_sim.exe --preview bars
 .\sim\build\pedal_sim.exe --preview circular
 .\sim\build\pedal_sim.exe --preview dbmeter
+.\sim\build\pedal_sim.exe --preview bounce
 ```
 
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current
@@ -67,8 +68,9 @@ working directory.
 
 ## Deterministic Smoke Test
 
-Run the launcher, app dispatch, synthetic visualizer, shared tuner DSP, quick
-app, and app cleanup checks without keyboard automation:
+Run the launcher, app dispatch, synthetic visualizer, shared tuner DSP, Bounce
+jump/collision/restart cycle, quick app, and app cleanup checks without keyboard
+automation:
 
 ```powershell
 .\sim\build\pedal_sim.exe --smoke-test

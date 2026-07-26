@@ -10,3 +10,4 @@ bool plat_sim_should_quit(void);
 bool plat_sim_is_smoke_test(void);
 const char *plat_sim_preview(void);
 bool plat_sim_post_event(ui_event_t event);
+void plat_sim_trigger_onset(void);

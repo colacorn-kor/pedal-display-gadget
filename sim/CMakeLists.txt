@@ -60,7 +60,7 @@ target_include_directories(pedal_sim PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/compat"
 )
 
-target_compile_definitions(pedal_sim PRIVATE SDL_MAIN_HANDLED)
+target_compile_definitions(pedal_sim PRIVATE SDL_MAIN_HANDLED PEDAL_SIM=1)
 
 if(MSVC)
     target_compile_options(pedal_sim PRIVATE /W4)

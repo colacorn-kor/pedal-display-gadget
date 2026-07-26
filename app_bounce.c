@@ -1,6 +1,5 @@
 #include "gadget_app.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -8,140 +7,81 @@
 #include "platform.h"
 #include "theme.h"
 
-#define BOUNCE_W 32
-#define BOUNCE_H 32
-#define BOUNCE_SCREEN_W 480
-#define BOUNCE_SCREEN_H 320
-#define BOUNCE_FLOOR_Y 248.0f
-#define BOUNCE_CENTER_MIN_X 40.0f
-#define BOUNCE_CENTER_MAX_X 440.0f
-#define BOUNCE_MIDI_MIN 40.0f
-#define BOUNCE_MIDI_MAX 76.0f
-#define BOUNCE_PITCH_LERP 0.20f
-#define BOUNCE_JUMP_K 2.60f
-#define BOUNCE_TRAILS 8
-#define BOUNCE_GRAVITY_COUNT 3
+#define SCREEN_W 480
+#define SCREEN_H 320
+#define GROUND_Y 258
 
-#define Z8 0, 0, 0, 0, 0, 0, 0, 0
-#define R_EMPTY Z8, Z8, Z8, Z8
+#define CAT_X 76
+#define CAT_W 44
+#define CAT_H 38
+#define CAT_GROUND_Y ((float)(GROUND_Y - CAT_H))
 
-static const uint8_t BOUNCE_IDLE_DATA[BOUNCE_W * BOUNCE_H] = {
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    Z8, 0, 0, 0, 60, 150, 0, 0, 0, 0, 0, 0, 0, 150, 60, 0, 0, Z8,
-    Z8, 0, 0, 70, 210, 250, 90, 0, 0, 0, 0, 90, 250, 210, 70, 0, Z8,
-    Z8, 0, 80, 230, 255, 255, 220, 120, 120, 120, 220, 255, 255, 230, 80, 0, Z8,
-    Z8, 80, 230, 255, 255, 255, 255, 230, 230, 230, 255, 255, 255, 255, 230, 80, Z8,
-    0, 0, 0, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, 0, 0, 0, 0, 0,
-    0, 40, 210, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 210, 40, 0, 0, 0, 0, 0,
-    0, 110, 245, 255, 255, 255, 255, 90, 90, 255, 255, 255, 90, 90, 255, 255, 255, 245, 110, 0, 0, 0, 0, 0,
-    0, 160, 255, 255, 255, 255, 255, 40, 40, 255, 255, 255, 40, 40, 255, 255, 255, 255, 160, 0, 0, 0, 0, 0,
-    0, 190, 255, 255, 255, 255, 255, 190, 190, 255, 255, 255, 190, 190, 255, 255, 255, 255, 190, 0, 0, 0, 0, 0,
-    0, 210, 255, 255, 255, 255, 255, 255, 255, 255, 230, 230, 255, 255, 255, 255, 255, 255, 210, 0, 0, 0, 0, 0,
-    0, 220, 255, 255, 255, 255, 255, 255, 255, 220, 120, 120, 220, 255, 255, 255, 255, 255, 220, 0, 0, 0, 0, 0,
-    0, 220, 255, 255, 255, 255, 255, 255, 255, 255, 220, 220, 255, 255, 255, 255, 255, 255, 220, 0, 0, 0, 0, 0,
-    0, 210, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 210, 0, 0, 0, 0, 0,
-    0, 190, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 190, 0, 0, 0, 0, 0,
-    0, 160, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 160, 0, 0, 0, 0, 0,
-    0, 110, 245, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 245, 110, 0, 0, 0, 0, 0,
-    0, 40, 210, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 210, 40, 0, 0, 0, 0, 0,
-    0, 0, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, 0, 0, 0, 0, 0, 0,
-    Z8, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, Z8,
-    Z8, 0, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, 0, Z8,
-    Z8, 0, 0, 80, 220, 255, 255, 255, 255, 255, 255, 220, 80, 0, 0, 0, Z8,
-    Z8, 0, 0, 0, 80, 200, 240, 255, 255, 240, 200, 80, 0, 0, 0, 0, Z8,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-};
+#define CUP_COUNT 2
+#define CUP_W 26
+#define CUP_H 36
+#define CUP_Y (GROUND_Y - CUP_H)
 
-static const uint8_t BOUNCE_SQUASH_DATA[BOUNCE_W * BOUNCE_H] = {
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    Z8, 0, 0, 80, 180, 0, 0, 0, 0, 0, 0, 0, 180, 80, 0, 0, Z8,
-    Z8, 0, 70, 220, 255, 210, 100, 0, 0, 0, 100, 210, 255, 220, 70, 0, Z8,
-    0, 0, 80, 230, 255, 255, 255, 220, 160, 160, 220, 255, 255, 255, 230, 80, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 60, 220, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 220, 60, 0, 0, 0, 0, 0, 0,
-    40, 210, 255, 255, 255, 255, 255, 80, 80, 255, 255, 255, 80, 80, 255, 255, 255, 210, 40, 0, 0, 0, 0, 0,
-    90, 245, 255, 255, 255, 255, 255, 40, 40, 255, 255, 255, 40, 40, 255, 255, 255, 245, 90, 0, 0, 0, 0, 0,
-    130, 255, 255, 255, 255, 255, 255, 200, 200, 255, 255, 255, 200, 200, 255, 255, 255, 255, 130, 0, 0, 0, 0, 0,
-    160, 255, 255, 255, 255, 255, 255, 255, 255, 255, 220, 220, 255, 255, 255, 255, 255, 255, 160, 0, 0, 0, 0, 0,
-    180, 255, 255, 255, 255, 255, 255, 255, 255, 220, 120, 120, 220, 255, 255, 255, 255, 255, 180, 0, 0, 0, 0, 0,
-    190, 255, 255, 255, 255, 255, 255, 255, 255, 255, 220, 220, 255, 255, 255, 255, 255, 255, 190, 0, 0, 0, 0, 0,
-    190, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 190, 0, 0, 0, 0, 0,
-    180, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 180, 0, 0, 0, 0, 0,
-    160, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 160, 0, 0, 0, 0, 0,
-    120, 245, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 245, 120, 0, 0, 0, 0, 0,
-    70, 220, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 220, 70, 0, 0, 0, 0, 0,
-    0, 80, 230, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 230, 80, 0, 0, 0, 0, 0, 0,
-    0, 0, 80, 220, 250, 255, 255, 255, 255, 255, 255, 255, 250, 220, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-    R_EMPTY,
-};
+#define GROUND_MARK_COUNT 8
+#define GROUND_MARK_SPACING 70
+#define GROUND_MARK_W 28
 
-static const lv_image_dsc_t BOUNCE_IDLE_IMG = {
-    .header = {
-        .magic = LV_IMAGE_HEADER_MAGIC,
-        .cf = LV_COLOR_FORMAT_A8,
-        .flags = 0,
-        .w = BOUNCE_W,
-        .h = BOUNCE_H,
-        .stride = BOUNCE_W,
-    },
-    .data_size = sizeof(BOUNCE_IDLE_DATA),
-    .data = BOUNCE_IDLE_DATA,
-};
+#define GAME_FRAME_MS 40U
+#define SCORE_REFRESH_MS 200U
+#define GAME_GRAVITY 1500.0f
+#define GAME_JUMP_VELOCITY (-590.0f)
+#define GAME_START_SPEED 155.0f
+#define GAME_MAX_SPEED 270.0f
+#define GAME_MAX_DT 0.080f
 
-static const lv_image_dsc_t BOUNCE_SQUASH_IMG = {
-    .header = {
-        .magic = LV_IMAGE_HEADER_MAGIC,
-        .cf = LV_COLOR_FORMAT_A8,
-        .flags = 0,
-        .w = BOUNCE_W,
-        .h = BOUNCE_H,
-        .stride = BOUNCE_W,
-    },
-    .data_size = sizeof(BOUNCE_SQUASH_DATA),
-    .data = BOUNCE_SQUASH_DATA,
-};
+#define CAT_PRIMARY_COUNT 8
+#define CAT_SECONDARY_COUNT 1
+#define CAT_DETAIL_COUNT 5
 
-static const float GRAVITY[BOUNCE_GRAVITY_COUNT] = { 0.32f, 0.52f, 0.82f };
-static const char *GRAVITY_LABELS[BOUNCE_GRAVITY_COUNT] = { "LOW", "MID", "HIGH" };
+typedef struct {
+    lv_obj_t *root;
+    lv_obj_t *body;
+    lv_obj_t *rim;
+    lv_obj_t *lip;
+    lv_obj_t *stripe;
+    float x;
+    bool active;
+} cup_t;
 
 static lv_obj_t *s_host;
-static lv_obj_t *s_sprite;
-static lv_obj_t *s_status;
+static lv_obj_t *s_cat;
+static lv_obj_t *s_cat_shadow;
+static lv_obj_t *s_cat_primary[CAT_PRIMARY_COUNT];
+static lv_obj_t *s_cat_secondary[CAT_SECONDARY_COUNT];
+static lv_obj_t *s_cat_detail[CAT_DETAIL_COUNT];
+static lv_obj_t *s_leg_back;
+static lv_obj_t *s_leg_front;
+static lv_obj_t *s_tail_tip;
 static lv_obj_t *s_ground;
-static lv_obj_t *s_trail[BOUNCE_TRAILS];
-static float s_x;
-static float s_y;
-static float s_vy;
-static int s_gravity_idx = 1;
-static int s_squash_frames;
+static lv_obj_t *s_ground_mark[GROUND_MARK_COUNT];
+static lv_obj_t *s_title_label;
+static lv_obj_t *s_score_label;
+static lv_obj_t *s_best_label;
+static lv_obj_t *s_game_over_label;
+static cup_t s_cups[CUP_COUNT];
+
+static float s_cat_y;
+static float s_cat_vy;
+static float s_speed;
+static float s_distance;
+static float s_spawn_distance;
+static float s_ground_offset;
+static uint32_t s_score;
+static uint32_t s_best;
+static uint32_t s_rng;
+static uint32_t s_last_frame_ms;
+static uint32_t s_last_score_ms;
 static uint32_t s_last_onset_seq;
-static int s_trail_head;
 static int s_theme_idx = -1;
-static bool s_sprite_squash;
-static char s_status_text[64];
-static bool s_trail_active[BOUNCE_TRAILS];
-static float s_trail_x[BOUNCE_TRAILS];
-static float s_trail_y[BOUNCE_TRAILS];
+static int s_last_cat_y = -1;
+static int s_last_run_phase = -1;
+static bool s_game_over;
+static char s_score_text[24];
+static char s_best_text[24];
 
 static const lv_font_t *font_small(void)
 {
@@ -152,236 +92,519 @@ static const lv_font_t *font_small(void)
 #endif
 }
 
-static float clampf(float v, float lo, float hi)
+static float clampf(float value, float lo, float hi)
 {
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
+    if (value < lo) return lo;
+    if (value > hi) return hi;
+    return value;
 }
 
-static float target_x_for_pitch(const music_snapshot_t *snap)
+static void style_group(lv_obj_t *obj)
 {
-    if (!snap->pitch_valid || !(snap->f0 > 0.0f) || !isfinite(snap->f0)) {
-        return 0.5f * (BOUNCE_SCREEN_W - BOUNCE_W);
-    }
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_border_width(obj, 0, 0);
+    lv_obj_set_style_radius(obj, 0, 0);
+    lv_obj_set_style_pad_all(obj, 0, 0);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_0, 0);
+}
 
-    float midi = 69.0f + 12.0f * log2f(snap->f0 / 440.0f);
-    midi = clampf(midi, BOUNCE_MIDI_MIN, BOUNCE_MIDI_MAX);
-    float ratio = (midi - BOUNCE_MIDI_MIN) / (BOUNCE_MIDI_MAX - BOUNCE_MIDI_MIN);
-    float center = BOUNCE_CENTER_MIN_X +
-        ratio * (BOUNCE_CENTER_MAX_X - BOUNCE_CENTER_MIN_X);
-    return center - 0.5f * BOUNCE_W;
+static void style_block(lv_obj_t *obj, lv_color_t color)
+{
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_border_width(obj, 0, 0);
+    lv_obj_set_style_radius(obj, 0, 0);
+    lv_obj_set_style_pad_all(obj, 0, 0);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(obj, color, 0);
+}
+
+static lv_obj_t *make_block(lv_obj_t *parent, int x, int y, int w, int h)
+{
+    lv_obj_t *obj = lv_obj_create(parent);
+    lv_obj_set_size(obj, w, h);
+    lv_obj_set_pos(obj, x, y);
+    style_block(obj, lv_color_hex(0xffffff));
+    return obj;
+}
+
+static lv_obj_t *make_label(lv_obj_t *parent, const char *text,
+                            const lv_font_t *font)
+{
+    lv_obj_t *label = lv_label_create(parent);
+    lv_label_set_text(label, text);
+    lv_obj_set_style_text_font(label, font, 0);
+    return label;
+}
+
+static void create_cat(void)
+{
+    int primary = 0;
+    int detail = 0;
+
+    s_cat_shadow = make_block(s_host, CAT_X + 4, GROUND_Y + 4, 36, 4);
+    lv_obj_set_style_radius(s_cat_shadow, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(s_cat_shadow, LV_OPA_30, 0);
+
+    s_cat = lv_obj_create(s_host);
+    lv_obj_set_size(s_cat, CAT_W, CAT_H);
+    style_group(s_cat);
+
+    s_cat_primary[primary++] = make_block(s_cat, 6, 14, 27, 18);
+    s_cat_primary[primary++] = make_block(s_cat, 24, 6, 18, 20);
+    s_cat_primary[primary++] = make_block(s_cat, 25, 1, 7, 10);
+    s_cat_primary[primary++] = make_block(s_cat, 35, 1, 7, 10);
+    s_cat_primary[primary++] = make_block(s_cat, 0, 16, 10, 5);
+    s_tail_tip = make_block(s_cat, 0, 10, 5, 10);
+    s_cat_primary[primary++] = s_tail_tip;
+    s_leg_back = make_block(s_cat, 9, 29, 6, 9);
+    s_cat_primary[primary++] = s_leg_back;
+    s_leg_front = make_block(s_cat, 27, 29, 6, 9);
+    s_cat_primary[primary++] = s_leg_front;
+
+    s_cat_secondary[0] = make_block(s_cat, 29, 17, 12, 7);
+
+    s_cat_detail[detail++] = make_block(s_cat, 31, 11, 3, 3);
+    s_cat_detail[detail++] = make_block(s_cat, 39, 19, 3, 3);
+    s_cat_detail[detail++] = make_block(s_cat, 38, 24, 6, 1);
+    s_cat_detail[detail++] = make_block(s_cat, 37, 27, 7, 1);
+    s_cat_detail[detail++] = make_block(s_cat, 19, 19, 4, 4);
+}
+
+static void create_cup(cup_t *cup)
+{
+    cup->root = lv_obj_create(s_host);
+    lv_obj_set_size(cup->root, CUP_W, CUP_H);
+    style_group(cup->root);
+
+    cup->lip = make_block(cup->root, 2, 0, CUP_W - 4, 3);
+    cup->rim = make_block(cup->root, 0, 3, CUP_W, 5);
+    cup->body = make_block(cup->root, 4, 8, CUP_W - 8, CUP_H - 8);
+    cup->stripe = make_block(cup->root, 4, 17, CUP_W - 8, 4);
+    cup->active = false;
+    cup->x = 0.0f;
+    lv_obj_add_flag(cup->root, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void style_scene(void)
 {
-    const ui_theme_t *t = theme_get();
+    const ui_theme_t *theme = theme_get();
+    const lv_color_t cat_color =
+        s_game_over ? theme->accent2 : theme->accent;
+
     if (s_host) {
-        lv_obj_set_style_bg_color(s_host, t->bg, 0);
+        lv_obj_set_style_bg_color(s_host, theme->bg, 0);
         lv_obj_set_style_bg_opa(s_host, LV_OPA_COVER, 0);
     }
-    if (s_status) {
-        lv_obj_set_style_text_color(s_status, t->text, 0);
+    if (s_ground) lv_obj_set_style_bg_color(s_ground, theme->grid, 0);
+    for (int i = 0; i < GROUND_MARK_COUNT; i++) {
+        if (s_ground_mark[i]) {
+            lv_obj_set_style_bg_color(s_ground_mark[i], theme->grid, 0);
+        }
     }
-    if (s_ground) {
-        lv_obj_set_style_bg_color(s_ground, t->grid, 0);
+    if (s_cat_shadow) {
+        lv_obj_set_style_bg_color(s_cat_shadow, theme->text, 0);
     }
-    if (s_sprite) {
-        lv_obj_set_style_image_recolor(s_sprite, t->accent, 0);
-        lv_obj_set_style_image_recolor_opa(s_sprite, LV_OPA_COVER, 0);
+    for (int i = 0; i < CAT_PRIMARY_COUNT; i++) {
+        if (s_cat_primary[i]) {
+            lv_obj_set_style_bg_color(s_cat_primary[i], cat_color, 0);
+        }
     }
-    for (int i = 0; i < BOUNCE_TRAILS; i++) {
-        if (!s_trail[i]) continue;
-        lv_obj_set_style_bg_color(s_trail[i], t->accent2, 0);
+    for (int i = 0; i < CAT_SECONDARY_COUNT; i++) {
+        if (s_cat_secondary[i]) {
+            lv_obj_set_style_bg_color(s_cat_secondary[i], theme->surface, 0);
+        }
+    }
+    for (int i = 0; i < CAT_DETAIL_COUNT; i++) {
+        if (s_cat_detail[i]) {
+            lv_obj_set_style_bg_color(s_cat_detail[i], theme->bg, 0);
+        }
+    }
+    for (int i = 0; i < CUP_COUNT; i++) {
+        if (!s_cups[i].root) continue;
+        lv_obj_set_style_bg_color(s_cups[i].body, theme->text, 0);
+        lv_obj_set_style_bg_color(s_cups[i].rim, theme->text, 0);
+        lv_obj_set_style_bg_color(s_cups[i].lip, theme->text, 0);
+        lv_obj_set_style_bg_color(s_cups[i].stripe, theme->accent2, 0);
+    }
+    if (s_score_label) {
+        lv_obj_set_style_text_color(s_score_label, theme->text, 0);
+    }
+    if (s_title_label) {
+        lv_obj_set_style_text_color(s_title_label, theme->accent, 0);
+    }
+    if (s_best_label) {
+        lv_obj_set_style_text_color(s_best_label, theme->text, 0);
+        lv_obj_set_style_text_opa(s_best_label, LV_OPA_50, 0);
+    }
+    if (s_game_over_label) {
+        lv_obj_set_style_text_color(s_game_over_label, theme->accent2, 0);
     }
 }
 
-static void reset_motion(void)
+static uint32_t next_random(void)
 {
-    s_x = 0.5f * (BOUNCE_SCREEN_W - BOUNCE_W);
-    s_y = BOUNCE_FLOOR_Y;
-    s_vy = 0.0f;
-    s_squash_frames = 0;
-    s_last_onset_seq = 0;
-    s_trail_head = 0;
-    s_sprite_squash = false;
-    s_status_text[0] = '\0';
-    for (int i = 0; i < BOUNCE_TRAILS; i++) {
-        s_trail_active[i] = false;
-        s_trail_x[i] = 0.0f;
-        s_trail_y[i] = 0.0f;
+    s_rng = s_rng * 1664525U + 1013904223U;
+    return s_rng;
+}
+
+static float next_spawn_gap(void)
+{
+    float speed_margin = (s_speed - GAME_START_SPEED) * 0.55f;
+    return 250.0f + (float)(next_random() % 150U) + speed_margin;
+}
+
+static bool cat_is_grounded(void)
+{
+    return s_cat_y >= CAT_GROUND_Y - 0.5f;
+}
+
+static void set_cup_active(cup_t *cup, bool active)
+{
+    cup->active = active;
+    if (!cup->root) return;
+    if (active) {
+        lv_obj_remove_flag(cup->root, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(cup->root, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
-static void update_trails(void);
-
-static void drop_trail(void)
+static void update_score_labels(uint32_t now, bool force)
 {
-    s_trail_active[s_trail_head] = true;
-    s_trail_x[s_trail_head] = s_x + 0.5f * BOUNCE_W;
-    s_trail_y[s_trail_head] = s_y + BOUNCE_H - 4.0f;
-    s_trail_head = (s_trail_head + 1) % BOUNCE_TRAILS;
-    update_trails();
+    if (!force && (uint32_t)(now - s_last_score_ms) < SCORE_REFRESH_MS) {
+        return;
+    }
+    s_last_score_ms = now;
+
+    char text[24];
+    snprintf(text, sizeof(text), "SCORE %05lu", (unsigned long)s_score);
+    if (strcmp(text, s_score_text) != 0) {
+        snprintf(s_score_text, sizeof(s_score_text), "%s", text);
+        lv_label_set_text(s_score_label, s_score_text);
+    }
+
+    snprintf(text, sizeof(text), "BEST %05lu", (unsigned long)s_best);
+    if (strcmp(text, s_best_text) != 0) {
+        snprintf(s_best_text, sizeof(s_best_text), "%s", text);
+        lv_label_set_text(s_best_label, s_best_text);
+    }
+}
+
+static void reset_game(uint32_t onset_seq)
+{
+    s_cat_y = CAT_GROUND_Y;
+    s_cat_vy = 0.0f;
+    s_speed = GAME_START_SPEED;
+    s_distance = 0.0f;
+    s_spawn_distance = 330.0f;
+    s_ground_offset = 0.0f;
+    s_score = 0;
+    s_game_over = false;
+    s_last_onset_seq = onset_seq;
+    s_last_cat_y = -1;
+    s_last_run_phase = -1;
+    s_score_text[0] = '\0';
+    s_best_text[0] = '\0';
+
+    for (int i = 0; i < CUP_COUNT; i++) {
+        set_cup_active(&s_cups[i], false);
+    }
+    if (s_game_over_label) {
+        lv_obj_add_flag(s_game_over_label, LV_OBJ_FLAG_HIDDEN);
+    }
+    style_scene();
+    update_score_labels(plat_millis(), true);
+}
+
+static void jump(float onset_strength)
+{
+    if (!cat_is_grounded() || s_game_over) return;
+
+    float strength = clampf((onset_strength - 1.0f) * 0.25f, 0.0f, 1.0f);
+    s_cat_vy = GAME_JUMP_VELOCITY * (0.94f + 0.10f * strength);
+}
+
+static void restart_and_jump(float onset_strength, uint32_t onset_seq)
+{
+    reset_game(onset_seq);
+    jump(onset_strength);
+}
+
+static void spawn_cup(void)
+{
+    for (int i = 0; i < CUP_COUNT; i++) {
+        if (s_cups[i].active) continue;
+        s_cups[i].x = SCREEN_W + 8.0f;
+        set_cup_active(&s_cups[i], true);
+        lv_obj_set_pos(s_cups[i].root, (int)s_cups[i].x, CUP_Y);
+        s_spawn_distance = next_spawn_gap();
+        return;
+    }
+    s_spawn_distance = 60.0f;
+}
+
+static bool collision_with(const cup_t *cup)
+{
+    if (!cup->active) return false;
+
+    const float cat_left = CAT_X + 7.0f;
+    const float cat_right = CAT_X + CAT_W - 5.0f;
+    const float cat_top = s_cat_y + 5.0f;
+    const float cat_bottom = s_cat_y + CAT_H - 2.0f;
+    const float cup_left = cup->x + 3.0f;
+    const float cup_right = cup->x + CUP_W - 3.0f;
+    const float cup_top = CUP_Y + 4.0f;
+    const float cup_bottom = GROUND_Y;
+
+    return cat_right > cup_left && cat_left < cup_right &&
+           cat_bottom > cup_top && cat_top < cup_bottom;
+}
+
+static void end_game(void)
+{
+    if (s_game_over) return;
+    s_game_over = true;
+    s_cat_vy = 0.0f;
+    if (s_score > s_best) s_best = s_score;
+
+    char text[48];
+    snprintf(text, sizeof(text), "GAME OVER\nSCORE %05lu",
+             (unsigned long)s_score);
+    lv_label_set_text(s_game_over_label, text);
+    lv_obj_remove_flag(s_game_over_label, LV_OBJ_FLAG_HIDDEN);
+    update_score_labels(plat_millis(), true);
+    style_scene();
+}
+
+static void update_cat_pose(uint32_t now)
+{
+    int cat_y = (int)(s_cat_y + 0.5f);
+    if (cat_y != s_last_cat_y) {
+        lv_obj_set_pos(s_cat, CAT_X, cat_y);
+        s_last_cat_y = cat_y;
+    }
+
+    const bool grounded = cat_is_grounded();
+    int run_phase = grounded && !s_game_over ? (int)((now / 120U) & 1U) : 2;
+    if (run_phase != s_last_run_phase) {
+        if (run_phase == 0) {
+            lv_obj_set_y(s_leg_back, 29);
+            lv_obj_set_y(s_leg_front, 31);
+            lv_obj_set_y(s_tail_tip, 10);
+        } else if (run_phase == 1) {
+            lv_obj_set_y(s_leg_back, 31);
+            lv_obj_set_y(s_leg_front, 29);
+            lv_obj_set_y(s_tail_tip, 12);
+        } else {
+            lv_obj_set_y(s_leg_back, 27);
+            lv_obj_set_y(s_leg_front, 27);
+            lv_obj_set_y(s_tail_tip, 11);
+        }
+        s_last_run_phase = run_phase;
+    }
+
+    float height = CAT_GROUND_Y - s_cat_y;
+    int shadow_width = (int)clampf(36.0f - height * 0.18f, 18.0f, 36.0f);
+    lv_obj_set_width(s_cat_shadow, shadow_width);
+    lv_obj_set_x(s_cat_shadow, CAT_X + (CAT_W - shadow_width) / 2);
+    lv_obj_set_style_bg_opa(
+        s_cat_shadow,
+        (lv_opa_t)clampf(80.0f - height * 0.45f, 20.0f, 80.0f), 0);
+}
+
+static void update_ground(float distance)
+{
+    s_ground_offset -= distance;
+    while (s_ground_offset <= -GROUND_MARK_SPACING) {
+        s_ground_offset += GROUND_MARK_SPACING;
+    }
+    for (int i = 0; i < GROUND_MARK_COUNT; i++) {
+        int x = (int)s_ground_offset + i * GROUND_MARK_SPACING;
+        lv_obj_set_x(s_ground_mark[i], x);
+    }
+}
+
+static void update_game(float dt, uint32_t now)
+{
+    s_speed = clampf(GAME_START_SPEED + (float)s_score * 0.45f,
+                     GAME_START_SPEED, GAME_MAX_SPEED);
+    const float travel = s_speed * dt;
+    s_distance += travel;
+    s_score = (uint32_t)(s_distance / 11.0f);
+    s_spawn_distance -= travel;
+    update_ground(travel);
+
+    s_cat_vy += GAME_GRAVITY * dt;
+    s_cat_y += s_cat_vy * dt;
+    if (s_cat_y >= CAT_GROUND_Y) {
+        s_cat_y = CAT_GROUND_Y;
+        s_cat_vy = 0.0f;
+    }
+
+    for (int i = 0; i < CUP_COUNT; i++) {
+        cup_t *cup = &s_cups[i];
+        if (!cup->active) continue;
+        cup->x -= travel;
+        if (cup->x < -CUP_W) {
+            set_cup_active(cup, false);
+            continue;
+        }
+        lv_obj_set_x(cup->root, (int)(cup->x + 0.5f));
+        if (collision_with(cup)) {
+            end_game();
+            break;
+        }
+    }
+
+    if (!s_game_over && s_spawn_distance <= 0.0f) spawn_cup();
+    update_cat_pose(now);
+    update_score_labels(now, false);
 }
 
 static void bounce_enter(int variant)
 {
     (void)variant;
-    audio_set_mode(AUDIO_TUNER);
-    reset_motion();
-    music_snapshot_t snap;
-    plat_music_get(&snap);
-    s_last_onset_seq = snap.onset_seq;
+    audio_set_mode(AUDIO_SPECTRUM);
+    audio_set_viz_mode(VIZ_DECOR);
+
+    music_snapshot_t snapshot;
+    plat_music_get(&snapshot);
 
     s_host = lv_obj_create(lv_screen_active());
-    lv_obj_set_size(s_host, BOUNCE_SCREEN_W, BOUNCE_SCREEN_H);
+    lv_obj_set_size(s_host, SCREEN_W, SCREEN_H);
     lv_obj_set_pos(s_host, 0, 0);
-    lv_obj_remove_flag(s_host, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_border_width(s_host, 0, 0);
-    lv_obj_set_style_radius(s_host, 0, 0);
-    lv_obj_set_style_pad_all(s_host, 0, 0);
+    style_group(s_host);
 
-    s_status = lv_label_create(s_host);
-    lv_obj_set_style_text_font(s_status, font_small(), 0);
-    lv_obj_set_pos(s_status, 10, 6);
+    s_title_label = make_label(
+        s_host, "CAT RUN", &lv_font_montserrat_14);
+    lv_obj_set_pos(s_title_label, 12, 9);
 
-    s_ground = lv_obj_create(s_host);
-    lv_obj_set_size(s_ground, BOUNCE_SCREEN_W, 2);
-    lv_obj_set_pos(s_ground, 0, (int)(BOUNCE_FLOOR_Y + BOUNCE_H));
-    lv_obj_remove_flag(s_ground, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_border_width(s_ground, 0, 0);
-    lv_obj_set_style_radius(s_ground, 0, 0);
+    s_best_label = make_label(s_host, "BEST 00000", font_small());
+    lv_obj_set_width(s_best_label, 130);
+    lv_obj_set_style_text_align(s_best_label, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_pos(s_best_label, 196, 10);
 
-    for (int i = 0; i < BOUNCE_TRAILS; i++) {
-        s_trail[i] = lv_obj_create(s_host);
-        lv_obj_set_size(s_trail[i], 10, 4);
-        lv_obj_remove_flag(s_trail[i], LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_style_border_width(s_trail[i], 0, 0);
-        lv_obj_set_style_radius(s_trail[i], 2, 0);
-        lv_obj_set_style_bg_opa(s_trail[i], LV_OPA_0, 0);
+    s_score_label = make_label(s_host, "SCORE 00000", font_small());
+    lv_obj_set_width(s_score_label, 138);
+    lv_obj_set_style_text_align(s_score_label, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_pos(s_score_label, 330, 10);
+
+    s_ground = make_block(s_host, 0, GROUND_Y, SCREEN_W, 2);
+    for (int i = 0; i < GROUND_MARK_COUNT; i++) {
+        s_ground_mark[i] = make_block(
+            s_host, i * GROUND_MARK_SPACING, GROUND_Y + 10,
+            GROUND_MARK_W, 2);
     }
 
-    s_sprite = lv_image_create(s_host);
-    lv_image_set_src(s_sprite, &BOUNCE_IDLE_IMG);
-    lv_image_set_pivot(s_sprite, BOUNCE_W / 2, BOUNCE_H);
+    create_cat();
+    for (int i = 0; i < CUP_COUNT; i++) create_cup(&s_cups[i]);
+
+    s_game_over_label = make_label(
+        s_host, "GAME OVER", &lv_font_montserrat_28);
+    lv_obj_set_width(s_game_over_label, 250);
+    lv_obj_set_style_text_align(s_game_over_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(s_game_over_label, 115, 92);
+    lv_obj_add_flag(s_game_over_label, LV_OBJ_FLAG_HIDDEN);
+
+    s_rng = plat_millis() ^ 0x9e3779b9U;
+    s_last_frame_ms = plat_millis();
+    s_last_score_ms = s_last_frame_ms;
     s_theme_idx = theme_index();
-    style_scene();
+    reset_game(snapshot.onset_seq);
+    update_cat_pose(s_last_frame_ms);
 }
 
 static void bounce_exit(void)
 {
     if (s_host) lv_obj_delete(s_host);
     s_host = NULL;
-    s_sprite = NULL;
-    s_status = NULL;
+    s_cat = NULL;
+    s_cat_shadow = NULL;
+    s_leg_back = NULL;
+    s_leg_front = NULL;
+    s_tail_tip = NULL;
     s_ground = NULL;
-    for (int i = 0; i < BOUNCE_TRAILS; i++) s_trail[i] = NULL;
-}
-
-static void update_trails(void)
-{
-    for (int i = 0; i < BOUNCE_TRAILS; i++) {
-        if (!s_trail[i]) continue;
-        if (!s_trail_active[i]) {
-            lv_obj_set_style_bg_opa(s_trail[i], LV_OPA_0, 0);
-            continue;
-        }
-
-        int age = (s_trail_head - 1 - i + BOUNCE_TRAILS) % BOUNCE_TRAILS;
-        int opa = 70 + (BOUNCE_TRAILS - age) * 14;
-        if (opa > LV_OPA_COVER) opa = LV_OPA_COVER;
-        lv_obj_set_style_bg_opa(s_trail[i], (lv_opa_t)opa, 0);
-        lv_obj_set_pos(s_trail[i], (int)(s_trail_x[i] - 5.0f), (int)s_trail_y[i]);
-    }
+    s_title_label = NULL;
+    s_score_label = NULL;
+    s_best_label = NULL;
+    s_game_over_label = NULL;
+    memset(s_cat_primary, 0, sizeof(s_cat_primary));
+    memset(s_cat_secondary, 0, sizeof(s_cat_secondary));
+    memset(s_cat_detail, 0, sizeof(s_cat_detail));
+    memset(s_ground_mark, 0, sizeof(s_ground_mark));
+    memset(s_cups, 0, sizeof(s_cups));
 }
 
 static void bounce_render(void)
 {
-    if (!s_host || !s_sprite || !s_status) return;
+    if (!s_host || !s_cat) return;
 
-    music_snapshot_t snap;
-    plat_music_get(&snap);
+    music_snapshot_t snapshot;
+    plat_music_get(&snapshot);
+
     const int theme_idx = theme_index();
     if (theme_idx != s_theme_idx) {
         s_theme_idx = theme_idx;
         style_scene();
     }
 
-    if (snap.onset_seq != s_last_onset_seq) {
-        s_last_onset_seq = snap.onset_seq;
-        float strength = clampf(snap.onset_strength, 0.0f, 3.0f);
-        s_vy = -BOUNCE_JUMP_K * strength;
-        s_squash_frames = 2;
+    if (snapshot.onset_seq != s_last_onset_seq) {
+        s_last_onset_seq = snapshot.onset_seq;
+        if (s_game_over) {
+            restart_and_jump(snapshot.onset_strength, snapshot.onset_seq);
+        } else {
+            jump(snapshot.onset_strength);
+        }
     }
 
-    s_x += BOUNCE_PITCH_LERP * (target_x_for_pitch(&snap) - s_x);
-    s_vy += GRAVITY[s_gravity_idx];
-    s_y += s_vy;
-    if (s_y > BOUNCE_FLOOR_Y) {
-        if (s_vy > 1.2f) s_squash_frames = 2;
-        s_y = BOUNCE_FLOOR_Y;
-        s_vy = 0.0f;
-    }
+    uint32_t now = plat_millis();
+    uint32_t elapsed_ms = now - s_last_frame_ms;
+    if (elapsed_ms < GAME_FRAME_MS) return;
+    s_last_frame_ms = now;
+    float dt = clampf((float)elapsed_ms * 0.001f, 0.0f, GAME_MAX_DT);
 
-    bool squash = s_squash_frames > 0;
-    if (s_squash_frames > 0) s_squash_frames--;
-    if (squash != s_sprite_squash) {
-        s_sprite_squash = squash;
-        lv_image_set_src(
-            s_sprite, squash ? &BOUNCE_SQUASH_IMG : &BOUNCE_IDLE_IMG);
-    }
-
-    float pulse = 1.0f + 0.15f * clampf(snap.level, 0.0f, 1.0f);
-    uint32_t scale_x = (uint32_t)(LV_SCALE_NONE * pulse * (squash ? 1.12f : 1.0f));
-    uint32_t scale_y = (uint32_t)(LV_SCALE_NONE * pulse * (squash ? 0.84f : 1.0f));
-    lv_image_set_scale_x(s_sprite, scale_x);
-    lv_image_set_scale_y(s_sprite, scale_y);
-    lv_obj_set_pos(s_sprite, (int)s_x, (int)s_y);
-
-    const char *note = snap.pitch_valid ? snap.note_name : "--";
-    char status[64];
-    if (snap.pitch_valid) {
-        snprintf(status, sizeof(status), "%s%d  BPM %.0f  G %s",
-                 note, snap.octave, snap.bpm, GRAVITY_LABELS[s_gravity_idx]);
+    if (!s_game_over) {
+        update_game(dt, now);
     } else {
-        snprintf(status, sizeof(status), "--  BPM %.0f  G %s",
-                 snap.bpm, GRAVITY_LABELS[s_gravity_idx]);
-    }
-    if (strcmp(status, s_status_text) != 0) {
-        snprintf(s_status_text, sizeof(s_status_text), "%s", status);
-        lv_label_set_text(s_status, s_status_text);
+        update_cat_pose(now);
     }
 }
 
 static bool bounce_on_event(ui_event_t event)
 {
-    if (event == EV_UP) {
-        s_gravity_idx = (s_gravity_idx + BOUNCE_GRAVITY_COUNT - 1) %
-            BOUNCE_GRAVITY_COUNT;
+    if (event == EV_OK || event == EV_UP) {
+        if (s_game_over) {
+            restart_and_jump(1.5f, s_last_onset_seq);
+        } else {
+            jump(1.5f);
+        }
         return true;
     }
-    if (event == EV_DOWN) {
-        s_gravity_idx = (s_gravity_idx + 1) % BOUNCE_GRAVITY_COUNT;
+    if (event == EV_DOWN || event == EV_LEFT || event == EV_RIGHT) {
         return true;
     }
-    if (event == EV_OK) {
-        drop_trail();
-        return true;
-    }
-    if (event == EV_LEFT || event == EV_RIGHT) return true;
     return false;
 }
+
+#ifdef PEDAL_SIM
+int bounce_app_debug_cat_y(void)
+{
+    return (int)(s_cat_y + 0.5f);
+}
+
+bool bounce_app_debug_game_over(void)
+{
+    return s_game_over;
+}
+#endif
 
 const gadget_app_t APP_BOUNCE = {
     .id = "bounce",
     .name = "Bounce",
-    .audio_mode = AUDIO_TUNER,
-    .icon = &BOUNCE_IDLE_IMG,
+    .audio_mode = AUDIO_SPECTRUM,
+    .icon = NULL,
     .on_enter = bounce_enter,
     .on_exit = bounce_exit,
     .on_render = bounce_render,
     .on_event = bounce_on_event,
 };
-
-#undef Z8
-#undef R_EMPTY

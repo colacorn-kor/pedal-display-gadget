@@ -203,6 +203,29 @@ static bool run_smoke_test(void)
         fprintf(stderr, "SMOKE FAIL: tuner exit did not release mute\n");
         return false;
     }
+    if (audio_get_mode() != AUDIO_SPECTRUM) {
+        fprintf(stderr, "SMOKE FAIL: bounce did not select spectrum mode\n");
+        return false;
+    }
+    const int cat_ground_y = bounce_app_debug_cat_y();
+    plat_sim_trigger_onset();
+    if (!run_frames_for(160) ||
+        bounce_app_debug_cat_y() >= cat_ground_y) {
+        fprintf(stderr, "SMOKE FAIL: audio onset did not jump the cat\n");
+        return false;
+    }
+    if (!run_frames_for(5200) || !bounce_app_debug_game_over()) {
+        fprintf(stderr,
+                "SMOKE FAIL: cat runner did not collide with a cup\n");
+        return false;
+    }
+    plat_sim_trigger_onset();
+    if (!run_frames_for(160) || bounce_app_debug_game_over() ||
+        bounce_app_debug_cat_y() >= cat_ground_y) {
+        fprintf(stderr,
+                "SMOKE FAIL: audio onset did not restart the cat runner\n");
+        return false;
+    }
 
     if (!smoke_send(EV_FOOTSW_HOLD, "bounce -> quick tuner") ||
         !smoke_expect_app("tuner") || mute_get() != 1) {
@@ -219,7 +242,7 @@ static bool run_smoke_test(void)
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
            "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
-           "quick app, cleanup\n",
+           "bounce runner, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }
@@ -240,6 +263,14 @@ static bool open_preview(const char *preview)
         for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
         sm_on_event(EV_OK);
         return smoke_expect_app("dbmeter");
+    }
+
+    if (strcmp(preview, "bounce") == 0) {
+        int idx = app_registry_find("bounce");
+        if (idx < 0) return false;
+        for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
+        sm_on_event(EV_OK);
+        return smoke_expect_app("bounce");
     }
 
     fprintf(stderr, "Unknown preview: %s\n", preview);
