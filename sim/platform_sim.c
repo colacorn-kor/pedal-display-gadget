@@ -47,6 +47,7 @@ static bool s_initialized;
 static bool s_audio_configured;
 static bool s_quit;
 static bool s_smoke_test;
+static const char *s_preview;
 static audio_mode_t s_audio_mode = AUDIO_SPECTRUM;
 static viz_mode_t s_viz_mode = VIZ_MONITOR;
 static int s_mute;
@@ -171,6 +172,9 @@ bool plat_sim_configure(int argc, char **argv)
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--smoke-test") == 0) {
             s_smoke_test = true;
+        } else if (strcmp(argv[i], "--preview") == 0 && i + 1 < argc) {
+            s_preview = argv[++i];
+            s_smoke_test = true;
         }
     }
     s_audio_configured = true;
@@ -258,6 +262,11 @@ bool plat_sim_should_quit(void)
 bool plat_sim_is_smoke_test(void)
 {
     return s_smoke_test;
+}
+
+const char *plat_sim_preview(void)
+{
+    return s_preview;
 }
 
 bool plat_sim_post_event(ui_event_t event)

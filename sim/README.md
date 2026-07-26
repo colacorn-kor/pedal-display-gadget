@@ -54,6 +54,14 @@ To preview the visualizer deterministically without opening a capture device:
 .\sim\build\pedal_sim.exe --synthetic
 ```
 
+To open a deterministic visual QA screen without NVS state or key input:
+
+```powershell
+.\sim\build\pedal_sim.exe --preview bars
+.\sim\build\pedal_sim.exe --preview circular
+.\sim\build\pedal_sim.exe --preview dbmeter
+```
+
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current
 working directory.
 

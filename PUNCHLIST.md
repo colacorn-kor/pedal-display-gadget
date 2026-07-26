@@ -40,3 +40,7 @@
 - 3행 런처: 빈 STASH 경유, Settings/Reorder 왕복, 선택 테두리와 대각 커서 실기 통과
 - Sound Monitor: 20Hz~20kHz 로그 축, -72~0dBFS, 1kHz 기준 +4.5dB/oct,
   평활 현재선·채움·피크선 적용. PC 시각 검수와 COM4 정상 부팅 통과
+- Sound Monitor 12밴드:
+  50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz 적용
+- 얼굴형 렌더러 제거, PSRAM 기반 96-segment Circular spectrum으로 교체
+- dB Meter 앱: RMS·sample peak dBFS, ADC 핀 명목 Vrms·dBV·dBu와 peak hold 구현

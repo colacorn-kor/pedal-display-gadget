@@ -57,6 +57,6 @@ void renderers_init(void){
     s_initialized=1;
     renderer_register(&RENDERER_CURVE);
     renderer_register(&RENDERER_BARS);
-    renderer_register(&RENDERER_REACTIVE);
+    renderer_register(&RENDERER_CIRCULAR);
     /* 다운로드 렌더러는 여기에 추가 등록 */
 }

@@ -63,7 +63,8 @@ static void usage(void)
 {
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
-            " [--synthetic] [--smoke-test]\n");
+            " [--synthetic] [--smoke-test]"
+            " [--preview bars|circular|dbmeter]\n");
 }
 
 static bool parse_device_index(const char *text, int *out)
@@ -102,6 +103,16 @@ static bool parse_args(int argc, char **argv, int *device_index)
         if (strcmp(arg, "--synthetic") == 0 ||
             strcmp(arg, "--smoke-test") == 0) {
             s_force_synthetic = true;
+            continue;
+        }
+
+        if (strcmp(arg, "--preview") == 0) {
+            if (i + 1 >= argc) {
+                usage();
+                return false;
+            }
+            s_force_synthetic = true;
+            i++;
             continue;
         }
 
@@ -283,6 +294,16 @@ static float block_rms(const float *block)
     return sqrtf(sum / (float)SIM_BLOCK_SIZE);
 }
 
+static float block_sample_peak(const float *block)
+{
+    float peak = 0.0f;
+    for (int i = 0; i < SIM_BLOCK_SIZE; i++) {
+        float magnitude = fabsf(block[i]);
+        if (magnitude > peak) peak = magnitude;
+    }
+    return peak;
+}
+
 static float level_from_rms(float rms)
 {
     float level = rms * 3.0f;
@@ -348,10 +369,13 @@ static void update_visualizer_from_block(const float *block, float level)
 static void process_block(const float *block)
 {
     float rms = block_rms(block);
+    float sample_peak = block_sample_peak(block);
     float level = level_from_rms(rms);
     audio_mode_t mode = audio_get_mode();
 
     handle_mode_change(mode);
+    s_viz.rms = rms;
+    s_viz.sample_peak = sample_peak;
     if (mode == AUDIO_TUNER) {
         tuner_feed(block, SIM_BLOCK_SIZE);
         music_events_process_block(rms, level);
@@ -514,6 +538,8 @@ static void synthetic_viz_get(audio_viz_snapshot_t *out)
         out->peaks[i] = s_synthetic_peaks[i];
     }
     out->level = level;
+    out->rms = s_viz.rms;
+    out->sample_peak = s_viz.sample_peak;
 }
 
 static void synthetic_music_get(music_snapshot_t *out)

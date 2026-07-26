@@ -51,4 +51,4 @@ const char*         viz_theme_name(int idx);
 /* 렌더러 구현이 노출하는 vtable (renderer_*.c) */
 extern const renderer_t RENDERER_CURVE;
 extern const renderer_t RENDERER_BARS;
-extern const renderer_t RENDERER_REACTIVE;
+extern const renderer_t RENDERER_CIRCULAR;

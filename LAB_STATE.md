@@ -6,9 +6,9 @@
 ## 1. 기준 상태
 
 - 저장소 인수 기준: `166141c` (`CLAUDE_HANDOFF.md` 추가)
-- 마지막 실기 펌웨어 기준: Sound Monitor 스펙트럼 개선 로컬 빌드
+- 마지막 실기 펌웨어 기준: 12밴드/Circular/dB Meter 로컬 빌드
 - 마지막 확인 포트: COM4
-- 등록 앱: Sound Monitor, Images, Tuner, Bounce 총 4개
+- 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
 - 미장착: SD 카드 모듈, 뮤트 회로
 - Ring 100Ω / Tip 220Ω: `ASSEMBLY.md` 완료 범위에 포함되어 장착됨
@@ -24,6 +24,7 @@
 - task watchdog 0회, panic 0회, 비의도 reset 0회
 - 정상 리셋 뒤 15초 재확인에서도 ladder 15회, WDT/panic 0회
 - 사용자 육안 확인: Tuner와 Sound Monitor UI가 정상 표시됨
+- 사용자 육안 확인: Spectrum 주파수·dBFS 눈금과 방향이 정상임
 - 실제 FOOTSW 짧게 1회로 Tuner -> Sound Monitor 전환 성공
 - 전환 뒤 20초 추가 감시에서도 ladder 20회, WDT/panic/reset/I2S 오류 0회
 
@@ -111,7 +112,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 |---|---|
 | 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xc5a10 bytes, 23% 여유) |
 | `INPUT_TRS_LADDER=0` 컴파일 | 통과 |
-| 호스트 테스트 3/3 | 통과 (MIDI, tuner, FFT normalization) |
+| 호스트 테스트 4/4 | 통과 (MIDI, tuner, audio level, FFT normalization) |
 | PC 시뮬레이터 | 빌드·창 실행 통과, 결정론적 smoke 2/2 통과 |
 | COM4 탐지 | 2026-07-26 확인 |
 | USB 플래시 | 통과, 외부 9V 분리·USB 단독 상태 |
@@ -164,6 +165,29 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   24~25fps 기동을 확인했다. 메모리 오류, WDT, panic, reset은 없었다.
 - 외부 9V가 분리되어 유효한 기타 입력이 없으므로 실제 신호의 주파수 응답과 peak 동작은
   아직 실기 판정하지 않았다.
+
+### 2026-07-26 12밴드/Circular/dB Meter
+
+- 기존 `bars` ID를 유지하면서
+  `50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz` 12밴드로
+  교체했다. `120/500Hz` 대신 사용자 요청의 `600Hz/1.2kHz`를 적용했다.
+- 얼굴형 `reactive` 렌더러와 `Talk` 프리셋을 제거하고, PSRAM RGB565 캔버스에서
+  96개 방사형 막대를 좌우 대칭으로 그리는 `Circular (Blue/Green)`으로 교체했다.
+- `dbmeter` 앱을 추가했다. Core1은 기존 seqlock 스냅샷에 block RMS와 sample peak만
+  함께 발행하며, 앱은 RMS·sample peak dBFS와 PCM1808 ADC 핀 기준 명목 Vrms·dBV·dBu를
+  표시한다. 프론트엔드 이득 미교정 상태이므로 외부 잭 전압으로 표시하지 않는다.
+- 시뮬레이터 `--preview bars|circular|dbmeter`로 세 화면을 각각 픽셀 검수했다.
+  12개 눈금과 텍스트 겹침, Circular 비어 있음, dB 단위 간 불일치는 없었다.
+- 호스트 audio-level 경계 테스트에서 full-scale sine RMS `-3.01dBFS`, sample peak
+  `0dBFS`, `1Vrms=0dBV`, `0.775Vrms=0dBu`를 검증했다.
+- 기본 TRS 래더와 실제 `INPUT_TRS_LADDER=0` 구성 모두 깨끗한 ESP-IDF 5.4.4 전체 빌드와
+  `-Werror`를 통과했다. 기본 바이너리는 `0xd0d90` bytes, 앱 파티션 여유는 18%다.
+- 외부 9V가 분리된 USB 단독 상태에서 기본 펌웨어를 COM4에 플래시했다. 최종 10초 재부팅
+  로그에서 8MB PSRAM 테스트, 240MHz, ST7796/LVGL, TRS IDLE, Spectrum 24~25fps를
+  확인했고 WDT, panic, reset, 메모리 오류는 없었다.
+- 기존 MIDI scene의 `reactive` 대상도 `circular`로 바꿔 프로그램 체인지 경로가
+  삭제된 렌더러를 가리키지 않게 했다.
+- 새 12밴드/Circular/dB Meter의 하드웨어 화면 육안 확인은 아직 하지 않았다.
 
 ## 7. 다음 작업
 

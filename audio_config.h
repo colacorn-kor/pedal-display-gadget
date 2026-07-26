@@ -13,3 +13,9 @@
 #define VIZ_TILT_PIVOT_HZ  1000.0f
 #define VIZ_MONITOR_TILT_DB_OCT 4.5f
 
+/* PCM1808 analog-input nominal full scale. Voltage readings are valid at the
+ * ADC pin; the external jack still needs front-end gain calibration. */
+#define AUDIO_ADC_FULL_SCALE_VPP   3.0f
+#define AUDIO_ADC_FULL_SCALE_VPEAK (AUDIO_ADC_FULL_SCALE_VPP * 0.5f)
+#define AUDIO_DBU_REFERENCE_VRMS   0.775f
+

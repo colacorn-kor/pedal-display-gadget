@@ -53,6 +53,7 @@ extern const gadget_app_t APP_MONITOR;
 extern const gadget_app_t APP_IMAGES;
 extern const gadget_app_t APP_TUNER;
 extern const gadget_app_t APP_BOUNCE;
+extern const gadget_app_t APP_DB_METER;
 
 void monitor_app_set_scene(int theme, int renderer);
 void monitor_app_refresh(void);

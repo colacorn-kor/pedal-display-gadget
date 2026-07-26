@@ -18,6 +18,8 @@ typedef struct {
     float bars[VIZ_POINTS];
     float peaks[VIZ_POINTS];
     float level;
+    float rms;
+    float sample_peak;
 } audio_viz_snapshot_t;
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out);
 

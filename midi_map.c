@@ -17,7 +17,7 @@ static const scene_t SCENES[] = {
     { 0, 0, "curve" },
     { 1, 1, "curve" },
     { 2, 2, "bars" },
-    { 0, 1, "reactive" },
+    { 0, 1, "circular" },
 };
 #define SCENE_COUNT ((int)(sizeof(SCENES) / sizeof(SCENES[0])))
 

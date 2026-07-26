@@ -218,6 +218,28 @@ static bool run_smoke_test(void)
     return true;
 }
 
+static bool open_preview(const char *preview)
+{
+    if (strcmp(preview, "bars") == 0 ||
+        strcmp(preview, "circular") == 0) {
+        sm_on_event(EV_OK);
+        monitor_app_set_preset(
+            strcmp(preview, "bars") == 0 ? 2 : 4);
+        return smoke_expect_app("monitor");
+    }
+
+    if (strcmp(preview, "dbmeter") == 0) {
+        int idx = app_registry_find("dbmeter");
+        if (idx < 0) return false;
+        for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
+        sm_on_event(EV_OK);
+        return smoke_expect_app("dbmeter");
+    }
+
+    fprintf(stderr, "Unknown preview: %s\n", preview);
+    return false;
+}
+
 int main(int argc, char **argv)
 {
     if (!plat_sim_configure(argc, argv)) return 1;
@@ -233,7 +255,10 @@ int main(int argc, char **argv)
     content_fs_register();
     sm_init();
 
-    if (plat_sim_is_smoke_test()) {
+    const char *preview = plat_sim_preview();
+    if (preview && !open_preview(preview)) return 1;
+
+    if (plat_sim_is_smoke_test() && !preview) {
         return run_smoke_test() ? 0 : 1;
     }
 

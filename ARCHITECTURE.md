@@ -17,7 +17,7 @@
 
 가젯을 **"앱 플랫폼"**으로 일반화한다. ~10개의 선택형 앱이 있고, 사용자는 **자기가 쓸
 것만 활성화**해서 풋스위치로 전환한다. 현재 `screen_manager`를 앱 레지스트리로 일반화하며,
-기존 `renderer_t`(곡선/막대/반응형)는 **"Sound Monitor" 앱 안에 그대로 중첩**된다.
+기존 `renderer_t`(곡선/12밴드/원형)는 **"Sound Monitor" 앱 안에 그대로 중첩**된다.
 Phase 1 하드웨어(디스플레이 + 튜너 + 비주얼라이저 + 기타 탭)만으로 Phase 1 앱들이 전부
 동작하고, Phase 2 오디오(코덱/믹스)는 구조가 **수용하되 요구하지 않는다**.
 
@@ -222,6 +222,24 @@ typedef enum {
   제한한다. 캔버스와 작업 배열은 PSRAM에 둬 디스플레이 DMA용 내부 RAM을 침범하지 않는다.
 - 기존 저장 씬과 NVS 호환을 위해 렌더러 ID `curve`는 유지하고 표시명만
   `Spectrum (Blue/Green)`으로 바꾼다.
+- 12밴드 렌더러는 기타·베이스 그래픽 EQ의 주요 지점을 참고한
+  `50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz` 중심 주파수를 사용한다.
+  각 밴드 경계는 인접 중심 주파수의 기하평균이며, 기존 씬 호환을 위해 ID `bars`를 유지한다.
+- 얼굴형 `reactive` 렌더러는 제거하고, 96개 방사형 막대를 좌우 대칭으로 배치한
+  `circular` 렌더러로 교체한다. 캔버스는 PSRAM에 두고 약 25fps로 제한한다.
+
+### dB Meter 표시 계약
+
+- `audio_viz_snapshot_t`는 기존 256점 스펙트럼과 함께 256샘플 블록의 정규화 RMS와
+  sample peak를 같은 seqlock 스냅샷으로 발행한다. Core1 소유권과 발행 방식은 바꾸지 않는다.
+- RMS와 sample peak의 dBFS는 각각 `20 log10(value)`로 표시한다. 따라서 full-scale
+  sine은 RMS `-3.01dBFS`, sample peak `0dBFS`다. sample peak는 오버샘플링 true-peak가
+  아니므로 화면에도 `SAMPLE PEAK`로 명시한다.
+- PCM1808의 명목 `3.0Vpp` full scale을 사용해 ADC 핀 전압을
+  `Vrms = normalized RMS × 1.5V`로 환산한다. dBV 기준은 `1Vrms`, dBu 기준은
+  `0.775Vrms`다.
+- 현재 아날로그 프론트엔드 이득은 교정되지 않았으므로 전압·dBV·dBu는 모두
+  **ADC PIN NOMINAL**이다. 외부 잭 전압으로 환산하지 않으며, 실제 이득 교정은 별도 작업이다.
 
 ### 하드웨어 영향
 
@@ -376,16 +394,17 @@ typedef struct {
 | id | 이름 | audio_mode | 변형 | 비고 |
 |----|------|-----------|------|------|
 | `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. 홈→Settings→Theme에서 6개 프리셋 선택 |
+| `dbmeter` | dB Meter | SPECTRUM | — | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
 | `images` | Images | SPECTRUM | — | 이미지·폴더 탐색(좌/우 전환) |
 | `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |
 | `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
-| `level` | Level / Signal | SPECTRUM | — | 기타 탭 레벨 + 클립 |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
 | `settings` | Settings / About | NONE | — | |
-| `bounce` | Bounce | SPECTRUM | — | 음악 이벤트 기반 바운스 시각화 |
+| `bounce` | Bounce | TUNER | — | 음악 이벤트 기반 바운스 시각화 |
 
-> 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce` 4개. 나머지는 카탈로그다.
+> 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce`·`dbmeter` 5개.
+> 나머지는 카탈로그다.
 
 ### Phase 2 (코덱 의존 — 등록하되 `requires_codec=true`로 비활성)
 | id | 이름 | 비고 |

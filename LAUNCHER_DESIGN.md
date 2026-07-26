@@ -125,8 +125,8 @@ static app_slot_t s_slots[APP_COUNT];
   좌·우 입력 즉시 런처 테마를 바꾸고 NVS에 저장한다. 홈은 상위 `Settings`로 돌아간다.
 - 앱 화면 홈 → `Exit`, `Settings`. 세로 메뉴는 상·하로만 이동하며 좌·우는 항목 이동에
   쓰지 않는다.
-- Sound Monitor의 `Settings → Theme`은 `Curve (Blue)`, `Curve (Green)`,
-  `Bar (Multi)`, `Bar (Blue)`, `Talk (Blue)`, `Talk (Green)`을 제공한다.
+- Sound Monitor의 `Settings → Theme`은 `Spectrum (Blue)`, `Spectrum (Green)`,
+  `12-Band (Multi)`, `12-Band (Blue)`, `Circular (Blue)`, `Circular (Green)`을 제공한다.
   앱 화면의 상·하 직접 테마/렌더러 변경은 사용하지 않는다.
 
 ---
@@ -171,6 +171,7 @@ typedef struct {
 | id | 이름 | audio | 변형 | 상태 |
 |---|---|---|---|---|
 | monitor | Sound Monitor | SPECTRUM | — | 동작(①②) |
+| dbmeter | dB Meter | SPECTRUM | — | 동작 |
 | tuner | Tuner | TUNER | 기본/고급 | 동작(변형은 ③) |
 | images | Images | NONE | — | 동작 |
 | rhythm | (미정) Rhythm Game | SPECTRUM/TUNER | — | ③ 이후 프로토타입 목표 |

@@ -17,6 +17,13 @@ if(NOT MSVC)
 endif()
 add_test(NAME tuner_detection COMMAND test_tuner)
 
+add_executable(test_audio_level test_audio_level.c ../audio_level.c)
+target_include_directories(test_audio_level PRIVATE ..)
+if(NOT MSVC)
+    target_link_libraries(test_audio_level PRIVATE m)
+endif()
+add_test(NAME audio_level_units COMMAND test_audio_level)
+
 if(MSVC)
     target_compile_options(test_midi PRIVATE /utf-8 /wd4819)
     target_compile_options(test_tuner PRIVATE
@@ -24,6 +31,7 @@ if(MSVC)
         /wd4819
         /experimental:c11atomics
     )
+    target_compile_options(test_audio_level PRIVATE /utf-8 /wd4819)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

@@ -1,8 +1,9 @@
 # GUI/GG - 기타 페달보드 미니 디스플레이 가젯
 
-ESP32-S3 기반 기타 페달보드용 디스플레이 플랫폼이다. 튜너, 사운드 시각화, 이미지,
-Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마 시스템을 통해
-기능을 확장한다. 기타 메인 출력은 소프트웨어를 통과하지 않는 아날로그 패스스루다.
+ESP32-S3 기반 기타 페달보드용 디스플레이 플랫폼이다. 튜너, 사운드 시각화, dB Meter,
+이미지, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마
+시스템을 통해 기능을 확장한다. 기타 메인 출력은 소프트웨어를 통과하지 않는 아날로그
+패스스루다.
 
 ## 현재 상태
 
@@ -43,10 +44,11 @@ PC simulator
 
 | ID | 표시명 | 역할 |
 |---|---|---|
-| `monitor` | Sound Monitor | 로그 스펙트럼과 bar/talk를 포함한 Settings의 6개 프리셋 |
+| `monitor` | Sound Monitor | 로그 스펙트럼, 기타·베이스 12밴드, 원형 스펙트럼의 6개 프리셋 |
 | `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
 | `bounce` | Bounce | 온셋·피치 이벤트 기반 인터랙티브 앱 |
+| `dbmeter` | dB Meter | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu 표시 |
 
 앱은 `gadget_app_t` 계약과 `gadget_app.c` 레지스트리에 등록된다. 런처 항목은 레지스트리에서
 생성되며 `app_slots.c`가 LIVE/STASH 슬롯과 NVS 설정을 관리한다.
@@ -80,16 +82,18 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `app_images.c` | Images 앱 |
 | `app_tuner.c` | Tuner 앱과 뮤트/오디오 모드 생명주기 |
 | `app_bounce.c` | Bounce 앱 |
+| `app_db_meter.c` | dB Meter 앱 |
 | `app_slots.{c,h}` | LIVE/STASH 슬롯과 NVS 영속성 |
 | `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |
-| `renderer*.c`, `theme.c` | 모니터 렌더러와 테마 |
+| `renderer*.c`, `theme.c` | 로그·12밴드·원형 모니터 렌더러와 테마 |
+| `audio_level.{c,h}` | dBFS·Vrms·dBV·dBu 변환 |
 | `fft_map.{c,h}` | 2048-point FFT를 20Hz~20kHz, -72~0dBFS의 256점 로그 스펙트럼으로 매핑 |
 | `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
 | `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
 | `sim/` | SDL2 PC 시뮬레이터와 `platform_sim` |
-| `tests/` | MIDI, 튜너, FFT 기준 호스트 테스트 |
+| `tests/` | MIDI, 튜너, 오디오 레벨 단위, FFT 기준 호스트 테스트 |
 
 ## 펌웨어 빌드
 

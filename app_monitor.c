@@ -12,10 +12,10 @@ typedef struct {
 static const monitor_preset_t PRESETS[] = {
     { "Spectrum (Blue)",  "curve",    1 },
     { "Spectrum (Green)", "curve",    0 },
-    { "Bar (Multi)",   "bars",     0 },
-    { "Bar (Blue)",    "bars",     1 },
-    { "Talk (Blue)",   "reactive", 1 },
-    { "Talk (Green)",  "reactive", 0 },
+    { "12-Band (Multi)",  "bars",     0 },
+    { "12-Band (Blue)",   "bars",     1 },
+    { "Circular (Blue)",  "circular", 1 },
+    { "Circular (Green)", "circular", 0 },
 };
 
 static int s_renderer;
@@ -27,7 +27,10 @@ static void monitor_select_renderer(void)
 {
     if (!s_host) return;
     renderer_select(s_renderer, s_host, viz_theme_at(s_theme));
-    audio_set_viz_mode(s_renderer == renderer_find("curve") ? VIZ_MONITOR : VIZ_DECOR);
+    const bool analyzer =
+        s_renderer == renderer_find("curve") ||
+        s_renderer == renderer_find("bars");
+    audio_set_viz_mode(analyzer ? VIZ_MONITOR : VIZ_DECOR);
 }
 
 void monitor_app_set_scene(int theme, int renderer)

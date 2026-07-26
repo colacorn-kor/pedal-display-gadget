@@ -325,11 +325,14 @@ static void audio_task(void *arg)
 
         int n = (int)(got / sizeof(raw[0]));
         float sum = 0.0f;
+        float sample_peak = 0.0f;
         for (int i = 0; i < n; i++) {
             /* PCM1808's 24 valid bits are left-aligned in this 32-bit slot. */
             float sample = (float)raw[i] / 2147483648.0f;
             samples[i] = sample;
             sum += sample * sample;
+            float magnitude = fabsf(sample);
+            if (magnitude > sample_peak) sample_peak = magnitude;
         }
         float rms = sqrtf(sum / (float)n);
         float level = rms * 3.0f;
@@ -366,6 +369,8 @@ static void audio_task(void *arg)
                                 s_viz[producer].bars,
                                 s_viz[producer].peaks);
         s_viz[producer].level = level;
+        s_viz[producer].rms = rms;
+        s_viz[producer].sample_peak = sample_peak;
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_release);
 
         if (produced) {
