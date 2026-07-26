@@ -7,6 +7,7 @@
 
 #include "app.h"
 #include "app_slots.h"
+#include "audio_level.h"
 #include "content_screen.h"
 #include "gadget_app.h"
 #include "platform.h"
@@ -260,7 +261,36 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    if (!smoke_send(EV_FOOTSW_HOLD, "bounce -> quick tuner") ||
+    if (!smoke_send(EV_FOOTSW, "bounce -> db meter") ||
+        !smoke_expect_app("dbmeter")) {
+        return false;
+    }
+    if (db_meter_debug_input_range() != AUDIO_INPUT_LINE ||
+        db_meter_debug_average_mode() != 0) {
+        fprintf(stderr, "SMOKE FAIL: dB meter defaults are invalid\n");
+        return false;
+    }
+    if (!smoke_send(EV_RIGHT, "db meter LINE -> INST") ||
+        !smoke_send(EV_DOWN, "db meter select average window") ||
+        !smoke_send(EV_RIGHT, "db meter LIVE -> AVG 1s") ||
+        db_meter_debug_input_range() != AUDIO_INPUT_INST ||
+        db_meter_debug_average_mode() != 1) {
+        fprintf(stderr, "SMOKE FAIL: dB meter controls did not update\n");
+        return false;
+    }
+    audio_viz_snapshot_t meter_before;
+    audio_viz_snapshot_t meter_after;
+    plat_audio_viz_get(&meter_before);
+    if (!run_frames_for(1100)) return false;
+    plat_audio_viz_get(&meter_after);
+    if (meter_after.meter_sample_total <= meter_before.meter_sample_total ||
+        meter_after.meter_energy_total <= meter_before.meter_energy_total) {
+        fprintf(stderr,
+                "SMOKE FAIL: dB meter cumulative power did not advance\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_FOOTSW_HOLD, "db meter -> quick tuner") ||
         !smoke_expect_app("tuner") || mute_get() != 1) {
         fprintf(stderr, "SMOKE FAIL: quick app did not enter muted tuner\n");
         return false;
@@ -275,7 +305,8 @@ static bool run_smoke_test(void)
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
            "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
-           "bounce runner with local Nyan theme, quick app, cleanup\n",
+           "bounce runner with local Nyan theme, input-voltage dB meter, "
+           "quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }

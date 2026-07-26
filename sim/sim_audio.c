@@ -383,6 +383,9 @@ static void process_block(const float *block)
         return;
     }
 
+    s_viz.meter_energy_total +=
+        (double)rms * (double)rms * (double)SIM_BLOCK_SIZE;
+    s_viz.meter_sample_total += SIM_BLOCK_SIZE;
     music_events_process_block(rms, level);
     update_visualizer_from_block(block, level);
 }
@@ -540,6 +543,8 @@ static void synthetic_viz_get(audio_viz_snapshot_t *out)
     out->level = level;
     out->rms = s_viz.rms;
     out->sample_peak = s_viz.sample_peak;
+    out->meter_energy_total = s_viz.meter_energy_total;
+    out->meter_sample_total = s_viz.meter_sample_total;
 }
 
 static void synthetic_music_get(music_snapshot_t *out)

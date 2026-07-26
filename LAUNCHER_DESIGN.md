@@ -72,7 +72,8 @@ typedef struct {
     chain_t chain;            /* 라이브(순환) / 보관함(비활성) */
     uint8_t order;            /* 체인 내 위치 */
     uint8_t variant;          /* 선택된 변형 */
-    uint8_t local_theme;       /* 앱 로컬 Theme 선택값 */
+    uint8_t local_theme;      /* 앱 로컬 Theme 선택값 */
+    uint8_t options;          /* 앱별 소형 설정 비트 */
 } app_slot_t;
 
 static app_slot_t s_slots[APP_COUNT];
@@ -144,7 +145,8 @@ static app_slot_t s_slots[APP_COUNT];
 ## 5. 영속성 (§ARCHITECTURE 10)
 ```c
 typedef struct {
-    chain_t chain; uint8_t order; uint8_t variant; uint8_t local_theme;
+    chain_t chain; uint8_t order; uint8_t variant;
+    uint8_t local_theme; uint8_t options;
 } app_setting_t;
 
 typedef struct {
@@ -159,9 +161,10 @@ typedef struct {
   순서/변형 저장됨. SD 매니페스트는 Phase 2.)
 - **저장 트리거**: 순서변경 drop, 변형·앱 로컬 Theme 변경, 퀵앱 변경 시.
 - **id 없는 슬롯**(앱 제거됨) = 무시. **새 앱**(설정에 없음) = 기본값으로 보관함 추가.
-- 현재 `platform_config`는 **version 3**이다. 구조체 패딩 안의 1바이트를
-  `local_theme`으로 사용해 blob 크기를 유지하므로 v2의 체인·순서·변형·전역 테마를
-  그대로 읽고, 새 로컬 Theme 값만 0으로 초기화해 v3로 저장한다.
+- 현재 `platform_config`는 **version 4**다. v3 뒤에 남아 있던 구조체 패딩 1바이트를
+  앱별 `options`로 사용해 blob 크기를 유지한다. v2는 `local_theme`과 `options`를,
+  v3는 `options`만 0으로 초기화한 뒤 v4로 저장한다. dB Meter는 이 바이트에
+  LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 저장한다.
 
 ---
 

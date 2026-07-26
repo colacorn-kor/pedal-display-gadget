@@ -242,18 +242,26 @@ typedef enum {
 
 ### dB Meter 표시 계약
 
-- `audio_viz_snapshot_t`는 기존 256점 스펙트럼과 함께 256샘플 블록의 정규화 RMS와
-  sample peak를 같은 seqlock 스냅샷으로 발행한다. Core1 소유권과 발행 방식은 바꾸지 않는다.
+- `audio_viz_snapshot_t`는 기존 256점 스펙트럼과 함께 256샘플 블록의 정규화 RMS,
+  sample peak, 전체 샘플 누적 에너지·개수를 같은 seqlock 스냅샷으로 발행한다.
+  Core1 소유권과 발행 방식은 바꾸지 않는다.
 - RMS와 sample peak의 dBFS는 각각 `20 log10(value)`로 표시한다. 따라서 full-scale
   sine은 RMS `-3.01dBFS`, sample peak `0dBFS`다. sample peak는 오버샘플링 true-peak가
   아니므로 화면에도 `SAMPLE PEAK`로 명시한다.
 - PCM1808의 명목 `3.0Vpp` full scale을 사용해 ADC 핀 전압을
-  `Vrms = normalized RMS × 1.5V`로 환산한다. dBV 기준은 `1Vrms`, dBu 기준은
-  `0.775Vrms`다.
-- 현재 아날로그 프론트엔드 이득은 교정되지 않았으므로 전압·dBV·dBu는 모두
-  **ADC PIN NOMINAL**이다. 외부 잭 전압으로 환산하지 않으며, 실제 이득 교정은 별도 작업이다.
-- 화면은 50ms마다 RMS 전력을 샘플링해 400ms 시정수로 평균하고 200ms마다 갱신한다.
+  `ADC Vrms = normalized RMS × 1.5V`로 환산한다. 입력잭 전압은 선택한 물리 게인과
+  맞춰 `ADC Vrms / 2.00`(LINE) 또는 `ADC Vrms / 7.82`(INST)로 역산한다.
+  dBV 기준은 `1Vrms`, dBu 기준은 `0.775Vrms`다.
+- 물리 SPDT 상태는 MCU에 연결되지 않았으므로 앱의 `INPUT LINE/INST`를 실제 스위치와
+  수동으로 맞춘다. 표시값은 저항 명목값 기준 **입력잭 추정치**이며,
+  `audio_config.h`의 모드별 correction factor는 1kHz 기준 1점 교정 연결점이다.
+  교정 전에는 정확한 계측값으로 취급하지 않는다.
+- `WINDOW LIVE`는 최신 256샘플 블록(48kHz에서 약 5.33ms)의 RMS를 사용한다.
+  `AVG 1s/3s`는 Core1의 누적 에너지·샘플 수 차분을 50ms 버킷에 보관해 선택 구간의
+  전력을 평균한 뒤 RMS로 환산한다. 화면 갱신은 가독성과 입력 응답을 위해 200ms를 유지한다.
   sample peak는 각 표시 구간의 최댓값을 1초간 hold한다.
+- 현재 AC 커플링과 PCM1808 내장 HPF를 통과한 오디오만 측정하므로 DC 전압계가 아니다.
+  영구적인 별도 측정 회로는 필요 없지만, 자동 게인 감지는 스위치 접점을 읽는 추가 배선이 필요하다.
 
 ### 하드웨어 영향
 
@@ -408,7 +416,7 @@ typedef struct {
 | id | 이름 | audio_mode | 변형 | 비고 |
 |----|------|-----------|------|------|
 | `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. 홈→Settings→Theme에서 6개 프리셋 선택 |
-| `dbmeter` | dB Meter | SPECTRUM | — | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu |
+| `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, LINE/INST 입력잭 명목 Vrms·dBV·dBu |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
 | `images` | Images | SPECTRUM | — | 이미지·폴더 탐색(좌/우 전환) |
 | `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "audio_config.h"
 #include "fft_map.h"
 #include "renderer.h"
@@ -20,6 +21,8 @@ typedef struct {
     float level;
     float rms;
     float sample_peak;
+    double meter_energy_total;
+    uint64_t meter_sample_total;
 } audio_viz_snapshot_t;
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out);
 

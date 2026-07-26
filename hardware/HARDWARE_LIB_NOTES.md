@@ -34,14 +34,17 @@ GND=power_in, TL072 V+/V-=power_in, ADC OUT/MISO=output, 아날로그입력=pass
 
 ## 3. 스톡 라이브러리 사용(별도 제작 안 함)
 - 버튼 SW1–7: `Switch:SW_Push` (SPEC: SW#.1=GPIO, SW#.2=GND). SW7만 오프보드 스톰프 → 보드엔 `PinHeader_1x02`.
-- 저항: `Device:R` — SPEC 값 레퍼런스 그대로 사용: **R100, R10k_a, R10k_b, R10k_rg, R15k, R1M**.
+- 게인 스위치: `Switch:SW_SPDT` — COM=VREF, LINE=R15k_line, INST=R2k2_inst.
+- 저항: `Device:R` — SPEC 값 레퍼런스 그대로 사용:
+  **R100, R10k_a, R10k_b, R15k_rf, R15k_line, R2k2_inst, R1M**.
 - 커패시터: `Device:C`(필름/세라믹) / `Device:CP`(전해) — **C1u_in, C1u_out, C100u_op, C100n_op, C100u_ref, C100n_ref**.
 - 전원 LED: `Device:LED` + `Device:R`(330Ω) — SPEC 네트엔 없으니 추가 시 표시등용으로.
 
 ## 4. 스키매틱 배선 시 SPEC 핵심 체크 (재확인)
 - **+5V ↔ +3V3 절대 미연결.** 부하는 전부 `+9V_PROT`(D1 뒤)에서만.
 - **D1 방향:** anode=+9V_RAW, cathode(띠)=+9V_PROT.
-- **Rg(R10k_rg) 반대끝 = VREF(4.5V)**, GND 아님 (단일전원 포화 방지). 게인 = 1+R15k/R10k_rg = 2.5×.
+- **SW_GAIN.COM = VREF(4.5V)**, GND 아님 (단일전원 포화 방지).
+  LINE 게인=1+15k/15k=2.00×, INST 게인=1+15k/2.2k≈7.82×.
 - **TL072 버퍼:** U4.6 = U4.7 (같은 네트 VREF). 분압 10k+10k → 4.5V.
 - **커플링 캡 ≥1µF**(C1u_in/out, 저역 보존).
 - **LCD/SD SCLK·MOSI 버스 공유**(LCD_SCLK=G12, LCD_MOSI=G13), CS만 분리(LCD=G2, SD=G47).

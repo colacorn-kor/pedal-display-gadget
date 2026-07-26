@@ -77,5 +77,7 @@ typedef struct {
 4. 테마 선택 UI=런처 하단 **[SETTINGS] → Theme**. 좌우로 순환해 즉시 적용+NVS 저장.
 5. Bounce의 `Nyan Cat` 로컬 테마는 외부 이미지 에셋 없이 LVGL 사각형으로 다시 그린
    선택형 픽셀 외형이다. 제품화 전 명칭·외형의 권리 검토는 별도로 한다.
-6. platform_config **version 3**은 앱별 `local_theme`을 추가한다. v2 blob의 기존
-   설정은 보존하고 새 필드만 기본값 0으로 마이그레이션한다.
+6. platform_config **version 4**는 v3의 마지막 패딩 바이트를 앱별 `options`로 사용한다.
+   v2/v3 blob 크기와 기존 설정은 보존하고 새 필드만 기본값 0으로 마이그레이션한다.
+7. dB Meter 상단은 `INPUT LINE/INST`와 `WINDOW LIVE/AVG 1s/AVG 3s` 두 선택기로
+   구성한다. 상·하로 선택기를 고르고 좌·우/확인으로 값을 바꾸며, 선택은 NVS에 유지한다.

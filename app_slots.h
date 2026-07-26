@@ -17,6 +17,7 @@ typedef struct {
     uint8_t order;
     uint8_t variant;
     uint8_t local_theme;
+    uint8_t options;
 } app_slot_t;
 
 void app_slots_init(void);
@@ -34,3 +35,5 @@ void app_slots_set_theme(uint8_t idx);
 uint8_t app_slots_local_theme(const gadget_app_t *app);
 void app_slots_set_local_theme(const gadget_app_t *app, uint8_t idx);
 void app_slots_set_local_theme_runtime(const gadget_app_t *app, uint8_t idx);
+uint8_t app_slots_options(const gadget_app_t *app);
+void app_slots_set_options(const gadget_app_t *app, uint8_t options);

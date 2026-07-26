@@ -6,8 +6,9 @@
 #include "platform.h"
 
 #define APP_CFG_MAGIC 0x6741u
-#define APP_CFG_VERSION 3u
-#define APP_CFG_VERSION_PREVIOUS 2u
+#define APP_CFG_VERSION 4u
+#define APP_CFG_VERSION_THEME 3u
+#define APP_CFG_VERSION_BASE 2u
 #define APP_ID_LEN 16
 #define APP_QUICK_DEFAULT "tuner"
 
@@ -16,10 +17,11 @@ typedef struct {
     uint8_t order;
     uint8_t variant;
     uint8_t local_theme;
+    uint8_t options;
 } app_setting_t;
 
 _Static_assert(sizeof(app_setting_t) == 8,
-               "app config v2/v3 blob layout must stay compatible");
+               "app config v2-v4 blob layout must stay compatible");
 
 typedef struct {
     char id[APP_ID_LEN];
@@ -106,6 +108,7 @@ static void default_config(platform_config_t *cfg)
         cfg->apps[i].s.order = (uint8_t)i;
         cfg->apps[i].s.variant = 0;
         cfg->apps[i].s.local_theme = 0;
+        cfg->apps[i].s.options = 0;
     }
 }
 
@@ -174,6 +177,7 @@ static bool bind_slots_from_config(void)
         slot->order = (uint8_t)i;
         slot->variant = 0;
         slot->local_theme = 0;
+        slot->options = 0;
 
         const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
         if (cfg_idx >= 0) {
@@ -182,6 +186,7 @@ static bool bind_slots_from_config(void)
             slot->order = setting->order;
             slot->variant = setting->variant;
             slot->local_theme = setting->local_theme;
+            slot->options = setting->options;
         } else {
             ESP_LOGW(TAG, "Adding new app slot for '%s'", app->id);
             changed = true;
@@ -296,15 +301,22 @@ void app_slots_init(void)
     bool needs_save = !found;
     if (found && loaded.magic == APP_CFG_MAGIC &&
         (loaded.version == APP_CFG_VERSION ||
-         loaded.version == APP_CFG_VERSION_PREVIOUS)) {
+         loaded.version == APP_CFG_VERSION_THEME ||
+         loaded.version == APP_CFG_VERSION_BASE)) {
         s_cfg = loaded;
         terminate_config_strings(&s_cfg);
-        if (loaded.version == APP_CFG_VERSION_PREVIOUS) {
+        if (loaded.version == APP_CFG_VERSION_BASE) {
             for (int i = 0; i < APP_SLOT_MAX; i++) {
                 s_cfg.apps[i].s.local_theme = 0;
             }
+        }
+        if (loaded.version != APP_CFG_VERSION) {
+            for (int i = 0; i < APP_SLOT_MAX; i++) {
+                s_cfg.apps[i].s.options = 0;
+            }
             s_cfg.version = APP_CFG_VERSION;
-            ESP_LOGI(TAG, "Migrated config v2 -> v3");
+            ESP_LOGI(TAG, "Migrated config v%u -> v%u",
+                     (unsigned)loaded.version, (unsigned)APP_CFG_VERSION);
             needs_save = true;
         }
     } else if (found) {
@@ -334,6 +346,7 @@ void app_slots_save(void)
         s_cfg.apps[i].s.order = slot->order;
         s_cfg.apps[i].s.variant = slot->variant;
         s_cfg.apps[i].s.local_theme = slot->local_theme;
+        s_cfg.apps[i].s.options = slot->options;
     }
 
     plat_nvs_save(&s_cfg, sizeof(s_cfg));
@@ -426,5 +439,24 @@ void app_slots_set_local_theme(const gadget_app_t *app, uint8_t idx)
         return;
     }
     s_slots[slot].local_theme = next;
+    app_slots_save();
+}
+
+uint8_t app_slots_options(const gadget_app_t *app)
+{
+    const int slot = find_slot_for_app(app);
+    return slot >= 0 ? s_slots[slot].options : 0;
+}
+
+void app_slots_set_options(const gadget_app_t *app, uint8_t options)
+{
+    const int slot = find_slot_for_app(app);
+    if (slot < 0) return;
+    const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
+    if (s_slots[slot].options == options && cfg_idx >= 0 &&
+        s_cfg.apps[cfg_idx].s.options == options) {
+        return;
+    }
+    s_slots[slot].options = options;
     app_slots_save();
 }

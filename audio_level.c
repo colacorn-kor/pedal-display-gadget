@@ -20,7 +20,22 @@ static float amplitude_db(float value, float reference)
     return db < AUDIO_LEVEL_FLOOR_DB ? AUDIO_LEVEL_FLOOR_DB : db;
 }
 
+float audio_level_input_gain(audio_input_range_t range)
+{
+    return range == AUDIO_INPUT_INST
+        ? AUDIO_FRONTEND_INST_GAIN
+        : AUDIO_FRONTEND_LINE_GAIN;
+}
+
+float audio_level_input_voltage_correction(audio_input_range_t range)
+{
+    return range == AUDIO_INPUT_INST
+        ? AUDIO_FRONTEND_INST_VOLTAGE_CORRECTION
+        : AUDIO_FRONTEND_LINE_VOLTAGE_CORRECTION;
+}
+
 void audio_level_calculate(float rms, float sample_peak,
+                           audio_input_range_t input_range,
                            audio_level_reading_t *out)
 {
     if (!out) return;
@@ -30,6 +45,10 @@ void audio_level_calculate(float rms, float sample_peak,
     out->rms_dbfs = amplitude_db(rms, 1.0f);
     out->peak_dbfs = amplitude_db(sample_peak, 1.0f);
     out->adc_vrms = rms * AUDIO_ADC_FULL_SCALE_VPEAK;
-    out->dbv = amplitude_db(out->adc_vrms, 1.0f);
-    out->dbu = amplitude_db(out->adc_vrms, AUDIO_DBU_REFERENCE_VRMS);
+    out->input_vrms =
+        out->adc_vrms / audio_level_input_gain(input_range) *
+        audio_level_input_voltage_correction(input_range);
+    out->input_dbv = amplitude_db(out->input_vrms, 1.0f);
+    out->input_dbu =
+        amplitude_db(out->input_vrms, AUDIO_DBU_REFERENCE_VRMS);
 }

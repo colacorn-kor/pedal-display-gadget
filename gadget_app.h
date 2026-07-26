@@ -77,4 +77,6 @@ int images_app_count(void);
 int bounce_app_debug_cat_y(void);
 bool bounce_app_debug_game_over(void);
 int bounce_app_debug_theme_index(void);
+int db_meter_debug_input_range(void);
+int db_meter_debug_average_mode(void);
 #endif

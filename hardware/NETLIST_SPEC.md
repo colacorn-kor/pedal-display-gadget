@@ -5,7 +5,8 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 
 > 참조 부품(레퍼런스 예시): `U1`=ESP32-S3-DevKitC-1, `U2`=ST7796 디스플레이,
 > `U3`=PCM1808 모듈, `U4`=TL072, `U5`=MP1584, `D1`=1N5819, `J1`=입력잭, `J2`=출력잭,
-> `J3`=SD 어댑터, `SW1..SW7`=버튼, `PWR1`=ELB040202(9V 입력).
+> `J3`=SD 어댑터, `SW1..SW7`=버튼, `SW_GAIN`=INST/LINE SPDT,
+> `PWR1`=ELB040202(9V 입력).
 > 저항/캡은 값으로 부른다(R10k_1 등). TL072 핀번호는 8핀 DIP 기준(1=OUTA,2=-INA,3=+INA,
 > 4=V−,5=+INB,6=−INB,7=OUTB,8=V+).
 
@@ -39,7 +40,7 @@ op-amp 전용 깨끗한 9V (RC 필터):
 VREF_DIV   : R10k_a.2, R10k_b.1, C100u_ref.+, C100n_ref.1, U4.5(+INB)
              (R10k_a: +9V_OPAMP↔VREF_DIV,  R10k_b: VREF_DIV↔GND → 분압 4.5V)
              (C100u_ref, C100n_ref → GND)
-VREF       : U4.7(OUTB), U4.6(−INB), R1M.2, R10k_rg.2   ← 버퍼된 저임피던스 4.5V
+VREF       : U4.7(OUTB), U4.6(−INB), R1M.2, SW_GAIN.COM ← 버퍼된 저임피던스 4.5V
 ```
 
 검토 규칙: `U4.6`와 `U4.7`이 같은 네트(VREF)여야 팔로워(버퍼)가 성립. 분압 중점이
@@ -52,16 +53,18 @@ VREF       : U4.7(OUTB), U4.6(−INB), R1M.2, R10k_rg.2   ← 버퍼된 저임�
 ```
 GTR_IN     : J1.tip(입력잭), J2.tip(출력잭), C1u_in.1     ← 통과(패스스루) + 탭 분기
 AIN_P      : C1u_in.2, U4.3(+INA), R1M.1                  ← +입력 (1MΩ로 VREF 바이어스)
-AIN_N      : U4.2(−INA), R15k.1, R10k_rg.1                ← −입력 (Rf/Rg 접합)
-            (R15k: AIN_N↔U4.1(OUTA) = Rf 피드백)
-            (R10k_rg: AIN_N↔VREF = ★Rg를 GND 아님 VREF에! 단일전원 핵심)
+AIN_N      : U4.2(−INA), R15k_rf.1, R15k_line.1, R2k2_inst.1
+            (R15k_rf: AIN_N↔U4.1(OUTA) = Rf 피드백)
+GAIN_LINE  : R15k_line.2, SW_GAIN.LINE
+GAIN_INST  : R2k2_inst.2, SW_GAIN.INST
 PCM_IN     : U4.1(OUTA)…아니라 C1u_out 경유 → 아래
 (경유)      : U4.1(OUTA), C1u_out.1
 PCM_INL    : C1u_out.2, U3(PCM1808).VINL                  ← 출력 커플링 1µF
 ```
 
-검토 규칙: 게인 = 1 + R15k/R10k_rg = 2.5×. `R10k_rg`의 반대끝이 **VREF(4.5V)** 여야 함
-(GND면 출력 포화). 입력 커플링 `C1u_in`은 1µF 이상(30Hz 보존).
+검토 규칙: `SW_GAIN.COM`은 **VREF(4.5V)** 에 연결하며 GND에 연결하지 않는다.
+LINE 게인은 `1 + 15k/15k = 2.00×`, INST 게인은 `1 + 15k/2.2k ≈ 7.82×`다.
+입력 커플링 `C1u_in`은 1µF 이상(30Hz 보존).
 
 ---
 
@@ -162,7 +165,7 @@ MUTE_CTL   : U1.G3 → (게이트 드라이브 회로, 설계 예정) → J201.g
 - [ ] 각 네트 끝점이 위 스펙과 일치(핀 번호·부품)
 - [ ] `+5V` ↔ `+3V3` 미연결, 전원 단일 소스
 - [ ] `D1` 방향(anode=RAW / cathode=PROT)
-- [ ] `R10k_rg` 반대끝 = VREF(4.5V)  ← 포화 방지
+- [ ] SPDT가 고른 `R15k_line`/`R2k2_inst` 반대끝 = VREF(4.5V)  ← 포화 방지
 - [ ] `U4.6=U4.7`(버퍼), 분압 4.5V
 - [ ] 커플링 캡 ≥1µF(저역 보존)
 - [ ] LCD/SD SCLK·MOSI 버스 공유, CS 분리

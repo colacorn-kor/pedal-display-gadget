@@ -281,6 +281,8 @@ static void audio_task(void *arg)
     fft_map_set_mode(active_viz);
     unsigned reported_overflows = 0;
     unsigned processed_blocks = 0;
+    double meter_energy_total = 0.0;
+    uint64_t meter_sample_total = 0;
     static TickType_t last_overflow_log;
     static TickType_t last_invalid_count_log;
 
@@ -344,6 +346,8 @@ static void audio_task(void *arg)
             active_mode = requested_mode;
             if (active_mode == AUDIO_TUNER) tuner_reset();
             else {
+                meter_energy_total = 0.0;
+                meter_sample_total = 0;
                 fft_map_reset();
                 publish_empty_viz_frame(&producer);
             }
@@ -362,6 +366,8 @@ static void audio_task(void *arg)
             continue;
         }
 
+        meter_energy_total += (double)sum;
+        meter_sample_total += (uint64_t)n;
         music_events_process_block(rms, level);
 
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_acq_rel);
@@ -371,6 +377,8 @@ static void audio_task(void *arg)
         s_viz[producer].level = level;
         s_viz[producer].rms = rms;
         s_viz[producer].sample_peak = sample_peak;
+        s_viz[producer].meter_energy_total = meter_energy_total;
+        s_viz[producer].meter_sample_total = meter_sample_total;
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_release);
 
         if (produced) {

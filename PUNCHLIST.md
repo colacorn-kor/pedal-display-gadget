@@ -22,6 +22,7 @@
 8. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
 9. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
 10. 외부 9V와 실제 기타 입력에서 Spectrum 주파수 응답·피크 감쇠 실기 튜닝
+11. 알려진 1kHz Vrms 신호로 dB Meter LINE/INST 1점 전압 교정과 보정계수 확정
 
 ## 해결 및 관찰
 
@@ -43,8 +44,9 @@
 - Sound Monitor 12밴드:
   50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz 적용
 - 얼굴형 렌더러 제거, 고정 중심·PSRAM 기반 72-segment Circular spectrum으로 교체
-- dB Meter 앱: 400ms RMS 전력 평균, 5Hz 표시, sample peak dBFS와 1초 hold,
-  ADC 핀 명목 Vrms·dBV·dBu 구현
+- dB Meter 앱: LIVE 블록 또는 최근 1초/3초 전체 표본의 RMS 전력 평균, 5Hz 표시,
+  sample peak dBFS와 1초 hold, 수동 LINE/INST 이득 기반 입력 잭 명목 Vrms·dBV·dBu 구현
 - Bounce 앱: SPECTRUM 온셋 기반 고양이·종이컵 러너, 점수·충돌·온셋 재시작 구현
 - 테마 소유권 분리: 전역 UI Theme은 런처·모든 공통 팝업, 앱 Theme은 해당 앱만 변경.
-  Monitor 6프리셋과 Bounce Classic/Nyan Cat 선택을 NVS v3에 앱별 저장
+  Monitor 6프리셋과 Bounce Classic/Nyan Cat 선택을 앱별 저장. 현재 NVS는 dB Meter
+  옵션 바이트를 더한 v4이며 v2/v3 blob을 보존 마이그레이션
