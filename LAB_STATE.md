@@ -6,7 +6,7 @@
 ## 1. 기준 상태
 
 - 저장소 인수 기준: `166141c` (`CLAUDE_HANDOFF.md` 추가)
-- 마지막 실기 펌웨어 기준: 12밴드/Circular/dB Meter 로컬 빌드
+- 마지막 실기 펌웨어 기준: 전역 UI/앱 로컬 Theme 분리 + Bounce Nyan Cat 로컬 빌드
 - 마지막 확인 포트: COM4
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
@@ -218,6 +218,33 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   프로젝트 소스 오류가 아닌 툴체인 병렬 컴파일 문제로 분리했다.
 - 외부 9V가 분리되어 실제 기타 입력으로 온셋 임계와 점프 감도를 판정하지 않았다.
   공유 온셋 경로는 시뮬레이터 합성 온셋으로 검증했다.
+
+### 2026-07-26 전역 UI/앱 로컬 Theme 분리
+
+- 런처의 `BLUE/WHITE/GREEN` 전역 UI Theme은 런처와 모든 공통 팝업의 팔레트만
+  관리하고, 앱의 `Settings -> Theme`은 해당 앱의 로컬 Theme 훅만 호출하도록 분리했다.
+  로컬 Theme이 없는 앱은 Settings에서 `Info`만 표시한다.
+- `gadget_app_t`에 선택형 로컬 Theme count/name/index/set 훅을 추가했다. Sound
+  Monitor의 기존 6개 프리셋과 Bounce의 `Classic Cat/Nyan Cat`이 이 계약을 사용한다.
+- 슬롯 설정에 앱별 `local_theme`을 추가하고 NVS schema를 v3로 올렸다. 기존 v2
+  구조체의 패딩 1바이트를 사용해 blob 크기를 유지하며, 컴파일 타임 크기 검사로 호환을
+  보장한다. v2의 체인·순서·변형·전역 Theme은 보존하고 새 필드만 0으로 초기화한다.
+- MIDI scene이 Sound Monitor 상태를 바꾸면 런타임 슬롯 선택값도 맞춰 Theme 메뉴와
+  실제 렌더러가 어긋나지 않게 했다. 사용자가 확인으로 적용할 때만 NVS에 저장한다.
+- 별도 임시 폴더의 깨끗한 PC 시뮬레이터 빌드와 smoke를 통과했다. smoke는 전역
+  팔레트가 앱 Theme 선택으로 바뀌지 않는 것, Monitor/Bounce 표시값과 슬롯값 일치,
+  Nyan 테마의 온셋 점프·충돌·재시작·풋스위치 응답을 검증한다.
+- Nyan Cat은 외부 이미지 에셋 없이 LVGL 사각형으로 그렸고 480x320 시뮬레이터에서
+  얼굴·팝타르트 몸통·6색 무지개와 점수/지면의 겹침이 없음을 픽셀 검수했다.
+- 호스트 테스트 4/4, `sdkconfig.defaults` 기본 및 `INPUT_TRS_LADDER=0` 깨끗한 전체
+  빌드와 `-Werror`가 통과했다. 최종 바이너리는 각각 `0xd0d90` bytes(18% 여유),
+  `0xcd6f0` bytes(20% 여유)다.
+- 사용자가 외부 9V 분리·USB 단독 상태를 확인한 뒤 기본 펌웨어를 COM4에 플래시했다.
+  12초 로그에서 ESP32-S3 rev0.2, 8MB PSRAM 80MHz 메모리 테스트, 240MHz,
+  ST7796/LVGL, TRS ladder IDLE, Sound Monitor 24~25fps를 확인했다. WDT, panic,
+  비정상 reset, 메모리 오류는 없었다.
+- 전역 Theme과 앱 팝업 팔레트 일치 및 Nyan Cat 선택의 실기 육안 확인은 사용자 요청으로
+  보류했다. 자동 UI smoke와 PC 픽셀 검수는 통과한 상태다.
 
 ## 7. 다음 작업
 

@@ -61,6 +61,7 @@ To open a deterministic visual QA screen without NVS state or key input:
 .\sim\build\pedal_sim.exe --preview circular
 .\sim\build\pedal_sim.exe --preview dbmeter
 .\sim\build\pedal_sim.exe --preview bounce
+.\sim\build\pedal_sim.exe --preview bounce-nyan
 ```
 
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current

@@ -130,6 +130,7 @@ static bool run_smoke_test(void)
 
     if (!smoke_send(EV_OK, "launcher -> monitor") ||
         !smoke_expect_app("monitor")) return false;
+    const int app_popup_palette = theme_index();
     if (audio_get_mode() != AUDIO_SPECTRUM) {
         fprintf(stderr, "SMOKE FAIL: monitor did not select spectrum mode\n");
         return false;
@@ -166,6 +167,15 @@ static bool run_smoke_test(void)
     if (!smoke_send(EV_OK, "apply circular preset") ||
         monitor_app_preset_index() != circular_preset) {
         fprintf(stderr, "SMOKE FAIL: circular preset was not applied\n");
+        return false;
+    }
+    const gadget_app_t *monitor =
+        app_registry_at(app_registry_find("monitor"));
+    if (theme_index() != app_popup_palette ||
+        app_slots_local_theme(monitor) != circular_preset) {
+        fprintf(stderr,
+                "SMOKE FAIL: monitor theme changed the popup palette or "
+                "missed its saved app theme\n");
         return false;
     }
     if (!run_frames_for(150)) return false;
@@ -207,6 +217,29 @@ static bool run_smoke_test(void)
         fprintf(stderr, "SMOKE FAIL: bounce did not select spectrum mode\n");
         return false;
     }
+    const int bounce_popup_palette = theme_index();
+    const gadget_app_t *bounce =
+        app_registry_at(app_registry_find("bounce"));
+    if (!smoke_send(EV_HOME, "bounce -> app menu") ||
+        !smoke_send(EV_DOWN, "bounce app menu -> settings") ||
+        !smoke_send(EV_OK, "open bounce settings") ||
+        !smoke_send(EV_OK, "bounce settings -> theme") ||
+        !smoke_send(EV_DOWN, "classic cat -> nyan cat") ||
+        !smoke_send(EV_OK, "apply nyan cat")) {
+        return false;
+    }
+    if (bounce_app_debug_theme_index() != 1 ||
+        app_slots_local_theme(bounce) != 1 ||
+        theme_index() != bounce_popup_palette) {
+        fprintf(stderr,
+                "SMOKE FAIL: bounce app theme, saved selection, and popup "
+                "palette are inconsistent\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "bounce settings -> app menu") ||
+        !smoke_send(EV_HOME, "close bounce app menu")) {
+        return false;
+    }
     const int cat_ground_y = bounce_app_debug_cat_y();
     plat_sim_trigger_onset();
     if (!run_frames_for(160) ||
@@ -242,7 +275,7 @@ static bool run_smoke_test(void)
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
            "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
-           "bounce runner, quick app, cleanup\n",
+           "bounce runner with local Nyan theme, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }
@@ -265,11 +298,18 @@ static bool open_preview(const char *preview)
         return smoke_expect_app("dbmeter");
     }
 
-    if (strcmp(preview, "bounce") == 0) {
+    if (strcmp(preview, "bounce") == 0 ||
+        strcmp(preview, "bounce-nyan") == 0) {
         int idx = app_registry_find("bounce");
         if (idx < 0) return false;
         for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
         sm_on_event(EV_OK);
+        if (strcmp(preview, "bounce-nyan") == 0) {
+            const gadget_app_t *bounce = app_registry_at(idx);
+            if (bounce && bounce->local_theme_set) {
+                bounce->local_theme_set(1);
+            }
+        }
         return smoke_expect_app("bounce");
     }
 

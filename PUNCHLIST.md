@@ -46,3 +46,5 @@
 - dB Meter 앱: 400ms RMS 전력 평균, 5Hz 표시, sample peak dBFS와 1초 hold,
   ADC 핀 명목 Vrms·dBV·dBu 구현
 - Bounce 앱: SPECTRUM 온셋 기반 고양이·종이컵 러너, 점수·충돌·온셋 재시작 구현
+- 테마 소유권 분리: 전역 UI Theme은 런처·모든 공통 팝업, 앱 Theme은 해당 앱만 변경.
+  Monitor 6프리셋과 Bounce Classic/Nyan Cat 선택을 NVS v3에 앱별 저장

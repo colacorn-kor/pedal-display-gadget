@@ -36,6 +36,28 @@
 #define CAT_PRIMARY_COUNT 8
 #define CAT_SECONDARY_COUNT 1
 #define CAT_DETAIL_COUNT 5
+#define NYAN_DETAIL_COUNT 5
+#define RAINBOW_COUNT 6
+
+enum {
+    BOUNCE_THEME_CLASSIC = 0,
+    BOUNCE_THEME_NYAN,
+    BOUNCE_THEME_COUNT,
+};
+
+static const char *const BOUNCE_THEME_NAMES[BOUNCE_THEME_COUNT] = {
+    "Classic Cat",
+    "Nyan Cat",
+};
+
+static const uint32_t RAINBOW_COLORS[RAINBOW_COUNT] = {
+    0xff4f5e,
+    0xff9f43,
+    0xffdf5d,
+    0x50d56f,
+    0x4d9eff,
+    0xa66cff,
+};
 
 typedef struct {
     lv_obj_t *root;
@@ -53,6 +75,9 @@ static lv_obj_t *s_cat_shadow;
 static lv_obj_t *s_cat_primary[CAT_PRIMARY_COUNT];
 static lv_obj_t *s_cat_secondary[CAT_SECONDARY_COUNT];
 static lv_obj_t *s_cat_detail[CAT_DETAIL_COUNT];
+static lv_obj_t *s_cat_body;
+static lv_obj_t *s_nyan_detail[NYAN_DETAIL_COUNT];
+static lv_obj_t *s_rainbow[RAINBOW_COUNT];
 static lv_obj_t *s_leg_back;
 static lv_obj_t *s_leg_front;
 static lv_obj_t *s_tail_tip;
@@ -77,6 +102,7 @@ static uint32_t s_last_frame_ms;
 static uint32_t s_last_score_ms;
 static uint32_t s_last_onset_seq;
 static int s_theme_idx = -1;
+static int s_local_theme = BOUNCE_THEME_CLASSIC;
 static int s_last_cat_y = -1;
 static int s_last_run_phase = -1;
 static bool s_game_over;
@@ -145,11 +171,22 @@ static void create_cat(void)
     lv_obj_set_style_radius(s_cat_shadow, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_opa(s_cat_shadow, LV_OPA_30, 0);
 
+    for (int i = 0; i < RAINBOW_COUNT; i++) {
+        s_rainbow[i] = make_block(
+            s_host, CAT_X - 54, (int)CAT_GROUND_Y + 13 + i * 3, 62, 3);
+    }
+
     s_cat = lv_obj_create(s_host);
     lv_obj_set_size(s_cat, CAT_W, CAT_H);
     style_group(s_cat);
 
-    s_cat_primary[primary++] = make_block(s_cat, 6, 14, 27, 18);
+    s_cat_body = make_block(s_cat, 6, 14, 27, 18);
+    s_cat_primary[primary++] = s_cat_body;
+    s_nyan_detail[0] = make_block(s_cat, 9, 17, 21, 12);
+    s_nyan_detail[1] = make_block(s_cat, 12, 20, 2, 2);
+    s_nyan_detail[2] = make_block(s_cat, 18, 24, 2, 2);
+    s_nyan_detail[3] = make_block(s_cat, 24, 19, 2, 2);
+    s_nyan_detail[4] = make_block(s_cat, 25, 27, 2, 2);
     s_cat_primary[primary++] = make_block(s_cat, 24, 6, 18, 20);
     s_cat_primary[primary++] = make_block(s_cat, 25, 1, 7, 10);
     s_cat_primary[primary++] = make_block(s_cat, 35, 1, 7, 10);
@@ -188,6 +225,7 @@ static void create_cup(cup_t *cup)
 static void style_scene(void)
 {
     const ui_theme_t *theme = theme_get();
+    const bool nyan = s_local_theme == BOUNCE_THEME_NYAN;
     const lv_color_t cat_color =
         s_game_over ? theme->accent2 : theme->accent;
 
@@ -206,17 +244,58 @@ static void style_scene(void)
     }
     for (int i = 0; i < CAT_PRIMARY_COUNT; i++) {
         if (s_cat_primary[i]) {
-            lv_obj_set_style_bg_color(s_cat_primary[i], cat_color, 0);
+            lv_obj_set_style_bg_color(
+                s_cat_primary[i],
+                nyan ? lv_color_hex(0x999999) : cat_color, 0);
         }
+    }
+    if (nyan && s_cat_body) {
+        lv_obj_set_style_bg_color(s_cat_body, lv_color_hex(0xf0c779), 0);
     }
     for (int i = 0; i < CAT_SECONDARY_COUNT; i++) {
         if (s_cat_secondary[i]) {
-            lv_obj_set_style_bg_color(s_cat_secondary[i], theme->surface, 0);
+            lv_obj_set_style_bg_color(
+                s_cat_secondary[i],
+                nyan ? lv_color_hex(0xd9d9d9) : theme->surface, 0);
         }
     }
     for (int i = 0; i < CAT_DETAIL_COUNT; i++) {
         if (s_cat_detail[i]) {
-            lv_obj_set_style_bg_color(s_cat_detail[i], theme->bg, 0);
+            lv_obj_set_style_bg_color(
+                s_cat_detail[i],
+                nyan ? lv_color_hex(0x333333) : theme->bg, 0);
+        }
+    }
+    for (int i = 0; i < NYAN_DETAIL_COUNT; i++) {
+        if (!s_nyan_detail[i]) continue;
+        if (nyan) {
+            lv_obj_remove_flag(s_nyan_detail[i], LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(s_nyan_detail[i], LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+    if (s_nyan_detail[0]) {
+        lv_obj_set_style_bg_color(s_nyan_detail[0], lv_color_hex(0xe96fa8), 0);
+    }
+    static const uint32_t sprinkle_colors[NYAN_DETAIL_COUNT - 1] = {
+        0xfff06a, 0x65d8ff, 0xffffff, 0xff5e72,
+    };
+    for (int i = 1; i < NYAN_DETAIL_COUNT; i++) {
+        if (s_nyan_detail[i]) {
+            lv_obj_set_style_bg_color(
+                s_nyan_detail[i], lv_color_hex(sprinkle_colors[i - 1]), 0);
+        }
+    }
+    for (int i = 0; i < RAINBOW_COUNT; i++) {
+        if (!s_rainbow[i]) continue;
+        lv_obj_set_style_bg_color(
+            s_rainbow[i], lv_color_hex(RAINBOW_COLORS[i]), 0);
+        lv_obj_set_style_bg_opa(
+            s_rainbow[i], s_game_over ? LV_OPA_40 : LV_OPA_COVER, 0);
+        if (nyan) {
+            lv_obj_remove_flag(s_rainbow[i], LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(s_rainbow[i], LV_OBJ_FLAG_HIDDEN);
         }
     }
     for (int i = 0; i < CUP_COUNT; i++) {
@@ -381,6 +460,9 @@ static void update_cat_pose(uint32_t now)
     int cat_y = (int)(s_cat_y + 0.5f);
     if (cat_y != s_last_cat_y) {
         lv_obj_set_pos(s_cat, CAT_X, cat_y);
+        for (int i = 0; i < RAINBOW_COUNT; i++) {
+            if (s_rainbow[i]) lv_obj_set_y(s_rainbow[i], cat_y + 13 + i * 3);
+        }
         s_last_cat_y = cat_y;
     }
 
@@ -399,6 +481,11 @@ static void update_cat_pose(uint32_t now)
             lv_obj_set_y(s_leg_back, 27);
             lv_obj_set_y(s_leg_front, 27);
             lv_obj_set_y(s_tail_tip, 11);
+        }
+        for (int i = 0; i < RAINBOW_COUNT; i++) {
+            if (s_rainbow[i]) {
+                lv_obj_set_x(s_rainbow[i], CAT_X - 54 - (run_phase & 1) * 3);
+            }
         }
         s_last_run_phase = run_phase;
     }
@@ -520,6 +607,7 @@ static void bounce_exit(void)
     s_host = NULL;
     s_cat = NULL;
     s_cat_shadow = NULL;
+    s_cat_body = NULL;
     s_leg_back = NULL;
     s_leg_front = NULL;
     s_tail_tip = NULL;
@@ -531,6 +619,8 @@ static void bounce_exit(void)
     memset(s_cat_primary, 0, sizeof(s_cat_primary));
     memset(s_cat_secondary, 0, sizeof(s_cat_secondary));
     memset(s_cat_detail, 0, sizeof(s_cat_detail));
+    memset(s_nyan_detail, 0, sizeof(s_nyan_detail));
+    memset(s_rainbow, 0, sizeof(s_rainbow));
     memset(s_ground_mark, 0, sizeof(s_ground_mark));
     memset(s_cups, 0, sizeof(s_cups));
 }
@@ -586,6 +676,30 @@ static bool bounce_on_event(ui_event_t event)
     return false;
 }
 
+static int bounce_theme_count(void)
+{
+    return BOUNCE_THEME_COUNT;
+}
+
+static const char *bounce_theme_name(int idx)
+{
+    return idx >= 0 && idx < BOUNCE_THEME_COUNT
+        ? BOUNCE_THEME_NAMES[idx]
+        : "";
+}
+
+static int bounce_theme_index(void)
+{
+    return s_local_theme;
+}
+
+static void bounce_theme_set(int idx)
+{
+    if (idx < 0 || idx >= BOUNCE_THEME_COUNT) return;
+    s_local_theme = idx;
+    style_scene();
+}
+
 #ifdef PEDAL_SIM
 int bounce_app_debug_cat_y(void)
 {
@@ -595,6 +709,11 @@ int bounce_app_debug_cat_y(void)
 bool bounce_app_debug_game_over(void)
 {
     return s_game_over;
+}
+
+int bounce_app_debug_theme_index(void)
+{
+    return s_local_theme;
 }
 #endif
 
@@ -607,4 +726,8 @@ const gadget_app_t APP_BOUNCE = {
     .on_exit = bounce_exit,
     .on_render = bounce_render,
     .on_event = bounce_on_event,
+    .local_theme_count = bounce_theme_count,
+    .local_theme_name = bounce_theme_name,
+    .local_theme_index = bounce_theme_index,
+    .local_theme_set = bounce_theme_set,
 };

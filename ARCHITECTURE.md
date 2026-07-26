@@ -7,8 +7,9 @@
 > **구현 진척(2026-07-26 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
 > 이벤트와 홈·풋스위치 정책, ③-A 슬롯/NVS, ③-B/C 런처·순서변경·테마를 구현했다.
 > 런처는 `LIVE`·`STASH`·`Reorder/Settings`의 3행 내비게이션이며, 앱 홈 메뉴와
-> `Settings → Theme/Info` 계층도 동작한다. Sound Monitor의 렌더러·팔레트 선택은 앱 화면
-> 방향키에서 `Settings → Theme`의 6개 프리셋으로 이동했다.
+> `Settings → Theme/Info` 계층도 동작한다. 전역 UI 테마는 런처와 모든 공통 팝업의
+> 팔레트를 함께 바꾸며, 앱 안의 Theme은 해당 앱의 로컬 테마만 바꾼다. Sound Monitor와
+> Bounce가 이 로컬 테마 계약을 구현한다.
 > 진척 상세는 §13 표 참조.
 
 ---
@@ -83,6 +84,10 @@ typedef void (*app_enter_fn)(int variant);
 typedef void (*app_exit_fn)(void);
 typedef void (*app_render_fn)(void);
 typedef bool (*app_event_fn)(ui_event_t event);
+typedef int (*app_local_theme_count_fn)(void);
+typedef const char *(*app_local_theme_name_fn)(int idx);
+typedef int (*app_local_theme_index_fn)(void);
+typedef void (*app_local_theme_set_fn)(int idx);
 
 struct gadget_app {
     const char  *id;            /* "tuner" — 안정적 식별자(설정 키) */
@@ -94,6 +99,12 @@ struct gadget_app {
     app_exit_fn   on_exit;      /* 정리 */
     app_render_fn on_render;    /* 매 프레임(LVGL lock 안) */
     app_event_fn  on_event;     /* 위임된 키 처리. 소비하면 true */
+
+    /* 선택 사항. 모두 NULL이면 앱 Settings에서 Theme 항목을 숨긴다. */
+    app_local_theme_count_fn local_theme_count;
+    app_local_theme_name_fn  local_theme_name;
+    app_local_theme_index_fn local_theme_index;
+    app_local_theme_set_fn   local_theme_set;
 
     app_input_source_t input_sources;  /* [Phase 2 예약] 0 = 기본 입력 */
     app_output_route_t output_routes;  /* [Phase 2 예약] 0 = 없음 */
@@ -116,9 +127,9 @@ void                 apps_init(void);   /* renderers_init() 이후 3앱 등록 *
 `on_exit()`. `renderer_select`가 destroy→create 하던 것과 동일하게, 앱 전환 시 이전 앱
 `on_exit()` 후 새 앱 `on_enter()`.
 
-> `icon`과 `variant_count`는 현재 슬롯/런처에서 사용한다. 표시용 `variant_names` 및 앱이
-> 설정 항목을 일반적으로 기여하는 계약은 아직 도입하지 않았으며, 현재 Sound Monitor
-> 프리셋은 앱 API를 매니저의 표준 Theme 페이지가 호출하는 좁은 어댑터다.
+> 로컬 테마 훅은 앱이 실제 표시 중인 선택값을 매니저에 되돌려 주는 양방향 계약이다.
+> 매니저는 슬롯의 저장값을 앱 진입 전에 적용하고, 앱 Theme 팝업은 같은 훅으로 이름과
+> 현재 선택값을 읽는다. 따라서 메뉴 표시와 실제 앱 화면이 어긋나지 않는다.
 
 ---
 
@@ -204,12 +215,12 @@ typedef enum {
 집 → 앱 메인 화면을 깨끗하게 유지하고, 나가기 동작을 모든 앱에서 동일하게(홈 숏→확인, 또는
 홈 롱) 만든다.
 
-- **Settings**: `Theme · Info`. 런처에서 열면 Theme은 전역 UI 테마
-  `BLUE/WHITE/GREEN`을 좌우로 즉시 바꾼다.
-- **Sound Monitor Settings**: Theme 페이지가 6개 렌더러·팔레트 프리셋을 세로 목록으로
-  제공하고 확인으로 적용한다.
-- 앱별 설정 기여 훅은 아직 일반화하지 않았다. 두 번째 앱이 고유 설정을 요구할 때
-  `gadget_app_t` 계약으로 승격한다.
+- **Launcher Settings**: `Theme · Info`. Theme은 전역 UI 테마
+  `BLUE/WHITE/GREEN`을 좌우로 즉시 바꾸고, 런처와 모든 공통 팝업에 함께 적용한다.
+- **App Settings**: 로컬 테마 훅을 구현한 앱만 `Theme · Info`를 보인다. 여기의 Theme은
+  활성 앱만 바꾸며 전역 UI 테마에는 손대지 않는다. 훅이 없는 앱은 `Info`만 보인다.
+- **Sound Monitor**는 6개 렌더러·팔레트 프리셋, **Bounce**는
+  `Classic Cat/Nyan Cat`을 로컬 Theme 목록으로 제공한다.
 
 ### Sound Monitor 스펙트럼 표시 계약
 
@@ -404,7 +415,7 @@ typedef struct {
 | `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
 | `settings` | Settings / About | NONE | — | |
-| `bounce` | Bounce | SPECTRUM | — | 오디오 온셋으로 고양이가 종이컵을 넘는 러너 게임 |
+| `bounce` | Bounce | SPECTRUM | — | 오디오 온셋 러너. 로컬 Theme=`Classic Cat/Nyan Cat` |
 
 > 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce`·`dbmeter` 5개.
 > 나머지는 카탈로그다.
@@ -431,7 +442,7 @@ typedef struct {
 | `sm_on_event`의 화면별 분기 | 매니저는 풋스위치/홈만, 나머지는 활성 앱 `on_event` 디스패치 | **②완료** — 매니저 전담 `{FOOTSW, FOOTSW_HOLD, HOME, HOME_HOLD}` + 표준 팝업, 5키 앱 위임 |
 | `ui_event_t {PREV,NEXT,SELECT,BACK,FOOTSW}` | `{UP,DOWN,LEFT,RIGHT,OK,HOME,HOME_HOLD,FOOTSW,FOOTSW_HOLD}` | **②완료** — `app.h` 9종 교체, 낡은 enum 잔재 0 |
 | (②신규) `input_task` 입력단 | 6버튼 + 풋스위치 상태기계(디바운스·롱프레스·오토리피트) | **②완료** (GPIO 1/2/4/5/6/13/7) |
-| (②신규) 표준 팝업 | 매니저 소유 공통 메뉴와 설정 계층 | **완료** — Exit/Settings, Theme/Info, 전역·모니터 Theme 페이지 |
+| (②신규) 표준 팝업 | 매니저 소유 공통 메뉴와 설정 계층 | **완료** — 전역 UI Theme과 앱 로컬 Theme을 분리한 공통 페이지 |
 
 **①에서 생성/변경된 파일:** `gadget_app.h`·`gadget_app.c`(인터페이스+레지스트리),
 `app_monitor.c`·`app_images.c`·`app_tuner.c`(3앱), `screen_manager.c`(디스패처로 일반화),
@@ -442,11 +453,11 @@ typedef struct {
 ①의 임시 풋스위치 브릿지 제거), `app_monitor.c`·`app_images.c`(`on_event` 새 어휘),
 `midi_map.c`(CC 리맵). 풋스위치 숏=앱 순환·롱=튜너 점프, 홈 숏=팝업·롱=즉시 나가기.
 
-**남은 일반화:** 변형 이름/화면 분기, 앱별 팝업 기여 훅, 코덱 의존 앱의 안내 UI.
+**남은 일반화:** 변형 이름/화면 분기, Theme 이외의 앱별 설정 기여 훅, 코덱 의존 앱의 안내 UI.
 
 **①·②에서 보존된 것:** Core1 오디오/seqlock, `renderer_t` 전체, LVGL lock 규약,
 `content_screen`/`tuner_screen`/렌더러 구현(앱이 호출만 함), `sm_*` 공개 시그니처,
-`gadget_app_t` 구조체(예약 필드·`variant_names` 미추가), `midi.c` 파서.
+`gadget_app_t` 예약 필드, `midi.c` 파서.
 
 ---
 

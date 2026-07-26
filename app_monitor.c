@@ -126,4 +126,8 @@ const gadget_app_t APP_MONITOR = {
     .on_exit = monitor_exit,
     .on_render = monitor_render,
     .on_event = monitor_on_event,
+    .local_theme_count = monitor_app_preset_count,
+    .local_theme_name = monitor_app_preset_name,
+    .local_theme_index = monitor_app_preset_index,
+    .local_theme_set = monitor_app_set_preset,
 };

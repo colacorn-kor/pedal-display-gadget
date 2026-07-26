@@ -16,6 +16,7 @@ typedef struct {
     chain_t chain;
     uint8_t order;
     uint8_t variant;
+    uint8_t local_theme;
 } app_slot_t;
 
 void app_slots_init(void);
@@ -30,3 +31,6 @@ void app_slots_set_last_view(const char *id);
 const char *app_slots_quick_app(void);
 uint8_t app_slots_theme(void);
 void app_slots_set_theme(uint8_t idx);
+uint8_t app_slots_local_theme(const gadget_app_t *app);
+void app_slots_set_local_theme(const gadget_app_t *app, uint8_t idx);
+void app_slots_set_local_theme_runtime(const gadget_app_t *app, uint8_t idx);

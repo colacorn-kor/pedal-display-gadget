@@ -24,6 +24,10 @@ typedef void (*app_enter_fn)(int variant);
 typedef void (*app_exit_fn)(void);
 typedef void (*app_render_fn)(void);
 typedef bool (*app_event_fn)(ui_event_t event);
+typedef int (*app_local_theme_count_fn)(void);
+typedef const char *(*app_local_theme_name_fn)(int idx);
+typedef int (*app_local_theme_index_fn)(void);
+typedef void (*app_local_theme_set_fn)(int idx);
 
 struct gadget_app {
     const char *id;
@@ -35,6 +39,11 @@ struct gadget_app {
     app_exit_fn on_exit;
     app_render_fn on_render;
     app_event_fn on_event;
+
+    app_local_theme_count_fn local_theme_count;
+    app_local_theme_name_fn local_theme_name;
+    app_local_theme_index_fn local_theme_index;
+    app_local_theme_set_fn local_theme_set;
 
     app_input_source_t input_sources; /* Phase 2 reserved; zero means default inputs. */
     app_output_route_t output_routes; /* Phase 2 reserved; no enum value exists for main output. */
@@ -67,4 +76,5 @@ int images_app_count(void);
 #ifdef PEDAL_SIM
 int bounce_app_debug_cat_y(void);
 bool bounce_app_debug_game_over(void);
+int bounce_app_debug_theme_index(void);
 #endif

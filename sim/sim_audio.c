@@ -64,7 +64,7 @@ static void usage(void)
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
             " [--synthetic] [--smoke-test]"
-            " [--preview bars|circular|dbmeter|bounce]\n");
+            " [--preview bars|circular|dbmeter|bounce|bounce-nyan]\n");
 }
 
 static bool parse_device_index(const char *text, int *out)

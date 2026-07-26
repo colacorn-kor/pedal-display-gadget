@@ -6,7 +6,8 @@
 #include "platform.h"
 
 #define APP_CFG_MAGIC 0x6741u
-#define APP_CFG_VERSION 2u
+#define APP_CFG_VERSION 3u
+#define APP_CFG_VERSION_PREVIOUS 2u
 #define APP_ID_LEN 16
 #define APP_QUICK_DEFAULT "tuner"
 
@@ -14,7 +15,11 @@ typedef struct {
     chain_t chain;
     uint8_t order;
     uint8_t variant;
+    uint8_t local_theme;
 } app_setting_t;
+
+_Static_assert(sizeof(app_setting_t) == 8,
+               "app config v2/v3 blob layout must stay compatible");
 
 typedef struct {
     char id[APP_ID_LEN];
@@ -66,6 +71,24 @@ static uint8_t clamp_variant(const gadget_app_t *app, uint8_t variant,
     return max_variant;
 }
 
+static uint8_t max_local_theme_for_app(const gadget_app_t *app)
+{
+    if (!app || !app->local_theme_count) return 0;
+    const int count = app->local_theme_count();
+    if (count <= 1) return 0;
+    if (count > 256) return 255;
+    return (uint8_t)(count - 1);
+}
+
+static uint8_t clamp_local_theme(const gadget_app_t *app, uint8_t theme,
+                                 bool *changed)
+{
+    const uint8_t max_theme = max_local_theme_for_app(app);
+    if (theme <= max_theme) return theme;
+    if (changed) *changed = true;
+    return max_theme;
+}
+
 static void default_config(platform_config_t *cfg)
 {
     memset(cfg, 0, sizeof(*cfg));
@@ -82,6 +105,7 @@ static void default_config(platform_config_t *cfg)
         cfg->apps[i].s.chain = CHAIN_LIVE;
         cfg->apps[i].s.order = (uint8_t)i;
         cfg->apps[i].s.variant = 0;
+        cfg->apps[i].s.local_theme = 0;
     }
 }
 
@@ -149,6 +173,7 @@ static bool bind_slots_from_config(void)
         slot->chain = CHAIN_LIVE;
         slot->order = (uint8_t)i;
         slot->variant = 0;
+        slot->local_theme = 0;
 
         const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
         if (cfg_idx >= 0) {
@@ -156,6 +181,7 @@ static bool bind_slots_from_config(void)
             slot->chain = setting->chain;
             slot->order = setting->order;
             slot->variant = setting->variant;
+            slot->local_theme = setting->local_theme;
         } else {
             ESP_LOGW(TAG, "Adding new app slot for '%s'", app->id);
             changed = true;
@@ -168,6 +194,8 @@ static bool bind_slots_from_config(void)
         }
 
         slot->variant = clamp_variant(app, slot->variant, &changed);
+        slot->local_theme =
+            clamp_local_theme(app, slot->local_theme, &changed);
         s_slot_count++;
     }
 
@@ -266,11 +294,19 @@ void app_slots_init(void)
     bool found = false;
     plat_nvs_load(&loaded, sizeof(loaded), &found);
     bool needs_save = !found;
-    if (found &&
-        loaded.magic == APP_CFG_MAGIC &&
-        loaded.version == APP_CFG_VERSION) {
+    if (found && loaded.magic == APP_CFG_MAGIC &&
+        (loaded.version == APP_CFG_VERSION ||
+         loaded.version == APP_CFG_VERSION_PREVIOUS)) {
         s_cfg = loaded;
         terminate_config_strings(&s_cfg);
+        if (loaded.version == APP_CFG_VERSION_PREVIOUS) {
+            for (int i = 0; i < APP_SLOT_MAX; i++) {
+                s_cfg.apps[i].s.local_theme = 0;
+            }
+            s_cfg.version = APP_CFG_VERSION;
+            ESP_LOGI(TAG, "Migrated config v2 -> v3");
+            needs_save = true;
+        }
     } else if (found) {
         ESP_LOGW(TAG, "Using default config: schema mismatch");
         needs_save = true;
@@ -291,10 +327,13 @@ void app_slots_save(void)
         app_slot_t *slot = &s_slots[i];
         if (!slot->app) continue;
         slot->variant = clamp_variant(slot->app, slot->variant, NULL);
+        slot->local_theme =
+            clamp_local_theme(slot->app, slot->local_theme, NULL);
         copy_id(s_cfg.apps[i].id, slot->app->id);
         s_cfg.apps[i].s.chain = slot->chain;
         s_cfg.apps[i].s.order = slot->order;
         s_cfg.apps[i].s.variant = slot->variant;
+        s_cfg.apps[i].s.local_theme = slot->local_theme;
     }
 
     plat_nvs_save(&s_cfg, sizeof(s_cfg));
@@ -359,5 +398,33 @@ void app_slots_set_theme(uint8_t idx)
 {
     if (s_cfg.theme_idx == idx) return;
     s_cfg.theme_idx = idx;
+    app_slots_save();
+}
+
+uint8_t app_slots_local_theme(const gadget_app_t *app)
+{
+    const int slot = find_slot_for_app(app);
+    return slot >= 0 ? s_slots[slot].local_theme : 0;
+}
+
+void app_slots_set_local_theme_runtime(const gadget_app_t *app, uint8_t idx)
+{
+    const int slot = find_slot_for_app(app);
+    if (slot < 0) return;
+    s_slots[slot].local_theme =
+        clamp_local_theme(app, idx, NULL);
+}
+
+void app_slots_set_local_theme(const gadget_app_t *app, uint8_t idx)
+{
+    const int slot = find_slot_for_app(app);
+    if (slot < 0) return;
+    const uint8_t next = clamp_local_theme(app, idx, NULL);
+    const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
+    if (s_slots[slot].local_theme == next && cfg_idx >= 0 &&
+        s_cfg.apps[cfg_idx].s.local_theme == next) {
+        return;
+    }
+    s_slots[slot].local_theme = next;
     app_slots_save();
 }

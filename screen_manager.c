@@ -26,7 +26,7 @@ typedef enum {
     POPUP_APP_MENU,
     POPUP_SETTINGS,
     POPUP_GLOBAL_THEME,
-    POPUP_MONITOR_THEME,
+    POPUP_APP_THEME,
     POPUP_INFO,
 } popup_page_t;
 
@@ -119,6 +119,19 @@ static void clean_screen(void)
 static const gadget_app_t *active_app(void)
 {
     return app_registry_at(s_active_app);
+}
+
+static bool app_has_local_themes(const gadget_app_t *app)
+{
+    return app && app->local_theme_count && app->local_theme_name &&
+           app->local_theme_index && app->local_theme_set &&
+           app->local_theme_count() > 0;
+}
+
+static bool popup_settings_has_theme(void)
+{
+    return s_popup_origin == POPUP_FROM_LAUNCHER ||
+           app_has_local_themes(active_app());
 }
 
 static int app_index(const gadget_app_t *app)
@@ -540,9 +553,16 @@ static void popup_close(void)
 static void popup_set_page(popup_page_t page)
 {
     s_popup_page = page;
-    s_popup_sel = page == POPUP_MONITOR_THEME
-        ? monitor_app_preset_index()
+    const gadget_app_t *app = active_app();
+    s_popup_sel = page == POPUP_APP_THEME && app_has_local_themes(app)
+        ? app->local_theme_index()
         : 0;
+    if (page == POPUP_APP_THEME && app_has_local_themes(app) &&
+        (s_popup_sel < 0 ||
+         s_popup_sel >= app->local_theme_count() ||
+         s_popup_sel >= POPUP_ITEM_MAX)) {
+        s_popup_sel = 0;
+    }
     popup_build();
 }
 
@@ -550,6 +570,7 @@ static void popup_build(void)
 {
     static const char *const app_menu[] = { "Exit", "Settings" };
     static const char *const settings[] = { "Theme", "Info" };
+    static const char *const info_only[] = { "Info" };
     const char *const *labels = 0;
     const char *title_text = "MENU";
     int panel_w = 280;
@@ -561,20 +582,25 @@ static void popup_build(void)
         labels = app_menu;
         s_popup_item_count = 2;
     } else if (s_popup_page == POPUP_SETTINGS) {
-        labels = settings;
+        const bool has_theme = popup_settings_has_theme();
+        labels = has_theme ? settings : info_only;
         title_text = "SETTINGS";
-        s_popup_item_count = 2;
+        s_popup_item_count = has_theme ? 2 : 1;
     } else if (s_popup_page == POPUP_GLOBAL_THEME) {
         title_text = "Theme";
         panel_h = 150;
-    } else if (s_popup_page == POPUP_MONITOR_THEME) {
+    } else if (s_popup_page == POPUP_APP_THEME) {
+        const gadget_app_t *app = active_app();
         title_text = "Theme";
         panel_w = 310;
-        panel_h = 286;
-        s_popup_item_count = monitor_app_preset_count();
+        s_popup_item_count =
+            app_has_local_themes(app) ? app->local_theme_count() : 0;
         if (s_popup_item_count > POPUP_ITEM_MAX) {
             s_popup_item_count = POPUP_ITEM_MAX;
         }
+        panel_h = 82 + s_popup_item_count * 34;
+        if (panel_h < 150) panel_h = 150;
+        if (panel_h > 286) panel_h = 286;
     } else {
         title_text = "Info";
         panel_h = 160;
@@ -629,23 +655,25 @@ static void popup_build(void)
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(info, LV_ALIGN_CENTER, 0, 14);
     } else {
+        const gadget_app_t *app = active_app();
         for (int i = 0; i < s_popup_item_count; i++) {
-            const char *label = s_popup_page == POPUP_MONITOR_THEME
-                ? monitor_app_preset_name(i)
+            const char *label = s_popup_page == POPUP_APP_THEME &&
+                                app_has_local_themes(app)
+                ? app->local_theme_name(i)
                 : labels[i];
             s_popup_item[i] = lv_label_create(panel);
             lv_label_set_text(s_popup_item[i], label);
             lv_obj_set_style_text_font(
                 s_popup_item[i],
-                s_popup_page == POPUP_MONITOR_THEME
+                s_popup_page == POPUP_APP_THEME
                     ? font_small()
                     : font_pixel(),
                 0);
             lv_obj_align(
                 s_popup_item[i],
                 LV_ALIGN_TOP_LEFT,
-                s_popup_page == POPUP_MONITOR_THEME ? 42 : 54,
-                54 + i * (s_popup_page == POPUP_MONITOR_THEME ? 34 : 42));
+                s_popup_page == POPUP_APP_THEME ? 42 : 54,
+                54 + i * (s_popup_page == POPUP_APP_THEME ? 34 : 42));
         }
         popup_highlight();
     }
@@ -699,6 +727,9 @@ static void enter_app(int idx, int variant)
     s_mode = MODE_LIVE;
     s_active_app = idx;
     s_return_app = app;
+    if (app_has_local_themes(app)) {
+        app->local_theme_set(app_slots_local_theme(app));
+    }
     if (app->on_enter) app->on_enter(variant);
     s_last_view_save_pending = true;
     s_last_view_save_since = lv_tick_get();
@@ -763,17 +794,20 @@ static void popup_activate(void)
             popup_set_page(POPUP_SETTINGS);
         }
     } else if (s_popup_page == POPUP_SETTINGS) {
-        if (s_popup_sel == 0) {
-            const bool monitor_theme =
-                s_popup_origin == POPUP_FROM_APP &&
-                app_registry_find("monitor") == s_active_app;
-            popup_set_page(
-                monitor_theme ? POPUP_MONITOR_THEME : POPUP_GLOBAL_THEME);
+        const bool has_theme = popup_settings_has_theme();
+        if (has_theme && s_popup_sel == 0) {
+            popup_set_page(s_popup_origin == POPUP_FROM_LAUNCHER
+                ? POPUP_GLOBAL_THEME
+                : POPUP_APP_THEME);
         } else {
             popup_set_page(POPUP_INFO);
         }
-    } else if (s_popup_page == POPUP_MONITOR_THEME) {
-        monitor_app_set_preset(s_popup_sel);
+    } else if (s_popup_page == POPUP_APP_THEME) {
+        const gadget_app_t *app = active_app();
+        if (app_has_local_themes(app)) {
+            app->local_theme_set(s_popup_sel);
+            app_slots_set_local_theme(app, (uint8_t)s_popup_sel);
+        }
         popup_set_page(POPUP_SETTINGS);
     } else if (s_popup_page == POPUP_GLOBAL_THEME ||
                s_popup_page == POPUP_INFO) {
@@ -1000,6 +1034,9 @@ void sm_load_scene(int content, int theme, int renderer)
 
     const int monitor = app_registry_find("monitor");
     const int images = app_registry_find("images");
+    const gadget_app_t *monitor_app = app_registry_at(monitor);
+    app_slots_set_local_theme_runtime(
+        monitor_app, (uint8_t)monitor_app_preset_index());
     if (s_active_app == monitor) {
         monitor_app_refresh();
     } else {
