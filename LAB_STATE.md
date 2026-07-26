@@ -172,7 +172,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   `50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz` 12밴드로
   교체했다. `120/500Hz` 대신 사용자 요청의 `600Hz/1.2kHz`를 적용했다.
 - 얼굴형 `reactive` 렌더러와 `Talk` 프리셋을 제거하고, PSRAM RGB565 캔버스에서
-  96개 방사형 막대를 좌우 대칭으로 그리는 `Circular (Blue/Green)`으로 교체했다.
+  방사형 막대를 좌우 대칭으로 그리는 `Circular (Blue/Green)`으로 교체했다.
 - `dbmeter` 앱을 추가했다. Core1은 기존 seqlock 스냅샷에 block RMS와 sample peak만
   함께 발행하며, 앱은 RMS·sample peak dBFS와 PCM1808 ADC 핀 기준 명목 Vrms·dBV·dBu를
   표시한다. 프론트엔드 이득 미교정 상태이므로 외부 잭 전압으로 표시하지 않는다.
@@ -187,7 +187,15 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   확인했고 WDT, panic, reset, 메모리 오류는 없었다.
 - 기존 MIDI scene의 `reactive` 대상도 `circular`로 바꿔 프로그램 체인지 경로가
   삭제된 렌더러를 가리키지 않게 했다.
-- 새 12밴드/Circular/dB Meter의 하드웨어 화면 육안 확인은 아직 하지 않았다.
+- 첫 실기에서 Circular의 292px·96분할 전체 캔버스 연속 갱신이 Core0를 포화시켜 짧은
+  입력을 놓치는 문제가 확인됐다. 240px·72분할·최대 약 16fps로 줄이고, 중심 원 크기를
+  고정했으며 스펙트럼 변화가 없으면 재그리기를 멈추도록 수정했다.
+- 팝업이 열려 있는 동안 뒤 앱 렌더링을 정지해 모달 입력을 우선한다.
+- dB Meter는 50ms마다 RMS 전력을 샘플링해 400ms 시정수로 평균하고, 화면은 200ms마다
+  갱신한다. sample peak 숫자는 1초 hold 값을 사용한다.
+- 최종 펌웨어 `0xd0680` bytes(앱 파티션 19% 여유)를 COM4에 플래시했다. 사용자 실기
+  확인에서 Circular와 dB Meter 모두 짧은 HOME·FOOTSW 입력이 정상 동작했다. 모니터
+  로그에서도 WDT, panic, reset은 없었다.
 
 ## 7. 다음 작업
 

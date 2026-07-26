@@ -42,5 +42,6 @@
   평활 현재선·채움·피크선 적용. PC 시각 검수와 COM4 정상 부팅 통과
 - Sound Monitor 12밴드:
   50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz 적용
-- 얼굴형 렌더러 제거, PSRAM 기반 96-segment Circular spectrum으로 교체
-- dB Meter 앱: RMS·sample peak dBFS, ADC 핀 명목 Vrms·dBV·dBu와 peak hold 구현
+- 얼굴형 렌더러 제거, 고정 중심·PSRAM 기반 72-segment Circular spectrum으로 교체
+- dB Meter 앱: 400ms RMS 전력 평균, 5Hz 표시, sample peak dBFS와 1초 hold,
+  ADC 핀 명목 Vrms·dBV·dBu 구현

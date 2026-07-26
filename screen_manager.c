@@ -1117,6 +1117,7 @@ void sm_render(void)
         s_last_view_save_pending = false;
         app_slots_set_last_view(app->id);
     }
+    if (s_popup) return;
     if (app && app->on_render) app->on_render();
 }
 

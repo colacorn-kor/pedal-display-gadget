@@ -145,6 +145,7 @@ static bool run_smoke_test(void)
     }
 
     const int initial_preset = monitor_app_preset_index();
+    const int circular_preset = 4;
     if (!smoke_send(EV_UP, "monitor direct up is inert") ||
         monitor_app_preset_index() != initial_preset) {
         fprintf(stderr, "SMOKE FAIL: monitor theme changed outside settings\n");
@@ -153,16 +154,21 @@ static bool run_smoke_test(void)
     if (!smoke_send(EV_HOME, "monitor -> app menu") ||
         !smoke_send(EV_DOWN, "app menu -> settings") ||
         !smoke_send(EV_OK, "open app settings") ||
-        !smoke_send(EV_OK, "app settings -> monitor theme") ||
-        !smoke_send(EV_DOWN, "select next monitor preset") ||
-        !smoke_send(EV_OK, "apply monitor preset")) {
+        !smoke_send(EV_OK, "app settings -> monitor theme")) {
         return false;
     }
-    if (monitor_app_preset_index() !=
-        (initial_preset + 1) % monitor_app_preset_count()) {
-        fprintf(stderr, "SMOKE FAIL: monitor preset was not applied\n");
+    int preset_steps =
+        (circular_preset - initial_preset + monitor_app_preset_count()) %
+        monitor_app_preset_count();
+    for (int i = 0; i < preset_steps; i++) {
+        if (!smoke_send(EV_DOWN, "advance to circular preset")) return false;
+    }
+    if (!smoke_send(EV_OK, "apply circular preset") ||
+        monitor_app_preset_index() != circular_preset) {
+        fprintf(stderr, "SMOKE FAIL: circular preset was not applied\n");
         return false;
     }
+    if (!run_frames_for(150)) return false;
     if (!smoke_send(EV_HOME, "app settings -> app menu") ||
         !smoke_send(EV_HOME, "close app menu") ||
         !smoke_expect_app("monitor")) {

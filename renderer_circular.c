@@ -12,18 +12,19 @@
 
 #define SCR_W 480
 #define SCR_H 320
-#define CANVAS_W 292
-#define CANVAS_H 292
+#define CANVAS_W 240
+#define CANVAS_H 240
 #define CANVAS_X ((SCR_W - CANVAS_W) / 2)
 #define CANVAS_Y ((SCR_H - CANVAS_H) / 2)
 #define CENTER_X (CANVAS_W / 2)
 #define CENTER_Y (CANVAS_H / 2)
-#define SEGMENT_COUNT 96
+#define SEGMENT_COUNT 72
 #define HALF_SEGMENTS (SEGMENT_COUNT / 2)
-#define INNER_RADIUS 74.0f
-#define MIN_BAR_LENGTH 8.0f
-#define MAX_BAR_LENGTH 60.0f
-#define CIRCULAR_FRAME_US 40000
+#define INNER_RADIUS 57.0f
+#define MIN_BAR_LENGTH 7.0f
+#define MAX_BAR_LENGTH 45.0f
+#define CIRCULAR_FRAME_US 60000
+#define REDRAW_EPSILON 0.002f
 #define PI_F 3.14159265358979323846f
 #define RGB565(r,g,b) \
     (uint16_t)((((r)&0xF8)<<8)|(((g)&0xFC)<<3)|((b)>>3))
@@ -148,14 +149,25 @@ static float sample_spectrum(const viz_frame_t *frame, int segment)
                       frame->bars[second] * fraction);
 }
 
+static bool circular_needs_redraw(const viz_frame_t *frame)
+{
+    if (s_last_draw_us == 0) return true;
+    for (int i = 0; i < SEGMENT_COUNT; i++) {
+        if (fabsf(sample_spectrum(frame, i) - s_work->smooth[i]) >
+            REDRAW_EPSILON) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void draw_frame(const viz_frame_t *frame)
 {
     uint16_t grid = C565(mix_hex(s_theme.bg, s_theme.grid, 148));
     uint16_t core = C565(mix_hex(s_theme.bg, s_theme.accent, 150));
     uint16_t glow = C565(mix_hex(s_theme.bg, s_theme.accent, 90));
     uint16_t line = C565(s_theme.line);
-    float pulse = clamp_unit(frame->level);
-    float inner = INNER_RADIUS + pulse * 2.5f;
+    float inner = INNER_RADIUS;
 
     clear_canvas();
     draw_ring(inner - 12.0f, grid, 1);
@@ -306,6 +318,10 @@ static void circular_update(const viz_frame_t *frame)
     int64_t now = esp_timer_get_time();
     if (s_last_draw_us != 0 &&
         now - s_last_draw_us < CIRCULAR_FRAME_US) {
+        return;
+    }
+    if (!circular_needs_redraw(frame)) {
+        s_last_draw_us = now;
         return;
     }
     s_last_draw_us = now;

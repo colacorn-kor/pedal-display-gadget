@@ -18,6 +18,9 @@
 #define METER_TOP_DB 0.0f
 #define METER_ZONE_COUNT 3
 #define PEAK_HOLD_MS 1000U
+#define METER_SAMPLE_MS 50U
+#define METER_DISPLAY_MS 200U
+#define RMS_AVERAGE_TAU_SECONDS 0.400f
 
 typedef struct {
     float lo_db;
@@ -45,8 +48,11 @@ static lv_obj_t *s_peak_tick;
 static audio_viz_snapshot_t s_snapshot;
 static float s_display_rms_db = METER_FLOOR_DB;
 static float s_peak_hold_db = METER_FLOOR_DB;
+static float s_average_power;
+static float s_window_peak;
 static uint32_t s_peak_hold_until;
-static uint32_t s_last_ms;
+static uint32_t s_last_sample_ms;
+static uint32_t s_last_display_ms;
 static int s_last_zone_width[METER_ZONE_COUNT];
 static int s_last_peak_x = -1;
 static char s_rms_text[16];
@@ -180,8 +186,11 @@ static void db_meter_enter(int variant)
 
     s_display_rms_db = METER_FLOOR_DB;
     s_peak_hold_db = METER_FLOOR_DB;
+    s_average_power = 0.0f;
+    s_window_peak = 0.0f;
     s_peak_hold_until = 0;
-    s_last_ms = plat_millis();
+    s_last_sample_ms = plat_millis();
+    s_last_display_ms = s_last_sample_ms;
     s_last_peak_x = -1;
     memset(&s_snapshot, 0, sizeof(s_snapshot));
     s_rms_text[0] = '\0';
@@ -308,40 +317,48 @@ static void db_meter_render(void)
 {
     if (!s_root) return;
 
-    plat_audio_viz_get(&s_snapshot);
-    audio_level_reading_t raw;
-    audio_level_calculate(s_snapshot.rms, s_snapshot.sample_peak, &raw);
-
     uint32_t now = plat_millis();
-    uint32_t elapsed_ms = now - s_last_ms;
-    if (elapsed_ms > 250U) elapsed_ms = 250U;
-    s_last_ms = now;
-    float dt = (float)elapsed_ms * 0.001f;
-    float tau = raw.rms_dbfs > s_display_rms_db ? 0.070f : 0.450f;
-    float alpha = dt / (tau + dt);
-    s_display_rms_db += (raw.rms_dbfs - s_display_rms_db) * alpha;
-    if (s_display_rms_db < AUDIO_LEVEL_FLOOR_DB) {
-        s_display_rms_db = AUDIO_LEVEL_FLOOR_DB;
-    }
-    update_peak_hold(raw.peak_dbfs, now, dt);
-    update_meter_geometry(s_display_rms_db);
+    uint32_t sample_elapsed_ms = now - s_last_sample_ms;
+    if (sample_elapsed_ms < METER_SAMPLE_MS) return;
+    if (sample_elapsed_ms > 250U) sample_elapsed_ms = 250U;
+    s_last_sample_ms = now;
 
-    float displayed_rms = powf(10.0f, s_display_rms_db / 20.0f);
+    plat_audio_viz_get(&s_snapshot);
+    float rms = isfinite(s_snapshot.rms)
+        ? clampf(s_snapshot.rms, 0.0f, 1.0f) : 0.0f;
+    float peak = isfinite(s_snapshot.sample_peak)
+        ? clampf(s_snapshot.sample_peak, 0.0f, 1.0f) : 0.0f;
+    float sample_dt = (float)sample_elapsed_ms * 0.001f;
+    float alpha = sample_dt / (RMS_AVERAGE_TAU_SECONDS + sample_dt);
+    s_average_power += (rms * rms - s_average_power) * alpha;
+    if (peak > s_window_peak) s_window_peak = peak;
+
+    uint32_t display_elapsed_ms = now - s_last_display_ms;
+    if (display_elapsed_ms < METER_DISPLAY_MS) return;
+    if (display_elapsed_ms > 500U) display_elapsed_ms = 500U;
+    s_last_display_ms = now;
+
+    float displayed_rms = sqrtf(fmaxf(s_average_power, 0.0f));
     audio_level_reading_t displayed;
-    audio_level_calculate(displayed_rms, s_snapshot.sample_peak, &displayed);
+    audio_level_calculate(displayed_rms, s_window_peak, &displayed);
+    s_display_rms_db = displayed.rms_dbfs;
+    update_peak_hold(displayed.peak_dbfs, now,
+                     (float)display_elapsed_ms * 0.001f);
+    update_meter_geometry(s_display_rms_db);
+    s_window_peak = 0.0f;
 
     char text[16];
-    if (s_snapshot.rms <= 1e-8f) {
+    if (s_display_rms_db <= AUDIO_LEVEL_FLOOR_DB) {
         snprintf(text, sizeof(text), "-INF");
     } else {
         snprintf(text, sizeof(text), "%.1f", s_display_rms_db);
     }
     set_text_if_changed(s_rms_value, s_rms_text, sizeof(s_rms_text), text);
 
-    if (s_snapshot.sample_peak <= 1e-8f) {
+    if (s_peak_hold_db <= AUDIO_LEVEL_FLOOR_DB) {
         snprintf(text, sizeof(text), "-INF dBFS");
     } else {
-        snprintf(text, sizeof(text), "%.1f dBFS", raw.peak_dbfs);
+        snprintf(text, sizeof(text), "%.1f dBFS", s_peak_hold_db);
     }
     set_text_if_changed(s_peak_value, s_peak_text,
                         sizeof(s_peak_text), text);
