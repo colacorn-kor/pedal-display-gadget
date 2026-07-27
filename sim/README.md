@@ -57,6 +57,8 @@ To preview the visualizer deterministically without opening a capture device:
 To open a deterministic visual QA screen without NVS state or key input:
 
 ```powershell
+.\sim\build\pedal_sim.exe --preview curve
+.\sim\build\pedal_sim.exe --preview reference
 .\sim\build\pedal_sim.exe --preview bars
 .\sim\build\pedal_sim.exe --preview circular
 .\sim\build\pedal_sim.exe --preview dbmeter

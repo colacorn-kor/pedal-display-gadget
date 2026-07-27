@@ -64,7 +64,7 @@ static void usage(void)
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
             " [--synthetic] [--smoke-test]"
-            " [--preview bars|circular|dbmeter|bounce"
+            " [--preview curve|reference|bars|circular|dbmeter|bounce"
             "|monitor-settings|monitor-color|monitor-mode]\n");
 }
 
@@ -352,7 +352,7 @@ static void update_visualizer_from_block(const float *block, float level)
         }
 
         float db = 20.0f * log10f(max_mag + 1e-7f);
-        float tilt = VIZ_MONITOR_TILT_DB_OCT *
+        float tilt = (float)audio_get_viz_tilt_tenths() * 0.1f *
                      log2f(sqrtf((float)s_band_lo[i] * s_band_hi[i]) *
                            ((float)AUDIO_SAMPLE_RATE / SIM_BLOCK_SIZE) /
                            VIZ_TILT_PIVOT_HZ);

@@ -33,6 +33,11 @@ typedef struct {
     void (*destroy)(void);
 } renderer_t;
 
+typedef enum {
+    CURVE_DISPLAY_VISUAL = 0,
+    CURVE_DISPLAY_REFERENCE,
+} curve_display_mode_t;
+
 /* 레지스트리 */
 void              renderer_register(const renderer_t *r);
 int               renderer_count(void);
@@ -41,6 +46,9 @@ int               renderer_find(const char *name);   /* 이름→인덱스, 없�
 void              renderer_select(int idx, lv_obj_t *parent, const viz_theme_t *theme);
 void              renderer_render(const viz_frame_t *frame);
 void              renderer_teardown(void);
+void              renderer_curve_configure(curve_display_mode_t mode,
+                                           int tilt_tenths,
+                                           int smoothing_level);
 
 /* 내장 테마 + 등록 */
 void                renderers_init(void);            /* 곡선·막대 등록 */

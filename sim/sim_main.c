@@ -151,6 +151,8 @@ static bool run_smoke_test(void)
     const int initial_mode = monitor && monitor->mode_index
         ? monitor->mode_index()
         : -1;
+    const int initial_tilt = monitor_app_debug_tilt_index();
+    const int initial_smoothing = monitor_app_debug_smoothing_index();
     if (!monitor ||
         app_slots_color(monitor) != APP_COLOR_DEFAULT ||
         theme_for_app_color(app_slots_color(monitor)) != theme_get()) {
@@ -158,10 +160,24 @@ static bool run_smoke_test(void)
                 "SMOKE FAIL: monitor Default color did not inherit UI theme\n");
         return false;
     }
-    if (!smoke_send(EV_UP, "monitor direct up is inert") ||
+    if (!smoke_send(EV_UP, "Curve tilt up") ||
         !monitor->mode_index ||
-        monitor->mode_index() != initial_mode) {
-        fprintf(stderr, "SMOKE FAIL: monitor mode changed outside settings\n");
+        monitor->mode_index() != initial_mode ||
+        monitor_app_debug_tilt_index() !=
+            (initial_tilt < 4 ? initial_tilt + 1 : initial_tilt) ||
+        monitor_app_debug_smoothing_index() != initial_smoothing) {
+        fprintf(stderr,
+                "SMOKE FAIL: Curve direction controls changed wrong state\n");
+        return false;
+    }
+    if (!smoke_send(EV_RIGHT, "Curve simplification up") ||
+        monitor_app_debug_smoothing_index() !=
+            (initial_smoothing < 2
+                ? initial_smoothing + 1 : initial_smoothing) ||
+        !smoke_send(EV_LEFT, "Curve simplification restore") ||
+        monitor_app_debug_smoothing_index() != initial_smoothing) {
+        fprintf(stderr,
+                "SMOKE FAIL: Curve simplification controls were not stable\n");
         return false;
     }
     if (!smoke_send(EV_HOME, "monitor -> app menu") ||
@@ -182,15 +198,17 @@ static bool run_smoke_test(void)
     }
     if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
         !smoke_send(EV_OK, "open monitor mode") ||
-        !smoke_send(EV_DOWN, "Spectrum -> 12-Band") ||
+        !smoke_send(EV_DOWN, "Curve -> 12-Band") ||
         !smoke_send(EV_DOWN, "12-Band -> Circular") ||
-        !smoke_send(EV_OK, "apply Circular mode")) {
+        !smoke_send(EV_DOWN, "Circular -> Reference") ||
+        !smoke_send(EV_OK, "apply Reference mode")) {
         return false;
     }
-    if (monitor->mode_index() != 2 ||
-        app_slots_mode(monitor) != 2) {
+    if (monitor->mode_index() != 3 ||
+        app_slots_mode(monitor) != 3 ||
+        audio_get_viz_tilt_tenths() != 0) {
         fprintf(stderr,
-                "SMOKE FAIL: monitor Circular mode was not applied or saved\n");
+                "SMOKE FAIL: monitor Reference mode was not flat or saved\n");
         return false;
     }
     if (!run_frames_for(150)) return false;
@@ -325,8 +343,8 @@ static bool run_smoke_test(void)
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
            "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
-           "Color/Mode app settings, Classic Cat runner, input-voltage meter, "
-           "quick app, cleanup\n",
+           "Curve controls, Reference mode, Color/Mode app settings, "
+           "Classic Cat runner, input-voltage meter, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }
@@ -349,12 +367,17 @@ static bool open_preview(const char *preview)
         return true;
     }
 
-    if (strcmp(preview, "bars") == 0 ||
+    if (strcmp(preview, "curve") == 0 ||
+        strcmp(preview, "reference") == 0 ||
+        strcmp(preview, "bars") == 0 ||
         strcmp(preview, "circular") == 0) {
         sm_on_event(EV_OK);
         const gadget_app_t *monitor =
             app_registry_at(app_registry_find("monitor"));
-        const int mode = strcmp(preview, "bars") == 0 ? 1 : 2;
+        int mode = 0;
+        if (strcmp(preview, "bars") == 0) mode = 1;
+        else if (strcmp(preview, "circular") == 0) mode = 2;
+        else if (strcmp(preview, "reference") == 0) mode = 3;
         if (monitor && monitor->mode_set) monitor->mode_set(mode);
         app_slots_set_mode_runtime(monitor, (uint8_t)mode);
         return smoke_expect_app("monitor");

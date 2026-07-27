@@ -4,12 +4,18 @@
 
 ## P0 - 현재 차단 요인
 
-- 없음
+- **Basic 래더 UP/DOWN/LEFT 판정 이탈**
+  - 1초 유지 실측: UP 90mV/0.0280, DOWN 252mV/0.0786, LEFT 385mV/0.1200은 deadzone
+  - RIGHT 633mV/0.1972, OK 1100~1112mV/0.3427~0.3465, HOME
+    1721~1732mV/0.5362~0.5396은 정상 판정
+  - 무부하 3209~3210mV는 정상. 낮은 키일수록 위로 밀린 패턴이므로 TRS Sleeve/GND
+    접점 또는 공통 직렬저항을 우선 점검한다. 판정창 확대는 동시입력 오인식 때문에 보류한다.
 
 ## P1 - 다음 실측
 
 1. **Basic 컨트롤러 체감 평가**
-   - 6키, UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게
+   - 양쪽 TRS 플러그 재장착 뒤 6키 1초 로그 재수집
+   - 복구 후 UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게
    - 결과로 Smart 컨트롤러 착수 여부 결정
 
 ## P2 - 하드웨어 및 제품 튜닝
@@ -18,12 +24,16 @@
 3. 커스텀 풋프린트 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
 4. 조립된 TL072 오디오 입력의 9V 전원 실기 검증과 노이즈 저감
 5. 튜너 5분 무리셋 및 I2S overflow 로그 실기 검증
-6. 게인 저항 튜닝: INST 2.2k / LINE 15k 시작점
+6. 현재 LINE 2.00x / INST 7.82x 구형 프론트엔드의 기준 실측
 7. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
 8. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
 9. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
-10. 외부 9V와 실제 기타 입력에서 Spectrum 주파수 응답·피크 감쇠 실기 튜닝
-11. 알려진 1kHz Vrms 신호로 dB Meter LINE/INST 1점 전압 교정과 보정계수 확정
+10. 외부 9V와 실제 기타 입력에서 Curve/Reference 주파수 응답·피크 감쇠 실기 튜닝
+11. PCM1808 L/R 동시 캡처와 HOT/SENSITIVE 자동 선택·hysteresis 구현
+12. Step 5B 자동 듀얼레인지 프론트엔드 조립
+   - OPA2192 dual ×2, SENSITIVE 보호 clamp, HOT 보상 divider 적용
+13. 범위별 1kHz gain 및 20Hz~20kHz sweep 교정, GG Input Full Scale 확정
+14. GG Analog Meter USB HID 보고서·바늘 ballistics·전력 예산 설계
 
 ## 해결 및 관찰
 
@@ -57,3 +67,7 @@
   8MB PSRAM 80MHz, 240MHz, ST7796/LVGL, ladder IDLE과 오류 0회 확인
 - 사용자 실기: 공통 Color/Mode 화면과 Classic Cat 장애물 구간의 짧은
   HOME/FOOTSW 응답을 포함해 이상 없음
+- Sound Monitor 개발본: Spectrum 표시명을 Curve로 변경하고 Curve 상하 기울기,
+  좌우 DETAIL/BALANCED/SIMPLE, 별도 flat Reference 모드 구현. 시뮬레이터 smoke 통과
+- Curve/Reference 개발본: ESP-IDF 기본 `0xd2040`·래더 비활성 `0xce9c0`,
+  호스트 4/4, COM4 일반 플래시와 25초 무오류 부팅 로그 통과

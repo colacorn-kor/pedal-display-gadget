@@ -1,6 +1,6 @@
 # LAUNCHER_DESIGN.md — 런처 / 앱 플랫폼 설계 (③)
 
-> GUI/GG 페달. 이 문서는 **런처(홈)와 앱 플랫폼**의 설계 SSOT.
+> GG 페달. 이 문서는 **런처(홈)와 앱 플랫폼**의 설계 SSOT.
 > `ARCHITECTURE.md`(전체 인앱 구조)와 분리. 런처·앱 계약·영속성·확장점만 다룸.
 > 상태: **구현 SSOT**. 2026-07-26 기준 3행 내비게이션과 설정 팝업 반영.
 
@@ -137,9 +137,9 @@ static app_slot_t s_slots[APP_COUNT];
 - 모든 앱의 `Settings`는 `Color`, `Mode`, `Info`를 표시한다. Color는
   `Default/Blue/White/Green`이며, `Default`는 현재 런처 Theme을 상속한다. 고정 Color도
   앱 콘텐츠만 바꾸고 런처나 공통 팝업 팔레트에는 영향을 주지 않는다.
-- Sound Monitor의 Mode는 `Spectrum`, `12-Band`, `Circular`이고 Bounce의 Mode는
+- Sound Monitor의 Mode는 `Curve`, `12-Band`, `Circular`, `Reference`이고 Bounce의 Mode는
   `Classic Cat`이다. 나머지 현재 앱도 확장 위치를 일관되게 유지하기 위해 한 개의
-  명명된 Mode를 제공한다. 앱 화면의 상·하 직접 외형 변경은 사용하지 않는다.
+  명명된 Mode를 제공한다. Curve만 앱 화면의 방향키로 기울기와 단순화를 조정한다.
 
 ---
 
@@ -165,8 +165,9 @@ typedef struct {
 - 현재 `platform_config`는 **version 5**다. 기존 `local_theme` 1바이트를
   `appearance`로 재사용해 하위 2비트에 Color, 상위 6비트에 Mode를 저장하므로 v2~v4와
   blob 크기가 같다. v4의 Monitor 6개 프리셋은 같은 Color/Mode 조합으로 변환하고,
-  제거된 Bounce Nyan 값은 `Default + Classic Cat`으로 변환한다. dB Meter의 `options`
-  바이트는 LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 그대로 저장한다.
+  제거된 Bounce Nyan 값은 `Default + Classic Cat`으로 변환한다. 현재 구형 dB Meter의
+  `options` 바이트는 LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 그대로 저장한다.
+  자동 듀얼레인지 전환 시 INPUT 비트는 마이그레이션용으로만 읽고 UI에서는 제거한다.
 
 ---
 

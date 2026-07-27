@@ -1,4 +1,4 @@
-# AGENTS.md - GUI/GG 작업 규칙
+# AGENTS.md - GG 작업 규칙
 
 이 파일은 이 저장소에서 작업하는 에이전트가 매 세션 자동으로 따를 지속 규칙이다.
 작업 언어와 문서 언어는 한국어다.
@@ -22,6 +22,7 @@
 | 현재 장치·플래시·실기 상태 | `LAB_STATE.md` |
 | 미결 작업과 우선순위 | `PUNCHLIST.md` |
 | 총괄 로드맵과 확장 트랙 | `PROJECT_MASTER.md` |
+| GG 제품 정체성·범위·GG2 경계 | `GG_PRODUCT_SPEC.md` |
 | 펌웨어 구조와 앱 계약 | `ARCHITECTURE.md` |
 | 하드웨어 넷·핀·저항 | `hardware/NETLIST_SPEC.md` |
 | 브레드보드 조립 절차 | `ASSEMBLY.md` |

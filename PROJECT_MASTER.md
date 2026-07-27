@@ -1,4 +1,4 @@
-# PROJECT_MASTER.md — GUI/GG 총괄 로드맵 · 워크플로우 · 확장 아키텍처
+# PROJECT_MASTER.md — GG 총괄 로드맵 · 워크플로우 · 확장 아키텍처
 
 > 이 문서는 **프로젝트 전체의 SSOT 지도**다.
 > 원칙: 태윤=제품 방향·물리 조작 / Codex=설계·구현·자동 검증·리뷰·로그 분석. 대화는 한국어.
@@ -9,9 +9,10 @@
 | `AGENTS.md` | 에이전트의 지속 작업 규칙·검증·하드웨어 안전 |
 | `LAB_STATE.md` | 마지막 플래시·현재 장치 상태·다음 실기 절차 |
 | `PUNCHLIST.md` | 미결 작업과 우선순위 |
+| `GG_PRODUCT_SPEC.md` | GG 제품 정체성·범위·GG2 경계·외부 확장 |
 | `ARCHITECTURE.md` | 펌웨어 인앱 구조(코어분리·앱모델·입력규약) |
 | `hardware/NETLIST_SPEC.md` | 회로 넷 연결(KiCad 대조 기준) |
-| `ASSEMBLY.md` | 브레드보드 조립(게인스위치·TRS·코덱자리 포함) |
+| `ASSEMBLY.md` | 현재 브레드보드 조립과 자동 듀얼레인지 개조 절차 |
 | `CONTROLLER_DESIGN.md` | Basic 저항 래더·Smart MCU 6키 컨트롤러 계약 |
 | `LAUNCHER_DESIGN.md` | 런처·슬롯·영속성·열린플랫폼 |
 | `UI_DESIGN.md` | 디자인시스템·테마토큰·.ggt 포맷 |
@@ -34,10 +35,10 @@
 [완료] input 태스크 WDT 핫픽스: 310초 무재발 · 정상 UI · FOOTSW 전환 확인
 [완료] 신회로 TRS 6키 ADC 실측 · HOME/FOOTSW 롱 동작 확인
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
-[현재] Basic 체감 평가 → Smart 착수 여부 결정
-[병행 HW] 조립된 TL072 입력 실기 검증 · KiCad 풋프린트/스키매틱 · 미장착 SD/뮤트 회로
+[현재] Sound Monitor Curve/Reference · Basic 래더 접촉 원인 확인
+[병행 HW] 자동 듀얼레인지 분석 탭 · 교정 지그 · KiCad 풋프린트/스키매틱
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
-       → S6 스마트 컨트롤러
+       → S6 스마트 컨트롤러 → S7 GG Analog Meter
 ```
 
 ## 3. 확장 트랙 아키텍처 (밑바탕 확정)
@@ -52,6 +53,7 @@
 - 앱 계약 확장: `needs_codec` 활성화(런처가 이미 비활성표시 지원 설계).
 - **HW(태윤)**: 코덱모듈 선정 필요 — 출력만이면 PCM5102A(무I2C·간단), 입출력 통합이면 ES8388.
   선정되면 NETLIST_SPEC 확장 → 브레드보드.
+- 앱 소리·음악·메트로놈은 헤드폰 경로에만 섞고, 하드와이어 기타 Thru에는 섞지 않는다.
 
 ### S3. 무선 (WiFi 우선, BLE 보조)
 - ★사실: **ESP32-S3 = WiFi+BLE. BT Classic 없음 → 블루투스 오디오(A2DP) 불가.**
@@ -73,13 +75,21 @@
 - MCU 기반 6키 스캔과 오픈드레인 반이중 통신, 테마 연동 LED를 추가한다.
 - 전기 계약과 자동 판별, 보호 회로의 SSOT는 `CONTROLLER_DESIGN.md`다.
 
+### S7. GG Analog Meter
+- 외부 USB 장치 1종은 범용 화면이 아니라 움직이는 바늘의 GG 보조 미터로 한정한다.
+- GG가 교정한 입력 Vrms·dBu·dBV·제품 기준 dBFS·VU/peak를 USB Host에서
+  vendor-defined HID로 20~30Hz 전송한다.
+- 미터는 로컬 DAC/PWM과 바늘 드라이버를 가지며 오디오 신호와 Thru에는 연결하지 않는다.
+
 ## 4. 하드웨어 태윤 TODO (소프트웨어와 비동기)
 - 현재 `ASSEMBLY.md` 조립은 SD 카드 모듈과 뮤트 회로를 제외하고 완료됐다.
 - [ ] 코덱 모듈 선정(PCM5102A vs ES8388) — S2 착수 조건
-- [ ] 조립된 TL072 입력·게인 스위치 실기 검증
+- [ ] 현재 TL072 LINE/INST 프로토타입을 외부 9V에서 기준 측정
+- [ ] PCM1808 두 채널 자동 듀얼레인지 펌웨어 뒤 Step 5B 회로로 개조
+- [ ] HOT/SENSITIVE 범위별 1kHz 및 20Hz~20kHz sweep 교정
 - [ ] SD 카드 모듈과 뮤트 회로의 장착 시점 및 회로 확정
 - [ ] KiCad Phase1 스키매틱(연습) → .net export → AI 검토 루프
-- [ ] (PCB 리비전 시) MIDI 부품, 코덱 확정 반영
+- [ ] (PCB 리비전 시) MIDI, 코덱, USB Host 전원 스위치·ESD, GG Analog Meter 반영
 - [ ] (S6 착수 시) Smart 컨트롤러 MCU·LED 전력 예산과 Ring 검출 후 급전 회로 확정
 
 ## 5. 다음 세션 시작 절차

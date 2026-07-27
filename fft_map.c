@@ -83,6 +83,20 @@ viz_mode_t fft_map_get_mode(void)
     return s_mode;
 }
 
+void fft_map_set_tilt_db_oct(float tilt_db_oct)
+{
+    if (!isfinite(tilt_db_oct)) tilt_db_oct = VIZ_MONITOR_TILT_DB_OCT;
+    if (tilt_db_oct < 0.0f) tilt_db_oct = 0.0f;
+    if (tilt_db_oct > 12.0f) tilt_db_oct = 12.0f;
+    s_preset.tilt_db_oct = tilt_db_oct;
+    recalc_preset();
+}
+
+float fft_map_get_tilt_db_oct(void)
+{
+    return s_preset.tilt_db_oct;
+}
+
 void fft_map_reset(void)
 {
     memset(s_ring, 0, sizeof(s_ring));

@@ -1,9 +1,10 @@
-# GUI/GG - 기타 페달보드 미니 디스플레이 가젯
+# GG - 모듈형 기타 사운드 디스플레이
 
 ESP32-S3 기반 기타 페달보드용 디스플레이 플랫폼이다. 튜너, 사운드 시각화, dB Meter,
 이미지, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마
 시스템을 통해 기능을 확장한다. 기타 메인 출력은 소프트웨어를 통과하지 않는 아날로그
-패스스루다.
+패스스루다. 제품 범위와 GG2의 경계는 [`GG_PRODUCT_SPEC.md`](GG_PRODUCT_SPEC.md)가
+권위다.
 
 ## 현재 상태
 
@@ -44,7 +45,7 @@ PC simulator
 
 | ID | 표시명 | 역할 |
 |---|---|---|
-| `monitor` | Sound Monitor | 로그 Spectrum, 기타·베이스 12-Band, Circular 모드 |
+| `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무보정 Reference |
 | `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
 | `bounce` | Bounce | 소리 온셋 고양이·종이컵 러너, Classic Cat 모드 |

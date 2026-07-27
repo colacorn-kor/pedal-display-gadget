@@ -97,6 +97,7 @@ static _Atomic unsigned     s_viz_seq[2];
 static _Atomic int          s_viz_ready;
 static _Atomic int          s_audio_mode = AUDIO_SPECTRUM;
 static _Atomic int          s_viz_mode = VIZ_MONITOR;
+static _Atomic int          s_viz_tilt_tenths = 45;
 
 static void publish_empty_viz_frame(int *producer)
 {
@@ -123,6 +124,20 @@ void audio_set_viz_mode(viz_mode_t mode)
 {
     if (mode != VIZ_MONITOR && mode != VIZ_DECOR) return;
     atomic_store_explicit(&s_viz_mode, (int)mode, memory_order_release);
+}
+
+void audio_set_viz_tilt_tenths(int tilt_tenths)
+{
+    if (tilt_tenths < 0) tilt_tenths = 0;
+    if (tilt_tenths > 120) tilt_tenths = 120;
+    atomic_store_explicit(
+        &s_viz_tilt_tenths, tilt_tenths, memory_order_release);
+}
+
+int audio_get_viz_tilt_tenths(void)
+{
+    return atomic_load_explicit(
+        &s_viz_tilt_tenths, memory_order_acquire);
 }
 
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out)
@@ -278,7 +293,9 @@ static void audio_task(void *arg)
     int producer = 1;
     audio_mode_t active_mode = audio_get_mode();
     viz_mode_t active_viz = (viz_mode_t)atomic_load_explicit(&s_viz_mode, memory_order_acquire);
+    int active_viz_tilt_tenths = audio_get_viz_tilt_tenths();
     fft_map_set_mode(active_viz);
+    fft_map_set_tilt_db_oct((float)active_viz_tilt_tenths * 0.1f);
     unsigned reported_overflows = 0;
     unsigned processed_blocks = 0;
     double meter_energy_total = 0.0;
@@ -355,9 +372,20 @@ static void audio_task(void *arg)
 
         viz_mode_t requested_viz =
             (viz_mode_t)atomic_load_explicit(&s_viz_mode, memory_order_acquire);
+        int requested_viz_tilt_tenths = audio_get_viz_tilt_tenths();
+        bool viz_profile_changed = false;
         if (requested_viz != active_viz) {
             active_viz = requested_viz;
             fft_map_set_mode(active_viz);
+            viz_profile_changed = true;
+        }
+        if (requested_viz_tilt_tenths != active_viz_tilt_tenths) {
+            active_viz_tilt_tenths = requested_viz_tilt_tenths;
+            viz_profile_changed = true;
+        }
+        if (viz_profile_changed) {
+            fft_map_set_tilt_db_oct(
+                (float)active_viz_tilt_tenths * 0.1f);
         }
 
         if (active_mode == AUDIO_TUNER) {

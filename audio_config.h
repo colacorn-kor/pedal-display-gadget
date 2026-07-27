@@ -5,7 +5,8 @@
 #define AUDIO_SAMPLE_RATE 48000
 #define VIZ_POINTS        256
 
-/* Shared spectrum display contract. Values are dBFS after display tilt. */
+/* Shared spectrum display contract. Values may include the active visual
+ * profile's display tilt; Reference mode selects 0 dB/oct. */
 #define VIZ_FREQ_LO_HZ       20.0f
 #define VIZ_FREQ_HI_HZ    20000.0f
 #define VIZ_DB_FLOOR        (-72.0f)

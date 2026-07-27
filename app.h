@@ -13,6 +13,8 @@ typedef enum { AUDIO_SPECTRUM, AUDIO_TUNER } audio_mode_t;
 void         audio_set_mode(audio_mode_t mode);
 audio_mode_t audio_get_mode(void);
 void         audio_set_viz_mode(viz_mode_t mode);
+void         audio_set_viz_tilt_tenths(int tilt_tenths);
+int          audio_get_viz_tilt_tenths(void);
 
 /* UI가 렌더링하는 동안 오디오 태스크가 재사용할 수 없는 일관된 스냅샷. */
 typedef struct {

@@ -5,17 +5,54 @@
 
 ## 1. 기준 상태
 
-- 현재 저장소·마지막 실기 펌웨어: `f2182fea` (`Split app color and mode settings`)
-- 현재 펌웨어 상태: 공통 `Color/Mode`, Nyan 제거 빌드. 소프트웨어 부팅 검증과
-  앱 화면·Bounce 장애물 구간 입력의 사용자 실기 확인 통과
+- 플래시 이미지 기준 커밋: `052f2876` (`Record Color Mode hardware verification`)
+- 마지막 실기 펌웨어: 위 커밋의 dirty 작업 트리에서 빌드한 Curve/Reference 개발본
+- 현재 펌웨어 상태: 자동 빌드·플래시·25초 부팅 로그 통과, Curve/Reference 사용자
+  화면·버튼 실기 확인 대기
 - 마지막 확인 포트: COM4
+- 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
 - 미장착: SD 카드 모듈, 뮤트 회로
 - Ring 100Ω / Tip 220Ω: `ASSEMBLY.md` 완료 범위에 포함되어 장착됨
 - 오디오 입력 프론트엔드: 조립됨, 외부 9V 미연결 상태라 동작 미검증
+- 목표 자동 듀얼레인지 회로는 문서만 확정했으며 현재 브레드보드는 구형 SPDT 회로 그대로
 
 ## 2. 마지막 실기 결과
+
+### 2026-07-27 Curve/Reference 개발본 플래시
+
+사용자가 별도로 알리지 않는 한 외부 9V는 분리된다는 합의에 따라 USB 단독 상태에서
+COM4에 일반 플래시했다. 전체 삭제, 파티션 변경과 NVS 초기화는 하지 않았다.
+
+- 기본 펌웨어 `0xd2040` bytes, 앱 파티션 18% 여유
+- bootloader, factory app, partition table 기록과 SHA 검증 통과
+- ESP32-S3 rev0.2, 16MB flash, 8MB PSRAM 80MHz와 PSRAM 메모리 테스트 통과
+- `App version: 052f2876-dirty`, 240MHz, ST7796 1.4.0, `boot complete`,
+  LVGL task 시작 확인
+- 25초 로그에서 ladder IDLE 24회, 3208~3210mV, ratio 0.9996~1.0002
+- WDT, panic, 비의도 reset, I2S·메모리 오류 0회
+- Curve/Reference 화면과 방향키 조작의 사용자 육안 확인은 아직 대기
+
+### 2026-07-27 Basic 래더 전압 이동
+
+COM4 장치가 3시간 이상 재부팅 없이 동작하는 상태에서 35초 로그를 수집했다. 사용자는
+UP, DOWN, LEFT, RIGHT, OK, HOME을 이 순서로 각각 약 1초간 눌렀다.
+
+| 키 | mV | ratio | 현재 판정 |
+|---|---:|---:|---|
+| UP | 90 | 0.0280 | DEADZONE |
+| DOWN | 252 | 0.0786 | DEADZONE |
+| LEFT | 385 | 0.1200 | DEADZONE |
+| RIGHT | 633 | 0.1972 | RIGHT |
+| OK | 1100~1112 | 0.3427~0.3465 | OK |
+| HOME | 1721~1732 | 0.5362~0.5396 | HOME |
+
+무부하는 3209~3210mV로 안정적이었다. 이전 정상 실측보다 모든 눌림 전압이 위로
+이동했고 낮은 저항 키에서 상대 영향이 큰 모양이다. 오래 켜 둔 시간만으로 단정하지 않고,
+TRS Sleeve/GND 접점 또는 공통 경로에 생긴 작은 직렬저항을 우선 의심한다. 판정창을 넓히면
+동시입력을 다른 키로 오인할 수 있어 펌웨어 문턱은 바꾸지 않았다. 양쪽 TRS 플러그 재장착 뒤
+같은 1초 로그를 다시 수집하는 것이 다음 분리 시험이다.
 
 ### 2026-07-27 공통 Color/Mode + Nyan 제거 펌웨어
 
@@ -128,17 +165,17 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd1c40 bytes, 18% 여유) |
-| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xce5c0` bytes, 19% 여유) |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd2040 bytes, 18% 여유) |
+| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xce9c0` bytes, 19% 여유) |
 | 호스트 테스트 4/4 | 통과 (MIDI, tuner, audio level, FFT normalization) |
-| PC 시뮬레이터 | 깨끗한 빌드·Color/Mode 시각 검수·결정론적 smoke 통과 |
+| PC 시뮬레이터 | Curve 조작·Reference 포함 깨끗한 빌드와 결정론적 smoke 통과 |
 | COM4 탐지 | 2026-07-27 확인 |
-| USB 플래시 | `f2182fea` 통과, 외부 9V 분리·USB 단독 상태 |
+| USB 플래시 | Curve/Reference 개발본 통과, 외부 9V 분리·USB 단독 전제 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
 | WDT 5분 무발생 | 통과 (310초, ladder 310회, WDT/panic/reset 0) |
 | 정상 UI 표시 | 통과 (Tuner, Sound Monitor 육안 확인) |
 | FOOTSW 짧게 | 통과 (Tuner -> Sound Monitor) |
-| 6키 ADC | 전부 통과, UP/DOWN 간격 110mV |
+| 6키 ADC | 7/26 전부 통과 후 7/27 UP/DOWN/LEFT deadzone 이탈, 접점 재시험 대기 |
 | HOME 롱·FOOTSW 롱 | 통과 (Launcher / Tuner) |
 | 3행 런처·Settings·Reorder UI | 통과 (사용자 조작·커서 시인성 확인) |
 | 신회로 7상태 ADC 로그 | 통과 |
@@ -312,9 +349,25 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   확인했고 WDT·panic·비정상 reset·I2S·메모리 오류는 없었다. 화면 외형과 Classic Cat
   장애물 구간의 HOME/FOOTSW 짧은 입력도 사용자가 실기 확인했고 이상이 없었다.
 
+### 2026-07-27 Curve/Reference 개발본
+
+- 기존 Monitor Mode 인덱스 0~2와 렌더러 id `curve`를 보존하면서 표시명 Spectrum을
+  Curve로 바꾸고 Reference를 인덱스 3에 추가했다.
+- Curve는 상·하로 `0/1.5/3.0/4.5/6.0dB/oct`, 좌·우로
+  `DETAIL/BALANCED/SIMPLE`을 바꾼다. 기존 `options` 바이트의 미사용 비트에 valid
+  sentinel과 설정을 저장해 NVS schema v5 크기를 바꾸지 않았다.
+- Reference는 0dB/oct와 공간 평활 없음으로 고정한다. Core1이 소유한 `fft_map`에는
+  원자적 tilt 요청만 전달하고, 기존 seqlock 발행 구조는 바꾸지 않았다.
+- VS 2026의 깨끗한 PC 시뮬레이터 빌드와 결정론 smoke가 통과했다. smoke는 Curve
+  기울기·단순화, Reference flat 선택, 기존 런처·앱·튜너·Bounce·dB Meter 흐름을 확인했다.
+- ESP-IDF 기본/래더 비활성 전체 빌드, COM4 일반 플래시와 25초 부팅 로그가 통과했다.
+  Curve/Reference 화면과 방향키의 사용자 실기 확인은 대기 중이다.
+
 ## 7. 다음 작업
 
-1. Basic 컨트롤러의 장시간 체감 평가는 실제 사용 중 이상이 있을 때 묶어서 수행한다.
-2. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
-3. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
-4. 알려진 1kHz Vrms 신호로 LINE/INST 전압 보정계수를 각각 확정한다.
+1. Basic 컨트롤러 양쪽 TRS 플러그를 재장착하고 6키를 각각 1초간 다시 측정한다.
+2. 실기에서 Sound Monitor Mode의 Curve/Reference 전환, Curve 상하 기울기와
+   좌우 DETAIL/BALANCED/SIMPLE 조작을 확인한다.
+3. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+4. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
+5. 현행 LINE/INST 회로를 기준 측정한 뒤, 스테레오 캡처 구현 후 Step 5B로 개조한다.

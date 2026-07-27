@@ -1,7 +1,7 @@
-# UI_DESIGN.md — GUI/GG 디자인 시스템 + 테마 아키텍처
+# UI_DESIGN.md — GG 디자인 시스템 + 테마 아키텍처
 
 > 상태: 확정안(태윤 미검토 항목은 §7 결정 로그 참조 — 뒤집기 가능)
-> 대상 화면: 480×320 가로. LVGL 9.5. 브랜드: **GUI / GG**, 픽셀 아이덴티티.
+> 대상 화면: 480×320 가로. LVGL 9.5. 브랜드: **GG**, 픽셀 아이덴티티.
 
 ## 1. 타이포그래피 — 픽셀 폰트
 - **LVGL 내장 UNSCII** 사용(외부 에셋 불필요): `lv_font_unscii_16`(제목/타일명), `lv_font_unscii_8`(보조).
@@ -78,9 +78,12 @@ typedef struct {
    Color=각 앱 콘텐츠 팔레트, Mode=각 앱 화면 형식).
 4. 테마 선택 UI=런처 하단 **[SETTINGS] → Theme**. 좌우로 순환해 즉시 적용+NVS 저장.
 5. 모든 앱 Settings는 `Color/Mode/Info`를 제공한다. Sound Monitor Mode는
-   `Spectrum/12-Band/Circular`, Bounce Mode는 `Classic Cat`이다.
+   `Curve/12-Band/Circular/Reference`, Bounce Mode는 `Classic Cat`이다.
+   Curve에서 상·하는 표시 기울기, 좌·우는 `DETAIL/BALANCED/SIMPLE` 단순화 수준을
+   조정한다. Reference는 고정 flat 계측 보기라 방향키를 소비하지 않는다.
 6. platform_config **version 5**는 기존 1바이트 외형 필드에 Color 2비트와 Mode 6비트를
    패킹한다. v2~v4 blob 크기를 보존하며 이전 Monitor 프리셋은 대응 조합으로,
    제거된 Nyan 값은 `Default + Classic Cat`으로 마이그레이션한다.
-7. dB Meter 상단은 `INPUT LINE/INST`와 `WINDOW LIVE/AVG 1s/AVG 3s` 두 선택기로
-   구성한다. 상·하로 선택기를 고르고 좌·우/확인으로 값을 바꾸며, 선택은 NVS에 유지한다.
+7. 현재 구형 dB Meter 상단은 `INPUT LINE/INST`와 `WINDOW LIVE/AVG 1s/AVG 3s` 두
+   선택기로 구성한다. Step 5B 자동 듀얼레인지가 활성화되면 INPUT 선택기는 없애고,
+   자동 범위 상태는 기본 화면이 아닌 진단 정보에만 표시한다.

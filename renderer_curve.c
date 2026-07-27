@@ -22,6 +22,7 @@
 #define PW    (SCR_W - LEFT - RIGHT)
 #define PH    (SCR_H - TOP - BOT)
 #define CURVE_FRAME_US 33333
+#define CURVE_SMOOTHING_LEVELS 3
 #define RGB565(r,g,b) (uint16_t)((((r)&0xF8)<<8)|(((g)&0xFC)<<3)|((b)>>3))
 #define C565(h) RGB565(((h)>>16)&0xFF,((h)>>8)&0xFF,(h)&0xFF)
 
@@ -67,6 +68,8 @@ static const int DB_MARKS[] = { 0, -12, -24, -36, -48, -60, -72 };
 static const char *TAG = "curve";
 static lv_obj_t *s_root;
 static lv_obj_t *s_canvas;
+static lv_obj_t *s_title_label;
+static lv_obj_t *s_profile_label;
 static void *s_buf;
 static void *s_static_buf;
 static curve_work_t *s_work;
@@ -76,6 +79,9 @@ static int s_frame_valid;
 static int64_t s_last_draw_us;
 static int64_t s_fps_start_us;
 static int s_fps_frames;
+static curve_display_mode_t s_display_mode = CURVE_DISPLAY_VISUAL;
+static int s_tilt_tenths = 45;
+static int s_smoothing_level = 1;
 
 static float clamp_unit(float value)
 {
@@ -152,18 +158,58 @@ static lv_obj_t *create_label(lv_obj_t *parent, const char *text,
     return label;
 }
 
+static void update_header_labels(void)
+{
+    if (!s_title_label || !s_profile_label) return;
+
+    if (s_display_mode == CURVE_DISPLAY_REFERENCE) {
+        lv_label_set_text(s_title_label, "REFERENCE");
+        lv_label_set_text(s_profile_label, "-72..0 dBFS   FLAT");
+        return;
+    }
+
+    static const char *const smoothing_names[CURVE_SMOOTHING_LEVELS] = {
+        "DETAIL", "BALANCED", "SIMPLE",
+    };
+    char text[40];
+    lv_snprintf(text, sizeof(text), "%d.%d dB/oct   %s",
+                s_tilt_tenths / 10, s_tilt_tenths % 10,
+                smoothing_names[s_smoothing_level]);
+    lv_label_set_text(s_title_label, "CURVE");
+    lv_label_set_text(s_profile_label, text);
+}
+
+void renderer_curve_configure(curve_display_mode_t mode,
+                              int tilt_tenths,
+                              int smoothing_level)
+{
+    s_display_mode = mode == CURVE_DISPLAY_REFERENCE
+        ? CURVE_DISPLAY_REFERENCE : CURVE_DISPLAY_VISUAL;
+    if (tilt_tenths < 0) tilt_tenths = 0;
+    if (tilt_tenths > 120) tilt_tenths = 120;
+    s_tilt_tenths = tilt_tenths;
+    if (smoothing_level < 0) smoothing_level = 0;
+    if (smoothing_level >= CURVE_SMOOTHING_LEVELS) {
+        smoothing_level = CURVE_SMOOTHING_LEVELS - 1;
+    }
+    s_smoothing_level = smoothing_level;
+    s_frame_valid = 0;
+    update_header_labels();
+}
+
 static void create_axes(void)
 {
     if (!s_theme.show_axis) return;
 
     uint32_t axis_color = mix_hex(s_theme.bg, s_theme.line, 118);
-    lv_obj_t *title = create_label(s_root, "SPECTRUM", s_theme.accent);
-    lv_obj_set_pos(title, PX, 3);
+    s_title_label = create_label(s_root, "", s_theme.accent);
+    lv_obj_set_pos(s_title_label, PX, 3);
 
-    lv_obj_t *mode = create_label(s_root, "-72 dBFS   4.5 dB/oct", axis_color);
-    lv_obj_set_width(mode, 190);
-    lv_obj_set_style_text_align(mode, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_set_pos(mode, SCR_W - RIGHT - 190, 3);
+    s_profile_label = create_label(s_root, "", axis_color);
+    lv_obj_set_width(s_profile_label, 240);
+    lv_obj_set_style_text_align(s_profile_label, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_pos(s_profile_label, SCR_W - RIGHT - 240, 3);
+    update_header_labels();
 
     for (int i = 0; i < DB_MARK_COUNT; i++) {
         char text[8];
@@ -234,15 +280,30 @@ static void draw_static_canvas(void)
 
 static void smooth_bands(const float *input, int count, float *output)
 {
-    static const int WEIGHTS[] = { 1, 4, 6, 4, 1 };
+    static const int balanced_weights[] = { 1, 4, 6, 4, 1 };
+    static const int simple_weights[] = {
+        1, 8, 28, 56, 70, 56, 28, 8, 1,
+    };
+    if (s_display_mode == CURVE_DISPLAY_REFERENCE ||
+        s_smoothing_level == 0) {
+        for (int i = 0; i < count; i++) {
+            output[i] = clamp_unit(input[i]);
+        }
+        return;
+    }
+
+    const int *weights = s_smoothing_level == 1
+        ? balanced_weights : simple_weights;
+    const int tap_count = s_smoothing_level == 1 ? 5 : 9;
+    const int radius = tap_count / 2;
     for (int i = 0; i < count; i++) {
         float sum = 0.0f;
         int weight_sum = 0;
-        for (int tap = -2; tap <= 2; tap++) {
+        for (int tap = -radius; tap <= radius; tap++) {
             int source = i + tap;
             if (source < 0) source = 0;
             if (source >= count) source = count - 1;
-            int weight = WEIGHTS[tap + 2];
+            int weight = weights[tap + radius];
             sum += clamp_unit(input[source]) * weight;
             weight_sum += weight;
         }
@@ -535,6 +596,8 @@ static void curve_destroy(void)
         lv_obj_delete(s_root);
         s_root = NULL;
         s_canvas = NULL;
+        s_title_label = NULL;
+        s_profile_label = NULL;
     }
     if (s_buf) {
         heap_caps_free(s_buf);

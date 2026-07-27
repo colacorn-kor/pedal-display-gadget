@@ -3,12 +3,19 @@
 KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export → Netlist…`로 뽑은 `.net`을
 이 문서와 대조(diff)한다. 형식: `NET_NAME: 끝점1, 끝점2, …` (부품.핀 표기).
 
+> **리비전 상태:** 아래 권위 넷은 GG 목표인 **무스위치 자동 듀얼레인지** 회로다. 현재
+> 브레드보드에는 아직 구형 LINE/INST SPDT 회로가 장착돼 있으며, 실제 상태와 개조 전제는
+> `ASSEMBLY.md` Step 5/5B와 `LAB_STATE.md`에 기록한다. 듀얼채널 펌웨어 전에는 개조하지 않는다.
+>
 > 참조 부품(레퍼런스 예시): `U1`=ESP32-S3-DevKitC-1, `U2`=ST7796 디스플레이,
-> `U3`=PCM1808 모듈, `U4`=TL072, `U5`=MP1584, `D1`=1N5819, `J1`=입력잭, `J2`=출력잭,
-> `J3`=SD 어댑터, `SW1..SW7`=버튼, `SW_GAIN`=INST/LINE SPDT,
+> `U3`=PCM1808 모듈, `U4/U6`=OPA2192 RRIO dual op-amp, `U5`=MP1584, `D1`=1N5819,
+> `D2`=BAV199 저누설 dual-series clamp,
+> `J1`=입력잭, `J2`=출력잭,
+> `J3`=SD 어댑터, `SW1..SW7`=버튼,
 > `PWR1`=ELB040202(9V 입력).
-> 저항/캡은 값으로 부른다(R10k_1 등). TL072 핀번호는 8핀 DIP 기준(1=OUTA,2=-INA,3=+INA,
-> 4=V−,5=+INB,6=−INB,7=OUTB,8=V+).
+> 저항/캡은 값으로 부른다(R10k_1 등). OPA2192 핀번호는 표준 dual op-amp
+> 8핀 기준(1=OUTA,2=-INA,3=+INA,4=V−,5=+INB,6=−INB,7=OUTB,8=V+).
+> 현재 DIP TL072와 핀 기능은 같지만 최종 패키지와 footprint는 발주 부품에 맞춘다.
 
 ---
 
@@ -17,7 +24,8 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 ```
 +9V_RAW    : PWR1.+, D1.anode
 +9V_PROT   : D1.cathode(띠), U5(MP1584).IN+, R100.1        ← 역전압 보호 뒤. 부하는 전부 여기서
-GND        : (모든 GND 공통 — PWR1.-, U5.IN-/OUT-, U1.GND, U2.GND, U3.GND, U4.4(V−),
+GND        : (모든 GND 공통 — PWR1.-, U5.IN-/OUT-, U1.GND, U2.GND, U3.GND,
+             U4.4(V−), U6.4(V−), D2.1(A1),
              D-잭 슬리브, 각 디커플링 캡의 GND쪽 …)  ★ 스타 그라운드 한 점
 +5V        : U5(MP1584).OUT+, U1(DevKit).5V, U3(PCM1808).+5V
 +3V3       : U1(DevKit).3V3, U3(PCM1808).3.3, U2(ST7796).VCC
@@ -25,7 +33,8 @@ GND        : (모든 GND 공통 — PWR1.-, U5.IN-/OUT-, U1.GND, U2.GND, U3.GND,
 
 op-amp 전용 깨끗한 9V (RC 필터):
 ```
-+9V_OPAMP  : R100.2, U4.8(V+), C100u_op.+, C100n_op.1
++9V_OPAMP  : R100.2, U4.8(V+), U6.8(V+), C100u_op.+,
+             C100n_op.1, C100n_u6.1, D2.2(K2)
              (R100 = 100Ω 직렬,  C100u_op = 100µF 전해,  C100n_op = 100nF 세라믹, 둘 다 →GND)
 ```
 
@@ -34,37 +43,71 @@ op-amp 전용 깨끗한 9V (RC 필터):
 
 ---
 
-## 2. 가상 그라운드 4.5V (TL072 B쪽 버퍼)
+## 2. 가상 그라운드 4.5V (U4 B쪽 버퍼)
 
 ```
 VREF_DIV   : R10k_a.2, R10k_b.1, C100u_ref.+, C100n_ref.1, U4.5(+INB)
              (R10k_a: +9V_OPAMP↔VREF_DIV,  R10k_b: VREF_DIV↔GND → 분압 4.5V)
              (C100u_ref, C100n_ref → GND)
-VREF       : U4.7(OUTB), U4.6(−INB), R1M.2, SW_GAIN.COM ← 버퍼된 저임피던스 4.5V
+VREF       : U4.7(OUTB), U4.6(−INB), R22M_sense.2,
+             R10k_sense.2, R1M5_hot.2, C15p_hot.2, U6.5(+INB)
+             ← 버퍼된 저임피던스 4.5V
+U6_IDLE    : U6.7(OUTB), U6.6(−INB)
+             (U6 B = VREF를 따르는 미사용 unity follower)
 ```
 
 검토 규칙: `U4.6`와 `U4.7`이 같은 네트(VREF)여야 팔로워(버퍼)가 성립. 분압 중점이
-`+9V_OPAMP`와 `GND` 사이 10k+10k인지 확인.
+`+9V_OPAMP`와 `GND` 사이 10k+10k인지 확인. 목표 U4/U6는 9V 단전원에서 HOT full-scale
+공통모드와 출력 swing을 감당하는 OPA2192다. 현재 TL072를 목표 회로에 대입하지 않는다.
 
 ---
 
-## 3. 신호 경로 (패스스루 + 버퍼/게인)
+## 3. 신호 경로 (하드와이어 Thru + 자동 듀얼레인지)
 
 ```
-GTR_IN     : J1.tip(입력잭), J2.tip(출력잭), C1u_in.1     ← 통과(패스스루) + 탭 분기
-AIN_P      : C1u_in.2, U4.3(+INA), R1M.1                  ← +입력 (1MΩ로 VREF 바이어스)
-AIN_N      : U4.2(−INA), R15k_rf.1, R15k_line.1, R2k2_inst.1
-            (R15k_rf: AIN_N↔U4.1(OUTA) = Rf 피드백)
-GAIN_LINE  : R15k_line.2, SW_GAIN.LINE
-GAIN_INST  : R2k2_inst.2, SW_GAIN.INST
-PCM_IN     : U4.1(OUTA)…아니라 C1u_out 경유 → 아래
-(경유)      : U4.1(OUTA), C1u_out.1
-PCM_INL    : C1u_out.2, U3(PCM1808).VINL                  ← 출력 커플링 1µF
+GTR_IN       : J1.tip(입력잭), J2.tip(출력잭), C1u_in.1
+               ← 전원·펌웨어와 무관한 직접 Thru + 분석 탭 분기
+ANALYZER_TAP  : C1u_in.2, R100k_sense.1, R10M_hot.1, C2p2_hot.1
+SENSE_P       : R100k_sense.2, U4.3(+INA), R22M_sense.1,
+                D2.3(K1/A2)
+               (R22M_sense: SENSE_P↔VREF)
+               (D2 BAV199: GND(A1)→SENSE_P(K1/A2)→+9V_OPAMP(K2))
+SENSE_N      : U4.2(−INA), R30k_sense.1, R10k_sense.1
+               (R30k_sense: SENSE_N↔U4.1, R10k_sense: SENSE_N↔VREF)
+SENSE_OUT    : U4.1(OUTA), R30k_sense.2, C1u_sense.1
+               (op-amp gain 4.00×, 입력잭 기준 명목 약 3.98×)
+
+HOT_DIV      : R10M_hot.2, R1M5_hot.1, C2p2_hot.2,
+               C15p_hot.1, U6.3(+INA)
+               (R10M_hot||C2p2_hot: ANALYZER_TAP↔HOT_DIV)
+               (R1M5_hot||C15p_hot: HOT_DIV↔VREF)
+HOT_OUT      : U6.1(OUTA), U6.2(−INA), C1u_hot.1
+               (HOT gain = 1.5M/(10M+1.5M) ≈ 0.1304×)
+
+PCM_SENSE_RC : C1u_sense.2, R100_sense.1
+PCM_INR      : R100_sense.2, C10n_sense.1, U3(PCM1808).VINR
+               (C10n_sense.2→GND)
+PCM_HOT_RC   : C1u_hot.2, R100_hot.1
+PCM_INL      : R100_hot.2, C10n_hot.1, U3(PCM1808).VINL
+               (C10n_hot.2→GND)
 ```
 
-검토 규칙: `SW_GAIN.COM`은 **VREF(4.5V)** 에 연결하며 GND에 연결하지 않는다.
-LINE 게인은 `1 + 15k/15k = 2.00×`, INST 게인은 `1 + 15k/2.2k ≈ 7.82×`다.
-입력 커플링 `C1u_in`은 1µF 이상(30Hz 보존).
+검토 규칙:
+
+- `J1.tip`과 `J2.tip`은 한 네트여야 하며 어떤 IC·스위치·직렬 부품도 사이에 넣지 않는다.
+- SENSITIVE op-amp는 강한 입력에서 포화될 수 있다. `R100k_sense`와 저누설 D2가
+  입력 전류를 제한해 op-amp·HOT·Thru를 격리한다. 저누설 부품을 쓰고 실제 기생
+  커패시턴스를 sweep 교정에 포함한다.
+- HOT은 9V op-amp로 버퍼하기 전에 수동 감쇠한다. `10M×2.2pF≈22us`와
+  `1.5M×15pF≈22.5us`로 divider의 저주파·고주파 비를 맞춘다. 실제 op-amp 입력·PCB
+  기생 커패시턴스를 포함한 값은 20Hz~20kHz sweep에서 조정한다.
+- 분석 탭의 명목 DC 입력 임피던스는 `22.1M || 11.5M ≈ 7.56MΩ`이며 GG 목표 최소
+  5MΩ를 넘는다.
+- PCM1808 명목 3.0Vpp 기준 sine 입력 한계는 SENSITIVE 약 0.265Vrms,
+  HOT 약 8.13Vrms다. 두 채널은 항상 동시에 샘플링하고 DSP가 overlap+hysteresis로 고른다.
+- 입력·출력 커플링은 1µF 이상을 사용한다. 100Ω+10nF는 PCM1808 데이터시트의 선택형
+  외부 RF 필터 범위 안에서 시작하는 값이며, 최종 주파수 응답은 sweep 교정으로 확정한다.
+- `SW_GAIN`, `GAIN_LINE`, `GAIN_INST` 네트는 목표 회로에 존재하지 않는다.
 
 ---
 

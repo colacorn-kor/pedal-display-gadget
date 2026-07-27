@@ -221,20 +221,26 @@ typedef enum {
 - **App Settings**: 모든 앱이 `Color · Mode · Info`를 보인다. Color의 `Default`는
   현재 전역 UI 테마를 상속하고 `Blue/White/Green`은 앱 콘텐츠만 고정한다. 어느 선택도
   런처나 공통 팝업 팔레트에는 영향을 주지 않는다.
-- **Sound Monitor**의 Mode는 `Spectrum/12-Band/Circular`, **Bounce**의 Mode는
+- **Sound Monitor**의 Mode는 `Curve/12-Band/Circular/Reference`, **Bounce**의 Mode는
   `Classic Cat`이다. 색과 화면 형식을 서로 독립적으로 저장한다.
 
 ### Sound Monitor 스펙트럼 표시 계약
 
 - 분석 범위는 20Hz~20kHz 로그 주파수 축, 세로축은 `-72..0dBFS`다.
-- 모니터 프리셋은 1kHz를 기준으로 `+4.5dB/oct` 시각 기울기를 적용한다. 이는 오디오
-  신호를 바꾸는 EQ가 아니라 사람이 읽기 좋은 스펙트럼 모양을 위한 표시 보정이다.
+- `Curve`는 1kHz 기준 표시 기울기를 `0/1.5/3.0/4.5/6.0dB/oct` 중에서 상·하로,
+  공간 단순화를 `DETAIL/BALANCED/SIMPLE` 중에서 좌·우로 조정한다. 기본값은
+  `+4.5dB/oct / BALANCED`다. 이는 오디오 신호를 바꾸는 EQ가 아니라 사람이 읽기 좋은
+  스펙트럼 모양을 위한 표시 보정이다.
+- `Reference`는 별도 모드다. 표시 기울기 `0dB/oct`, 공간 평활 없음으로 고정해 입력의
+  상대 주파수 분포를 가공하지 않고 보여 준다. 현재 65ms 시간 평균·220ms release와
+  PCM1808/프론트엔드의 실제 주파수 응답은 남으므로 교정 전에는 실험실급 분석기를
+  뜻하지 않는다.
 - FFT 파워는 65ms 평균, 즉시 attack, 220ms release를 사용하고 별도 peak envelope를
-  유지한다. Spectrum 렌더러는 5탭 공간 평활 뒤 현재 선·반투명 채움·피크선을 겹쳐 그린다.
+  유지한다. Curve 렌더러는 선택한 공간 평활 뒤 현재 선·반투명 채움·피크선을 겹쳐 그린다.
 - 주/보조 로그 주파수 그리드와 12dB 간격 눈금을 표시하며, 렌더러 갱신은 약 30fps로
   제한한다. 캔버스와 작업 배열은 PSRAM에 둬 디스플레이 DMA용 내부 RAM을 침범하지 않는다.
-- 기존 저장 씬과 NVS 호환을 위해 렌더러 ID `curve`는 유지하고 표시명만
-  `Spectrum (Blue/Green)`으로 바꾼다.
+- 기존 저장 씬과 NVS 호환을 위해 렌더러 ID `curve`와 기존 Mode 인덱스
+  `Curve=0/12-Band=1/Circular=2`는 유지하고 `Reference=3`을 뒤에 추가한다.
 - 12밴드 렌더러는 기타·베이스 그래픽 EQ의 주요 지점을 참고한
   `50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz` 중심 주파수를 사용한다.
   각 밴드 경계는 인접 중심 주파수의 기하평균이며, 기존 씬 호환을 위해 ID `bars`를 유지한다.
@@ -250,7 +256,7 @@ typedef enum {
 - RMS와 sample peak의 dBFS는 각각 `20 log10(value)`로 표시한다. 따라서 full-scale
   sine은 RMS `-3.01dBFS`, sample peak `0dBFS`다. sample peak는 오버샘플링 true-peak가
   아니므로 화면에도 `SAMPLE PEAK`로 명시한다.
-- PCM1808의 명목 `3.0Vpp` full scale을 사용해 ADC 핀 전압을
+- **현재 구형 프로토타입**은 PCM1808의 명목 `3.0Vpp` full scale을 사용해 ADC 핀 전압을
   `ADC Vrms = normalized RMS × 1.5V`로 환산한다. 입력잭 전압은 선택한 물리 게인과
   맞춰 `ADC Vrms / 2.00`(LINE) 또는 `ADC Vrms / 7.82`(INST)로 역산한다.
   dBV 기준은 `1Vrms`, dBu 기준은 `0.775Vrms`다.
@@ -263,7 +269,25 @@ typedef enum {
   전력을 평균한 뒤 RMS로 환산한다. 화면 갱신은 가독성과 입력 응답을 위해 200ms를 유지한다.
   sample peak는 각 표시 구간의 최댓값을 1초간 hold한다.
 - 현재 AC 커플링과 PCM1808 내장 HPF를 통과한 오디오만 측정하므로 DC 전압계가 아니다.
-  영구적인 별도 측정 회로는 필요 없지만, 자동 게인 감지는 스위치 접점을 읽는 추가 배선이 필요하다.
+  따라서 화면의 V 값은 오디오 대역 AC RMS이며 DC 전압계가 아니다.
+
+### GG 목표 자동 듀얼레인지 계약
+
+- 제품 목표 회로는 물리 LINE/INST 스위치를 제거하고 같은 입력을 두 고임피던스 가지로
+  나눠 PCM1808 양 채널로 동시에 읽는다. `VINL=HOT 약 0.13x`,
+  `VINR=SENSITIVE 약 3.98x`다. HOT은 op-amp 전에 주파수 보상 수동 분압을 거치므로
+  9V op-amp 전원 레일보다 큰 신호도 받을 수 있고, 명목 sine 입력 한계는 약 8.1Vrms다.
+- Core1이 두 채널을 같은 입력잭 단위로 환산한 뒤, clip margin·overlap·hysteresis로
+  포화되지 않은 쪽을 선택한다. 선택 범위가 바뀌어도 FFT·튜너·미터 값이 불연속적으로
+  뛰지 않아야 한다.
+- 사용자 dBFS는 개별 ADC 채널 full scale이 아니라 하나의 **GG Input Full Scale**에
+  고정한다. ADC dBFS와 현재 범위는 진단 정보로만 노출한다.
+- 절대 레벨의 기준은 교정된 입력잭 Vrms다. 범위별 1kHz gain과 20Hz~20kHz sweep LUT로
+  저항·op-amp·커플링·PCM1808 편차를 보정한다.
+- Instrument/Consumer(-10dBV)/Pro(+4dBu)는 레벨 맞춤용 비교선이며 정상/비정상 판정이
+  아니다. 이 구조와 하드와이어 Thru의 계약은 `GG_PRODUCT_SPEC.md`가 권위다.
+- 현재 단일채널 seqlock 공개 형식은 듀얼레인지 구현 전까지 유지한다. 구현 시에도 I2S와
+  범위 선택은 Core1만 소유하고 UI는 교정·선택이 끝난 발행 스냅샷만 읽는다.
 
 ### 하드웨어 영향
 
@@ -417,8 +441,8 @@ typedef struct {
 ### Phase 1 (지금 하드웨어로 동작)
 | id | 이름 | audio_mode | 변형 | 비고 |
 |----|------|-----------|------|------|
-| `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Spectrum/12-Band/Circular` |
-| `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, LINE/INST 입력잭 명목 Vrms·dBV·dBu |
+| `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Curve/12-Band/Circular/Reference` |
+| `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, 입력잭 Vrms·dBV·dBu·dBFS |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
 | `images` | Images | SPECTRUM | — | 이미지·폴더 탐색(좌/우 전환) |
 | `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |
@@ -444,7 +468,7 @@ typedef struct {
 
 | 현재 (`screen_manager.c`) | 앱 모델 | 진척 |
 |---------------------------|---------|------|
-| `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩 | **완료** — `Settings → Color/Mode`로 팔레트와 `Spectrum/12-Band/Circular`를 분리 |
+| `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩 | **완료** — Color와 `Curve/12-Band/Circular/Reference` Mode 분리 |
 | `SCR_IMAGES` + 이미지 순환 | **`images` 앱.** `on_event`로 이미지 전환 | **①·②완료** (②: `EV_LEFT/RIGHT` 순환) |
 | `SCR_TUNER` + 뮤트 특별취급 | **`tuner` 앱.** enter=뮤트, audio=TUNER, variant=2 | **①·②완료** (뮤트/모드 자기소유, 입력 미소비) |
 | `SCR_HOME` 메뉴 | **런처**로 역할 변경(단순 메뉴 → 두 체인 + 메뉴 행 + 순서/설정) | **완료** — 빈 행 포함 3행 내비게이션 |
