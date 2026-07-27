@@ -146,7 +146,8 @@ MP1584 벅 + 1N5819 역극성 보호.
 - I2S: MCLK=G8 BCK=G9 DIN=G10 WS=G18
 - TRS 래더: Tip→G4(ADC1_CH3), Ring=+3V3, Sleeve=GND. FOOTSW=G17(내부풀업 active-low)
 - 뮤트=G3 (J201 게이트 드라이브 **미설계** — 직결 금지)
-- SD: MISO=G11 CS=G47 (SPI 버스 G12/G13 공유, 펌웨어 스텁만. VCC=+3V3 직결, 순수 어댑터 전제)
+- SD: 당시에는 순수 +3V3 어댑터를 전제로 했으나 이 전제는 2026-07-28 폐기됐다.
+  실제 `SZH-EKBZ-005`는 MISO=G11, CS=G47, SPI G12/G13 공유, VCC=`+5V`다.
 - G5/G6/G7/G15/G16: 미사용(Phase 2 예비). G40/41/42: Phase 2 코덱 예약.
 
 **전기 금지사항(사고 이력 포함):**
@@ -157,7 +158,8 @@ MP1584 벅 + 1N5819 역극성 보호.
 5. 단일공급 op-amp Rg는 GND가 아닌 VREF(4.5V)에 (출력 포화 방지).
 6. ESP32 classic 데이터시트의 GPIO 제약을 S3에 적용하지 말 것. S3는 BT Classic 미지원
    (오디오 스트리밍 불가, BLE-MIDI/WiFi는 가능).
-7. AMS1117/레벨시프터 붙은 SD 모듈 비권장 — 40MHz LCD 공유 SPI 버스를 오염시킴.
+7. 당시 SD 레벨시프터 모듈을 비권장했으나 실제 부품이 `SZH-EKBZ-005`로 확인돼
+   장착 대상으로 정정됐다. 공유 40MHz LCD SPI 안정성은 실기 브링업에서 확인한다.
 
 ---
 

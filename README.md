@@ -64,6 +64,10 @@ PC simulator
 
 ## SD 카드
 
+실기 모듈은 아두이노 MicroSD 카드 소켓 모듈 `SZH-EKBZ-005`다. VCC는 `+5V`,
+GND는 공통 GND, MISO/MOSI/SCK/CS는 각각 G11/G13/G12/G47에 연결한다. 모듈의
+온보드 3.3V LDO·레벨 변환을 사용하므로 VCC를 `+3V3`에 연결하지 않는다.
+
 SD 카드는 FAT32로 포맷하고 다음 폴더를 사용한다.
 
 ```text

@@ -12,7 +12,7 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 > `U3`=PCM1808 모듈, `U4/U6`=OPA2192 RRIO dual op-amp, `U5`=MP1584, `D1`=1N5819,
 > `D2`=BAV199 저누설 dual-series clamp,
 > `J1`=입력잭, `J2`=출력잭,
-> `J3`=SD 어댑터, `SW1..SW7`=버튼,
+> `J3`=SZH-EKBZ-005 MicroSD 모듈, `SW1..SW7`=버튼,
 > `PWR1`=ELB040202(9V 입력).
 > 저항/캡은 값으로 부른다(R10k_1 등). OPA2192 핀번호는 표준 dual op-amp
 > 8핀 기준(1=OUTA,2=-INA,3=+INA,4=V−,5=+INB,6=−INB,7=OUTB,8=V+).
@@ -26,9 +26,9 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 +9V_RAW    : PWR1.+, D1.anode
 +9V_PROT   : D1.cathode(띠), U5(MP1584).IN+, R100.1        ← 역전압 보호 뒤. 부하는 전부 여기서
 GND        : (모든 GND 공통 — PWR1.-, U5.IN-/OUT-, U1.GND, U2.GND, U3.GND,
-             U4.4(V−), U6.4(V−), D2.1(A1),
+             U4.4(V−), U6.4(V−), D2.1(A1), J3.GND,
              D-잭 슬리브, 각 디커플링 캡의 GND쪽 …)  ★ 스타 그라운드 한 점
-+5V        : U5(MP1584).OUT+, U1(DevKit).5V, U3(PCM1808).+5V
++5V        : U5(MP1584).OUT+, U1(DevKit).5V, U3(PCM1808).+5V, J3.VCC
 +3V3       : U1(DevKit).3V3, U3(PCM1808).3.3, U2(ST7796).VCC
 ```
 
@@ -142,17 +142,20 @@ I2S_DIN    : U1.G10, U3.OUT(DOUT)
 
 ---
 
-## 6. SD 어댑터 (선택 장착, SDSPI/FATFS 구현) — U1 ↔ J3
+## 6. SZH-EKBZ-005 MicroSD 모듈 (선택 장착, SDSPI/FATFS 구현) — U1 ↔ J3
 
 ```
 LCD_SCLK   : (+ J3.SCK)          ← 4절 SCLK 네트에 J3.SCK 추가(버스 공유)
 LCD_MOSI   : (+ J3.MOSI)         ← 4절 MOSI 네트에 J3.MOSI 추가
 SD_MISO    : U1.G11, J3.MISO     ← SD 전용
 SD_CS      : U1.G47, J3.CS       ← SD 전용
-             J3.VCC → +3V3(순수 어댑터),  J3.GND → GND
+             J3.VCC → +5V,  J3.GND → GND
 ```
 
 > 즉 `LCD_SCLK`·`LCD_MOSI`는 U2와 J3가 **함께 매달린 한 네트**. CS만 각자(LCD=G2, SD=G47).
+> `SZH-EKBZ-005`는 4.5~5.5V VCC와 온보드 3.3V LDO·레벨 변환을 쓰므로 `J3.VCC`를
+> `+3V3`에 연결하지 않는다. `+5V`는 J3의 VCC에만 들어가며 SCK/MOSI/CS는 U1의 3.3V
+> 출력, MISO는 J3의 3.3V 출력이다.
 
 ---
 
@@ -219,6 +222,6 @@ MUTE_CTL   : U1.G3 → (게이트 드라이브 회로, 설계 예정) → J201.g
 - [ ] BAV199 `pin1=GND`, `pin2=+9V_OPAMP`, `pin3=SENSE_P`
 - [ ] HOT `10M||3.3pF`, `1.5M||15pF`와 C0G 튜닝 패드
 - [ ] 커플링 캡 ≥1µF(저역 보존)
-- [ ] LCD/SD SCLK·MOSI 버스 공유, CS 분리
+- [ ] LCD/SD SCLK·MOSI 버스 공유, CS 분리, J3.VCC=`+5V`
 - [ ] GPIO 중복 없음 / 금지핀 없음
 - [ ] MUTE(G3)는 드라이버 회로 확정 전까지 미배선

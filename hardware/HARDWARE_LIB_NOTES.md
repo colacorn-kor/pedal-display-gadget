@@ -14,7 +14,7 @@
 | MP1584_Buck | U5 | IN+ IN- OUT+ OUT- | 커스텀 |
 | D_1N5819 | D1 | 1=anode 2=cathode | 스톡 `D_DO-41...` |
 | Jack_6.35mm_Mono | J1,J2 | tip sleeve switch | 커스텀 |
-| microSD_Adapter_1x6 | J3 | CS SCK MOSI MISO VCC GND | 스톡 `PinSocket_1x06` |
+| microSD_Adapter_1x6 (`SZH-EKBZ-005`) | J3 | CS SCK MOSI MISO VCC GND | 스톡 `PinSocket_1x06`; VCC=`+5V` |
 | PWR_9V_ELB040202 | PWR1 | 1=+ 2=- | 커스텀 |
 
 **핀 전기타입(ERC):** GPIO=bidirectional, 5V=power_in, 3V3=power_out(DevKit이 출력),

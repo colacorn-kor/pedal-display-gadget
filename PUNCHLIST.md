@@ -14,9 +14,11 @@
    - 전원 ON/OFF 하드와이어 Thru 레벨 비교
    - 상세 순서와 기록표는 `ASSEMBLY.md` Step 5A
 2. **SD 실기 브링업**
-   - 순수 3.3V 어댑터 여부 확인 후 G11/G12/G13/G47·전원·GND 연속성 검사
+   - `SZH-EKBZ-005`의 VCC=`+5V`, GND, G11/G12/G13/G47 배선과 `+5V`↔`+3V3`
+     미연결을 무전원 상태에서 검사
    - FAT32 카드의 `GG/images`에 JPG/PNG/BMP/GIF를 넣고 mount·좌우 탐색 확인
-   - Gallery 전후 LCD 안정성, 입력 응답, 무카드 부팅과 전원 OFF 카드 교체 동작 기록
+   - USB 단독으로 무카드/카드 부팅, Gallery 전후 LCD 안정성, 입력 응답과 전원 OFF
+     카드 교체 동작 기록
 
 ## P2 - 하드웨어 및 제품 튜닝
 
@@ -55,7 +57,8 @@
 - 저장소 위생: `build/`, `managed_components/`, 파생 `sdkconfig*` 추적 제거
 - 사용자 확인: `ASSEMBLY.md` 조립 완료, SD 카드 모듈과 뮤트 회로만 미장착
 - Ring 100Ω / Tip 220Ω은 조립 완료 범위에 포함
-- SD VCC: 순수 어댑터 +3V3 직결로 확정
+- SD 모듈 정정: `SZH-EKBZ-005`는 4.5~5.5V 급전형이므로 VCC=`+5V`; SPI 신호는
+  온보드 레벨 변환을 거치는 3.3V 로직
 - NVS v1 -> v2 최초 부팅 시 1회 기본값 리셋은 정상
 - 3행 런처: 빈 STASH 경유, Settings/Reorder 왕복, 선택 테두리와 대각 커서 실기 통과
 - Sound Monitor: 20Hz~20kHz 로그 축, -72~0dBFS, 1kHz 기준 +4.5dB/oct,

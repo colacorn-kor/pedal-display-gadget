@@ -54,6 +54,8 @@
 ### S1.5. SD 콘텐츠 플랫폼 (기반·Gallery 완료)
 - LCD와 SPI2의 G12/G13을 공유하고 SD 전용 G11 MISO·G47 CS를 쓴다. Gallery가
   처음 필요할 때 10MHz SDSPI/FATFS를 마운트하므로 카드가 없어도 기본 부팅은 유지된다.
+- 실제 모듈은 `SZH-EKBZ-005`이며 VCC는 `+5V`(4.5~5.5V), SPI 신호는 온보드
+  레벨 변환을 거치는 3.3V 로직이다.
 - `/GG/images`, `/GG/music`, `/GG/roms`를 공통 카탈로그로 읽는다. Gallery의
   JPG/PNG/BMP/GIF/BIN 표시는 구현됐고 Music 재생은 S2 코덱 뒤에 연결한다.
 - Retro는 공식 [Retro-Go](https://github.com/ducalex/retro-go) 코어의 포팅·GPLv2
@@ -101,7 +103,7 @@
 - [x] PCM1808 두 채널 자동 듀얼레인지·Range Diagnostics·교정값 주입 경로
 - [ ] Step 5B 회로 개조 뒤 자동 범위 전환 실기 검증
 - [ ] HOT/SENSITIVE 범위별 1kHz 및 20Hz~20kHz sweep 교정
-- [ ] SD 카드 모듈과 뮤트 회로의 장착 시점 및 회로 확정
+- [ ] `SZH-EKBZ-005` 장착·공유 SPI 실기 브링업과 뮤트 회로 확정
 - [ ] KiCad Phase1 스키매틱(연습) → .net export → AI 검토 루프
 - [ ] (PCB 리비전 시) MIDI, 코덱, USB Host 전원 스위치·ESD, GG Analog Meter 반영
 - [ ] (S6 착수 시) Smart 컨트롤러 MCU·LED 전력 예산과 Ring 검출 후 급전 회로 확정
