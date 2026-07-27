@@ -89,7 +89,7 @@
 - Sound Monitor: `Curve / 12-Band / Circular / Reference`
 - Tuner
 - dB Meter
-- Images
+- Gallery: SD `GG/images`의 JPG/PNG/BMP/GIF/BIN 탐색·표시
 - Bounce
 
 ### GG 목표 기본 앱
@@ -102,6 +102,8 @@
 ## 5. SD와 소프트웨어 확장 범위
 
 - SD가 없어도 본체와 내장 앱은 부팅하고 동작한다.
+- SD의 표준 루트는 `GG/images`, `GG/music`, `GG/roms`다. Gallery와 세 카탈로그
+  기반은 구현됐고 Music 재생·Retro 실행은 아직 구현되지 않았다.
 - SD는 이미지·음악·게임 샘플, 테마, 설정, 업데이트 패키지를 제공한다.
 - 펌웨어 업데이트 없이 추가하는 앱은 서명·권한·자원 제한이 가능한 스크립트/바이트코드
   런타임을 장기 목표로 한다. 임의의 ESP32 네이티브 바이너리를 직접 실행하지 않는다.

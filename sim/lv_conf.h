@@ -29,6 +29,9 @@
 
 #define LV_USE_CANVAS 1
 #define LV_USE_GIF 1
+#define LV_USE_BMP 1
+#define LV_USE_LODEPNG 1
+#define LV_USE_TJPGD 1
 
 #define LV_USE_SDL 1
 #define LV_SDL_INCLUDE_PATH <SDL.h>

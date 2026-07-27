@@ -75,7 +75,7 @@ static void usage(void)
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
             " [--system-audio|--microphone] [--synthetic] [--smoke-test]"
-            " [--preview curve|reference|bars|circular|dbmeter|bounce"
+            " [--preview curve|reference|bars|circular|gallery|dbmeter|bounce"
             "|monitor-settings|monitor-color|monitor-mode]\n");
 }
 

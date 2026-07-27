@@ -92,7 +92,7 @@ static app_slot_t s_slots[APP_COUNT];
 ┌───────────────────────────────────────────────┐
 │  GUI                                    [배터리/상태 여백] │
 │  ── LIVE ───────────────────────────────────   │  ← 라이브 줄(풋스위치 순환)
-│   [Monitor] [Tuner] [Images] [Rhythm] …         │
+│   [Monitor] [Tuner] [Gallery] [Rhythm] …        │
 │  ── STASH ──────────────────────────────────   │  ← 보관함 줄
 │   [MIDI Mon] [Level] …                          │
 │                         [Reorder]  [Settings]   │  ← 메뉴 항목 줄
@@ -192,7 +192,7 @@ typedef struct {
 | monitor | Sound Monitor | SPECTRUM | — | 동작(①②) |
 | dbmeter | dB Meter | SPECTRUM | — | 동작 |
 | tuner | Tuner | TUNER | 기본/고급 | 동작(변형은 ③) |
-| images | Images | NONE | — | 동작 |
+| images | Gallery | SPECTRUM | — | SD 이미지 탐색 동작 |
 | rhythm | (미정) Rhythm Game | SPECTRUM/TUNER | — | ③ 이후 프로토타입 목표 |
 | setlist/metronome/midimon | — | NONE | — | MIDI 앱(Phase 2 하드웨어 후) |
 

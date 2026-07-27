@@ -10,6 +10,7 @@ set(APP_SOURCES
     "${PROJECT_ROOT}/midi_map.c"
     "${PROJECT_ROOT}/music_events.c"
     "${PROJECT_ROOT}/platform_esp.c"
+    "${PROJECT_ROOT}/storage_esp.c"
     "${PROJECT_ROOT}/tuner.c"
     ${PEDAL_UI_SOURCES}
 )

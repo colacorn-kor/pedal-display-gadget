@@ -45,6 +45,10 @@ if(NOT MSVC)
 endif()
 add_test(NAME fft_map_shared_backend COMMAND test_fft_map)
 
+add_executable(test_storage test_storage.c ../storage.c)
+target_include_directories(test_storage PRIVATE ..)
+add_test(NAME storage_media_catalog COMMAND test_storage)
+
 if(MSVC)
     target_compile_options(test_midi PRIVATE /utf-8 /wd4819)
     target_compile_options(test_tuner PRIVATE
@@ -55,6 +59,7 @@ if(MSVC)
     target_compile_options(test_audio_level PRIVATE /utf-8 /wd4819)
     target_compile_options(test_audio_autorange PRIVATE /utf-8 /wd4819)
     target_compile_options(test_fft_map PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_storage PRIVATE /utf-8 /wd4819)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

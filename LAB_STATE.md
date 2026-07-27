@@ -11,7 +11,7 @@
   화면·버튼 실기 확인 통과
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
-- 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
+- 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
 - 미장착: SD 카드 모듈, 뮤트 회로
 - Ring 100Ω / Tip 220Ω: `ASSEMBLY.md` 완료 범위에 포함되어 장착됨
@@ -187,11 +187,11 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd2250 bytes, 18% 여유) |
-| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xcebd0` bytes, 19% 여유) |
-| `AUDIO_DUAL_RANGE=1` 컴파일 | 통과 (`0xd25d0` bytes, 18% 여유), 현재 장치에는 미플래시 |
-| 호스트 검증 5/5 | 통과 (CTest 4개: MIDI, tuner, audio level, autorange + FFT normalization) |
-| PC 시뮬레이터 | 깨끗한 빌드·전체 결정론적 smoke·Windows 기본 출력 WASAPI 루프백 개방 통과 |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xeed00 bytes, 7% 여유) |
+| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xeb720` bytes, 8% 여유) |
+| `AUDIO_DUAL_RANGE=1` 컴파일 | 통과 (`0xef9d0` bytes, 6% 여유), 현재 장치에는 미플래시 |
+| 호스트 검증 7/7 | 통과 (CTest 6개 + FFT normalization) |
+| PC 시뮬레이터 | 깨끗한 빌드·Gallery 포함 전체 결정론적 smoke·Windows 기본 출력 WASAPI 루프백 개방 통과 |
 | COM4 탐지 | 2026-07-27 확인 |
 | USB 플래시 | Curve/Reference 개발본 통과, 외부 9V 분리·USB 단독 전제 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
@@ -452,13 +452,38 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 앞으로 앱·UI·공유 DSP 변경은 깨끗한 시뮬레이터 빌드·smoke와
   `sim/build/pedal_sim.exe` 갱신을 같은 작업의 완료 조건으로 삼는다.
 
+### 2026-07-28 SD 콘텐츠 기반과 Gallery
+
+- LCD SPI2의 G12 SCLK·G13 MOSI를 공유하고 G11 MISO·G47 CS를 쓰는 10MHz
+  SDSPI/FATFS 백엔드를 구현했다. Gallery가 처음 필요할 때만 마운트하므로 카드가 없어도
+  부팅과 다른 앱은 유지된다.
+- 공통 저장소 API가 `GG/images`, `GG/music`, `GG/roms`를 파일명 순으로 최대 64개
+  열거한다. 경로 순회를 거부하고 이미지·음악·Retro-Go급 ROM 확장자를 구분한다.
+- 기존 `images` 안정 ID와 NVS 슬롯은 유지하면서 표시명을 Gallery로 바꿨다.
+  JPG/JPEG/PNG/BMP/GIF/LVGL BIN을 실제 파일에서 열고 좌·우 탐색, OK 재검색을 지원한다.
+  Music은 카탈로그만 준비됐고 코덱 전에는 재생하지 않는다. Retro도 ROM 카탈로그만
+  준비했으며 코어·GPLv2·파티션 결정 전에는 실행하지 않는다.
+- PC 시뮬레이터는 기본 `sim/sdcard` 또는 `GG_SD_ROOT` 폴더를 같은 저장소 API로 읽는다.
+  깨끗한 빌드와 Gallery를 포함한 전체 smoke가 통과했고, 추적 EXE를 갱신했다.
+  smoke 전후 사용자 `sim/build/sim_nvs.bin` SHA-256은
+  `A2F43E17667F70DA1D002B842B16417A239ACA768F3CC09E6369460450A77BE6`으로 같았다.
+- CTest 6/6과 FFT normalization, 깨끗한 ESP-IDF 기본·래더 비활성·듀얼레인지
+  `-Werror` 빌드가 통과했다. 이미지 디코더 추가로 1MiB 앱 파티션 여유가 6~8%까지
+  줄었으므로 파티션 변경은 별도 승인 전까지 하지 않는다.
+- 이번 작업에서는 실기 플래시와 SD 어댑터 장착·마운트·Gallery 화면 확인을 하지 않았다.
+  실제 PNG를 지정한 PC preview 프로세스는 정상 유지됐지만 자동 화면 캡처 승인이
+  시간 초과되어 픽셀 육안 판정은 기록하지 않는다.
+
 ## 7. 다음 작업
 
-1. `ASSEMBLY.md` Step 5A에 따라 USB를 분리하고 외부 9V에서 구형 LINE/INST의
+1. 순수 3.3V SD 어댑터를 G11/G12/G13/G47에 연결하고 FAT32 카드의
+   `GG/images`로 Gallery 실기 브링업을 수행한다.
+2. 앱 파티션을 확장할지 승인하고 기존 NVS 보존·플래시 마이그레이션 절차를 확정한다.
+3. `ASSEMBLY.md` Step 5A에 따라 USB를 분리하고 외부 9V에서 구형 LINE/INST의
    noise·100mVrms gain·clip·Thru 기준을 기록한다.
-2. OPA2192×2, BAV199, 고값 저항, C0G pF 세트와 납땜용 소형 기판의 실제 보유 여부를 확인한다.
-3. Step 5B 회로를 무전원 상태에서 조립하고 넷리스트·단락·레일 검사를 통과시킨다.
-4. 외부 9V를 끄고 USB만 연결해 듀얼레인지 변형을 플래시한 뒤, USB를 다시 분리하고
+4. OPA2192×2, BAV199, 고값 저항, C0G pF 세트와 납땜용 소형 기판의 실제 보유 여부를 확인한다.
+5. Step 5B 회로를 무전원 상태에서 조립하고 넷리스트·단락·레일 검사를 통과시킨다.
+6. 외부 9V를 끄고 USB만 연결해 듀얼레인지 변형을 플래시한 뒤, USB를 다시 분리하고
    외부 9V에서 Range Diagnostics로 1kHz 교정과 범위 전환을 확인한다.
-5. 20Hz~20kHz sweep으로 HOT 보상 C와 남은 correction 후보를 확정한다.
-6. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+7. 20Hz~20kHz sweep으로 HOT 보상 C와 남은 correction 후보를 확정한다.
+8. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.

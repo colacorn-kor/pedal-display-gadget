@@ -51,6 +51,7 @@ add_executable(pedal_sim
     "${CMAKE_CURRENT_LIST_DIR}/sim_audio.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_fft_backend.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_main.c"
+    "${CMAKE_CURRENT_LIST_DIR}/storage_sim.c"
     "${PROJECT_ROOT}/fft_map.c"
     "${PROJECT_ROOT}/music_events.c"
     "${PROJECT_ROOT}/tuner.c"
@@ -69,7 +70,12 @@ target_include_directories(pedal_sim PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/compat"
 )
 
-target_compile_definitions(pedal_sim PRIVATE SDL_MAIN_HANDLED PEDAL_SIM=1)
+target_compile_definitions(
+    pedal_sim PRIVATE
+    SDL_MAIN_HANDLED
+    PEDAL_SIM=1
+    PEDAL_SIM_SD_ROOT="${CMAKE_CURRENT_LIST_DIR}/sdcard"
+)
 
 if(MSVC)
     target_compile_options(pedal_sim PRIVATE /W4)

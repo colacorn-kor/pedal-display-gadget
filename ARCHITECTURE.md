@@ -381,7 +381,7 @@ static launch_ctx_t s_saved_ctx;      /* 점프 직전 전체 상태(모드·체
 ┌───────────────────────────────────────────────┐
 │  PEDAL DISPLAY                                  │
 │  ── 라이브 ──────────────────────────────────   │  ← 위 줄: CHAIN_LIVE (순환 대상)
-│   [Monitor] [Tuner] [Images] [Setlist] ...      │
+│   [Monitor] [Tuner] [Gallery] [Setlist] ...     │
 │  ── 보관함 ──────────────────────────────────   │  ← 아래 줄: CHAIN_STASH
 │   [MIDI Mon] [Level] ...                         │
 │                              [순서변경]  [설정]  │  ← 구석 항목
@@ -434,8 +434,9 @@ typedef struct {
 
 - **Phase 1**: 컴파일된 기본값(하드코딩). README가 예고한 "테이블 하드코딩 → 추후 SD
   manifest"의 그 자리.
-- **Phase 2**: SD JSON 매니페스트 로드/저장(로더는 Phase 2 스텁). 펌웨어 재빌드 없이
-  앱 추가/순서/활성화/변형/테마 변경.
+- **Phase 2**: SD JSON 매니페스트 로드/저장. 펌웨어 재빌드 없이 컴파일된 앱의
+  순서/활성화/변형/테마를 바꾼다. 임의 네이티브 앱 추가는 허용하지 않으며, 새 앱 코드는
+  장기 스크립트/바이트코드 런타임이 생긴 뒤에만 SD로 배포한다.
 
 저장 대상: 체인 배정 + 순서 + 변형 + 퀵 앱 id + 마지막 화면 + 테마.
 
@@ -465,7 +466,7 @@ typedef struct {
 | `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Curve/12-Band/Circular/Reference` |
 | `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, 입력잭 Vrms·dBV·dBu·dBFS |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
-| `images` | Images | SPECTRUM | — | 이미지·폴더 탐색(좌/우 전환) |
+| `images` | Gallery | SPECTRUM | — | SD `GG/images`의 JPG/PNG/BMP/GIF/BIN 탐색 |
 | `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |
 | `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
@@ -490,7 +491,7 @@ typedef struct {
 | 현재 (`screen_manager.c`) | 앱 모델 | 진척 |
 |---------------------------|---------|------|
 | `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩 | **완료** — Color와 `Curve/12-Band/Circular/Reference` Mode 분리 |
-| `SCR_IMAGES` + 이미지 순환 | **`images` 앱.** `on_event`로 이미지 전환 | **①·②완료** (②: `EV_LEFT/RIGHT` 순환) |
+| `SCR_IMAGES` + 이미지 순환 | **`images`/Gallery 앱.** SD 카탈로그와 `on_event` 전환 | **완료** — 좌우 탐색·OK 재검색 |
 | `SCR_TUNER` + 뮤트 특별취급 | **`tuner` 앱.** enter=뮤트, audio=TUNER, variant=2 | **①·②완료** (뮤트/모드 자기소유, 입력 미소비) |
 | `SCR_HOME` 메뉴 | **런처**로 역할 변경(단순 메뉴 → 두 체인 + 메뉴 행 + 순서/설정) | **완료** — 빈 행 포함 3행 내비게이션 |
 | enum `screen_t` + 거대 switch | **활성 앱 인덱스 + 디스패치 + `s_slots[]` 모드** | **완료** |
@@ -524,6 +525,7 @@ typedef struct {
 | 6버튼+홈+확인, 풋스위치 숏/롱, 오토리피트 | ✅ 구현 | — |
 | 두 체인·순서변경·퀵 앱·변형 | ✅ 구현 | — |
 | 설정 영속성 | NVS(id 기반 슬롯/순서/테마/마지막 앱/퀵앱) | SD JSON 로더 |
+| SD 콘텐츠 | Gallery 이미지 + music/ROM 공통 카탈로그 | Music 재생·Retro 코어·스크립트 앱 |
 | `in_sources`/`out_paths` 라우팅 | 필드 예약(0) | 활성(디지털 믹서) |
 | 드럼/AUX 모니터 앱 | 비활성 스텁 | 동작 |
 

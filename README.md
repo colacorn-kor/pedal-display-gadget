@@ -1,7 +1,7 @@
 # GG - 모듈형 기타 사운드 디스플레이
 
 ESP32-S3 기반 기타 페달보드용 디스플레이 플랫폼이다. 튜너, 사운드 시각화, dB Meter,
-이미지, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마
+SD Gallery, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마
 시스템을 통해 기능을 확장한다. 기타 메인 출력은 소프트웨어를 통과하지 않는 아날로그
 패스스루다. 제품 범위와 GG2의 경계는 [`GG_PRODUCT_SPEC.md`](GG_PRODUCT_SPEC.md)가
 권위다.
@@ -46,7 +46,7 @@ PC simulator
 | ID | 표시명 | 역할 |
 |---|---|---|
 | `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무보정 Reference |
-| `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
+| `images` | Gallery | SD의 JPG/PNG/BMP/GIF/LVGL BIN 이미지 탐색·표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
 | `bounce` | Bounce | 소리 온셋 고양이·종이컵 러너, Classic Cat 모드 |
 | `dbmeter` | dB Meter | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu 표시 |
@@ -61,6 +61,24 @@ PC simulator
 런처의 Theme은 런처와 모든 공통 팝업의 전역 UI 팔레트를 바꾼다. 모든 앱의
 `Settings → Color`는 해당 앱 콘텐츠만 바꾸며 `Default`는 런처 Theme을 상속한다.
 `Settings → Mode`는 색과 독립적으로 앱의 화면 형식을 선택한다.
+
+## SD 카드
+
+SD 카드는 FAT32로 포맷하고 다음 폴더를 사용한다.
+
+```text
+GG/
+  images/   JPG, JPEG, PNG, BMP, GIF, LVGL BIN
+  music/    WAV, MP3, FLAC, OGG (카탈로그만 구현, 재생은 코덱 단계)
+  roms/     Retro-Go급 ROM (카탈로그만 구현, 에뮬레이터 코어는 후속 단계)
+```
+
+Gallery 진입 시 카드를 지연 마운트하므로 SD가 없어도 본체의 부팅과 다른 앱은 영향을 받지
+않는다. 좌·우로 파일을 이동하고 OK로 카드와 폴더를 다시 검색한다. 현재 한 폴더에서
+최대 64개를 파일명 순으로 읽으며 하위 폴더 재귀 탐색은 하지 않는다. 이미지는 화면 크기인
+480x320 이하를 권장한다. 더 큰 PNG/GIF도 파일 형식상 허용하지만 디코딩 메모리와 전환
+시간이 크게 늘 수 있다. 카드 파일 시스템 손상을 막기 위해 카드를 빼거나 교체할 때는
+본체 전원을 먼저 끈다.
 
 ## 입력
 
@@ -84,7 +102,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `app_main.c` | ESP 부팅, Core0/Core1 태스크, I2S, 입력, UI queue |
 | `gadget_app.{c,h}` | 앱 인터페이스와 레지스트리 |
 | `app_monitor.c` | Sound Monitor 앱 |
-| `app_images.c` | Images 앱 |
+| `app_images.c` | SD Gallery 앱 |
 | `app_tuner.c` | Tuner 앱과 뮤트/오디오 모드 생명주기 |
 | `app_bounce.c` | 온셋 기반 고양이 러너 Bounce 앱 |
 | `app_db_meter.c` | dB Meter 앱 |
@@ -96,6 +114,8 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `fft_map.{c,h}` | 2048-point FFT를 20Hz~20kHz, -72~0dBFS의 256점 로그 스펙트럼으로 매핑 |
 | `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
+| `storage.{c,h}` | 이미지·음악·Retro ROM 공통 카탈로그와 안전한 파일 접근 |
+| `storage_esp.c`, `sim/storage_sim.c` | SDSPI/FATFS와 PC 폴더 스토리지 백엔드 |
 | `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
 | `sim/` | SDL2 PC 시뮬레이터, `platform_sim`, PC용 FFT 실행 백엔드 |

@@ -36,6 +36,7 @@
 [완료] 신회로 TRS 6키 ADC 실측 · HOME/FOOTSW 롱 동작 확인
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
        · Windows 기본 출력 WASAPI 루프백 입력
+[완료] SDSPI/FATFS 기반 · SD Gallery · PC SD 폴더 · music/ROM 공통 카탈로그
 [현재] Range Diagnostics·Step 5B 배선/교정 절차 완료 · Step 5A 기준 측정 대기
 [병행 HW] 자동 듀얼레인지 분석 탭 · 교정 지그 · KiCad 풋프린트/스키매틱
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
@@ -49,6 +50,15 @@
 - 효과: PC 시뮬레이터에서 같은 앱·UI·renderer·`fft_map`이 SDL 창으로 실행된다.
   입력 수집과 FFT 실행만 플랫폼 백엔드로 분리돼 테스트가 쉽고, 코덱/무선 추가 시 UI는
   바뀌지 않는다.
+
+### S1.5. SD 콘텐츠 플랫폼 (기반·Gallery 완료)
+- LCD와 SPI2의 G12/G13을 공유하고 SD 전용 G11 MISO·G47 CS를 쓴다. Gallery가
+  처음 필요할 때 10MHz SDSPI/FATFS를 마운트하므로 카드가 없어도 기본 부팅은 유지된다.
+- `/GG/images`, `/GG/music`, `/GG/roms`를 공통 카탈로그로 읽는다. Gallery의
+  JPG/PNG/BMP/GIF/BIN 표시는 구현됐고 Music 재생은 S2 코덱 뒤에 연결한다.
+- Retro는 공식 [Retro-Go](https://github.com/ducalex/retro-go) 코어의 포팅·GPLv2
+  라이선스 결정·확장 파티션 승인 뒤 진행한다.
+  현재는 ROM 파일 판별과 정렬 기반만 있으며 게임 실행을 가장하지 않는다.
 
 ### S2. 오디오 출력 (3.5mm 스테레오 = 헤드폰/AUX 활성화)
 - 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(ASSEMBLY에 확보됨).

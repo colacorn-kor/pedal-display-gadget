@@ -26,7 +26,9 @@
 #define LCD_SPI_HOST  SPI2_HOST
 #define PIN_SCLK  12
 #define PIN_MOSI  13
+#define PIN_MISO  11
 #define PIN_CS     2
+#define PIN_SD_CS 47
 #define PIN_DC    21
 #define PIN_RST   14
 #define PIN_BL     1        /* 백라이트 EN (전류 크면 트랜지스터 경유) */
@@ -112,6 +114,14 @@ static esp_err_t lcd_test_pattern(esp_lcd_panel_handle_t panel)
 
 lv_display_t* bsp_display_init(void)
 {
+    /* Keep the optional SD card deselected while the LCD owns the bus. */
+    gpio_config_t sd_cs={
+        .mode=GPIO_MODE_OUTPUT,
+        .pin_bit_mask=1ULL<<PIN_SD_CS,
+    };
+    ESP_ERROR_CHECK(gpio_config(&sd_cs));
+    ESP_ERROR_CHECK(gpio_set_level(PIN_SD_CS,1));
+
     /* 백라이트 핀 (초기화 끝나고 켜야 깜빡임 없음) */
     gpio_config_t bk={ .mode=GPIO_MODE_OUTPUT, .pin_bit_mask=1ULL<<PIN_BL };
     ESP_ERROR_CHECK(gpio_config(&bk));
@@ -119,7 +129,7 @@ lv_display_t* bsp_display_init(void)
 
     /* SPI 버스 */
     spi_bus_config_t bus={
-        .sclk_io_num=PIN_SCLK, .mosi_io_num=PIN_MOSI, .miso_io_num=-1,
+        .sclk_io_num=PIN_SCLK, .mosi_io_num=PIN_MOSI, .miso_io_num=PIN_MISO,
         .quadwp_io_num=-1, .quadhd_io_num=-1,
         .max_transfer_sz=LCD_HRES*80*sizeof(uint16_t),
     };

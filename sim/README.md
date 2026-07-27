@@ -81,6 +81,7 @@ To open a deterministic visual QA screen without NVS state or key input:
 .\sim\build\pedal_sim.exe --preview reference
 .\sim\build\pedal_sim.exe --preview bars
 .\sim\build\pedal_sim.exe --preview circular
+.\sim\build\pedal_sim.exe --preview gallery
 .\sim\build\pedal_sim.exe --preview dbmeter
 .\sim\build\pedal_sim.exe --preview bounce
 .\sim\build\pedal_sim.exe --preview monitor-settings
@@ -90,6 +91,24 @@ To open a deterministic visual QA screen without NVS state or key input:
 
 Persistent launcher/theme/slot state is written to `sim_nvs.bin` in the current
 working directory.
+
+## SD Card Folder
+
+The simulator maps `sim/sdcard` to the gadget's SD card:
+
+```text
+sim/sdcard/GG/images
+sim/sdcard/GG/music
+sim/sdcard/GG/roms
+```
+
+Gallery reads supported images from `GG/images`. Set the `GG_SD_ROOT`
+environment variable to use another directory. The same media filtering,
+sorting, 64-item limit, and safe relative paths are shared with the firmware.
+
+```powershell
+.\sim\build\pedal_sim.exe --preview gallery
+```
 
 ## Deterministic Smoke Test
 

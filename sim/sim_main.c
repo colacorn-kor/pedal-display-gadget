@@ -342,7 +342,7 @@ static bool run_smoke_test(void)
     }
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
-           "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
+           "monitor viz, Gallery, live cycle, tuner %.2f Hz (%s%d), "
            "Curve controls, Reference mode, Color/Mode app settings, "
            "Classic Cat runner, input-voltage meter, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
@@ -389,6 +389,14 @@ static bool open_preview(const char *preview)
         for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
         sm_on_event(EV_OK);
         return smoke_expect_app("dbmeter");
+    }
+
+    if (strcmp(preview, "gallery") == 0) {
+        int idx = app_registry_find("images");
+        if (idx < 0) return false;
+        for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
+        sm_on_event(EV_OK);
+        return smoke_expect_app("images");
     }
 
     if (strcmp(preview, "bounce") == 0) {

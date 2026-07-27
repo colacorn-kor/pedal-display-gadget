@@ -9,24 +9,20 @@
 
 #include "lvgl.h"
 #include "content_screen.h"
+#include "storage.h"
 
 #define SCR_W      480
 #define SCR_H      320
-#define SD_MOUNT   "/sdcard"
 #define FS_LETTER  'S'
 
 /* ---------- LVGL filesystem -> ESP-IDF VFS ------------------------------- */
 static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
 {
     (void)drv;
-    char full[256];
-    int written = snprintf(full, sizeof(full), "%s/%s", SD_MOUNT, path);
-    if (written < 0 || written >= (int)sizeof(full)) return NULL;
-
     const bool read = (mode & LV_FS_MODE_RD) != 0;
     const bool write = (mode & LV_FS_MODE_WR) != 0;
     const char *open_mode = read && write ? "rb+" : (write ? "wb" : "rb");
-    return fopen(full, open_mode);
+    return storage_open(path, open_mode);
 }
 
 static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file)

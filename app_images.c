@@ -1,35 +1,112 @@
 #include "gadget_app.h"
 
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "esp_heap_caps.h"
+
 #include "app_slots.h"
 #include "content_screen.h"
+#include "storage.h"
 #include "theme.h"
 
-static const char *IMG_F[] = {
-    "S:content/img1.bin", "S:content/img2.bin", "S:content/img3.bin"
-};
-static const char *IMG_N[] = { "img1", "img2", "img3" };
-#define IMGN ((int)(sizeof(IMG_F) / sizeof(IMG_F[0])))
-
 static int s_image;
+static int s_image_count;
+static storage_item_t *s_images;
+static char s_image_source[STORAGE_PATH_MAX + 3];
 
 static const ui_theme_t *images_theme(void)
 {
     return theme_for_app_color(app_slots_color(&APP_IMAGES));
 }
 
+static bool images_ensure_catalog(void)
+{
+    if (s_images) return true;
+    s_images = heap_caps_calloc(
+        STORAGE_MAX_ITEMS, sizeof(*s_images),
+        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    return s_images != NULL;
+}
+
 int images_app_count(void)
 {
-    return IMGN;
+    if (!images_ensure_catalog()) return 1;
+    if (s_image_count <= 0) {
+        s_image_count = storage_scan(
+            STORAGE_MEDIA_IMAGE, s_images, STORAGE_MAX_ITEMS);
+    }
+    return s_image_count > 0 ? s_image_count : 1;
 }
 
 void images_app_set_content(int content)
 {
-    s_image = content;
+    s_image = content < 0 ? 0 : content;
+}
+
+static bool has_gif_extension(const char *path)
+{
+    const char *extension = path ? strrchr(path, '.') : NULL;
+    if (!extension) return false;
+    const char *gif = ".gif";
+    while (*extension && *gif) {
+        if (tolower((unsigned char)*extension) != *gif) return false;
+        extension++;
+        gif++;
+    }
+    return *extension == '\0' && *gif == '\0';
+}
+
+static void images_show_empty(void)
+{
+    if (!s_images) {
+        content_show_text("Gallery memory unavailable", "Gallery");
+    } else if (storage_ready()) {
+        content_show_text("No images found\n\nGG/images", "Gallery");
+    } else {
+        content_show_text(storage_status(), "Gallery");
+    }
 }
 
 static void images_show_current(void)
 {
-    content_show_image(IMG_F[s_image], IMG_N[s_image]);
+    if (s_image_count <= 0) {
+        images_show_empty();
+        return;
+    }
+    if (s_image >= s_image_count) s_image = s_image_count - 1;
+
+    const storage_item_t *item = &s_images[s_image];
+    const int length = snprintf(
+        s_image_source, sizeof(s_image_source), "S:%s", item->path);
+    if (length < 0 || length >= (int)sizeof(s_image_source)) {
+        images_show_empty();
+        return;
+    }
+
+    if (has_gif_extension(item->path)) {
+        content_show_gif(s_image_source, item->name);
+    } else {
+        content_show_image(s_image_source, item->name);
+    }
+}
+
+static void images_refresh(void)
+{
+    if (!images_ensure_catalog()) {
+        s_image_count = 0;
+        images_show_empty();
+        return;
+    }
+    s_image_count = storage_scan(
+        STORAGE_MEDIA_IMAGE, s_images, STORAGE_MAX_ITEMS);
+    if (s_image_count <= 0) {
+        s_image = 0;
+    } else if (s_image >= s_image_count) {
+        s_image = s_image_count - 1;
+    }
+    images_show_current();
 }
 
 static void images_enter(int variant)
@@ -38,7 +115,7 @@ static void images_enter(int variant)
     audio_set_mode(AUDIO_SPECTRUM);
     content_screen_apply_theme(images_theme());
     content_screen_create();
-    images_show_current();
+    images_refresh();
 }
 
 static void images_exit(void)
@@ -49,13 +126,25 @@ static void images_exit(void)
 static bool images_on_event(ui_event_t event)
 {
     if (event == EV_LEFT) {
-        s_image = (s_image - 1 + IMGN) % IMGN;
+        if (s_image_count <= 0) {
+            images_refresh();
+            return true;
+        }
+        s_image = (s_image - 1 + s_image_count) % s_image_count;
         images_show_current();
         return true;
     }
     if (event == EV_RIGHT) {
-        s_image = (s_image + 1) % IMGN;
+        if (s_image_count <= 0) {
+            images_refresh();
+            return true;
+        }
+        s_image = (s_image + 1) % s_image_count;
         images_show_current();
+        return true;
+    }
+    if (event == EV_OK) {
+        images_refresh();
         return true;
     }
     return false;
@@ -88,7 +177,7 @@ static void images_mode_set(int idx)
 
 const gadget_app_t APP_IMAGES = {
     .id = "images",
-    .name = "Images",
+    .name = "Gallery",
     .audio_mode = AUDIO_SPECTRUM,
     .icon = NULL,
     .on_enter = images_enter,

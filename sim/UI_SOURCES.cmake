@@ -15,6 +15,7 @@ set(PEDAL_UI_SOURCES
     "${PEDAL_ROOT}/renderer_curve.c"
     "${PEDAL_ROOT}/audio_level.c"
     "${PEDAL_ROOT}/screen_manager.c"
+    "${PEDAL_ROOT}/storage.c"
     "${PEDAL_ROOT}/theme.c"
     "${PEDAL_ROOT}/tuner_screen.c"
 )

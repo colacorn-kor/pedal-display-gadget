@@ -13,27 +13,35 @@
    - 100mVrms 1kHz의 LINE/INST 표시와 clip 근접 입력
    - 전원 ON/OFF 하드와이어 Thru 레벨 비교
    - 상세 순서와 기록표는 `ASSEMBLY.md` Step 5A
+2. **SD 실기 브링업**
+   - 순수 3.3V 어댑터 여부 확인 후 G11/G12/G13/G47·전원·GND 연속성 검사
+   - FAT32 카드의 `GG/images`에 JPG/PNG/BMP/GIF를 넣고 mount·좌우 탐색 확인
+   - Gallery 전후 LCD 안정성, 입력 응답, 무카드 부팅과 전원 OFF 카드 교체 동작 기록
 
 ## P2 - 하드웨어 및 제품 튜닝
 
-2. KiCad `.pretty` 파일 4개 배치와 추적 확인(`TAEYUN_TODO.md` 참조)
-3. 커스텀 풋프린트 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
-4. 조립된 TL072 오디오 입력의 9V 전원 실기 검증과 노이즈 저감
-5. 튜너 5분 무리셋 및 I2S overflow 로그 실기 검증
-6. 현재 LINE 2.00x / INST 7.82x 구형 프론트엔드의 기준 실측
-7. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
-8. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
-9. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
-10. 외부 9V와 실제 기타 입력에서 Curve/Reference 주파수 응답·피크 감쇠 실기 튜닝
-11. `AUDIO_DUAL_RANGE=1` L/R 자동 선택의 Step 5B 실기 검증
+3. KiCad `.pretty` 파일 4개 배치와 추적 확인(`TAEYUN_TODO.md` 참조)
+4. 커스텀 풋프린트 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
+5. 조립된 TL072 오디오 입력의 9V 전원 실기 검증과 노이즈 저감
+6. 튜너 5분 무리셋 및 I2S overflow 로그 실기 검증
+7. 현재 LINE 2.00x / INST 7.82x 구형 프론트엔드의 기준 실측
+8. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
+9. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
+10. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
+11. 외부 9V와 실제 기타 입력에서 Curve/Reference 주파수 응답·피크 감쇠 실기 튜닝
+12. `AUDIO_DUAL_RANGE=1` L/R 자동 선택의 Step 5B 실기 검증
    - 자동 선택, Range Diagnostics, 호스트 테스트와 분리 빌드 소프트웨어 완료
    - 두 채널 overlap 일치, 실제 전환 연속성, clip 상태와 I2S overflow는 하드웨어 뒤 확인
-12. Step 5B 자동 듀얼레인지 프론트엔드 조립
+13. Step 5B 자동 듀얼레인지 프론트엔드 조립
    - OPA2192 dual ×2, SENSITIVE 보호 clamp, HOT 보상 divider 적용
    - 고임피던스/pF 부분은 솔더리스 브레드보드가 아닌 세척한 납땜 기판 사용
    - HOT 시작값 `10M||3.3pF : 1.5M||15pF`, sweep 뒤 C0G 조정
-13. 범위별 1kHz gain 및 20Hz~20kHz sweep 교정, GG Input Full Scale 확정
-14. GG Analog Meter USB HID 보고서·바늘 ballistics·전력 예산 설계
+14. 범위별 1kHz gain 및 20Hz~20kHz sweep 교정, GG Input Full Scale 확정
+15. GG Analog Meter USB HID 보고서·바늘 ballistics·전력 예산 설계
+16. 16MB 플래시의 앱 파티션 확장 승인·마이그레이션 계획
+   - 이미지 디코더 포함 기본 이미지가 1MiB 파티션의 7%만 남김
+   - 파티션 변경·기존 NVS 보존·일반 플래시 호환을 별도 승인 후 진행
+17. Retro-Go 포팅 범위와 GPLv2 배포 라이선스 결정
 
 ## 해결 및 관찰
 
