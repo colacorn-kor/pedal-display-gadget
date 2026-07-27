@@ -286,8 +286,19 @@ typedef enum {
   저항·op-amp·커플링·PCM1808 편차를 보정한다.
 - Instrument/Consumer(-10dBV)/Pro(+4dBu)는 레벨 맞춤용 비교선이며 정상/비정상 판정이
   아니다. 이 구조와 하드와이어 Thru의 계약은 `GG_PRODUCT_SPEC.md`가 권위다.
-- 현재 단일채널 seqlock 공개 형식은 듀얼레인지 구현 전까지 유지한다. 구현 시에도 I2S와
-  범위 선택은 Core1만 소유하고 UI는 교정·선택이 끝난 발행 스냅샷만 읽는다.
+- `AUDIO_DUAL_RANGE`의 기본값은 `0`이다. 따라서 현재 구형 브레드보드 빌드는 PCM1808
+  VINL만 읽는 기존 동작을 유지하며, Step 5B 두 채널이 모두 연결되기 전에는 `1` 변형을
+  플래시하지 않는다.
+- `AUDIO_DUAL_RANGE=1`은 32-bit stereo I2S 프레임의 left=HOT, right=SENSITIVE를
+  동시에 읽는다. `audio_autorange`가 두 채널을 고정 GG 입력 스케일로 환산하고,
+  SENSITIVE ADC peak 0.82에서 HOT으로 즉시 전환한다. 0.45 아래가 500ms 지속될 때만
+  SENSITIVE로 돌아가며, 클리핑 전환이 아니면 한 블록 crossfade를 적용한다.
+- I2S와 범위 선택은 계속 Core1만 소유한다. `audio_viz_snapshot_t`는 선택된 입력
+  소스·GG 스케일 사용 여부·선택 범위 clip 상태를 기존 seqlock으로 함께 발행하며 UI는
+  교정·선택이 끝난 복사본만 읽는다.
+- 듀얼레인지 dB Meter는 LINE/INST 수동 선택을 없애고 `AUTO SENSITIVE/HOT`을 표시한다.
+  RMS·peak dBFS는 고정 GG Input Full Scale, Vrms·dBV·dBu는 입력잭 기준으로 계산한다.
+  현재 gain/correction은 명목값이므로 Step 5B의 1kHz·sweep 교정 전에는 계측 확정값이 아니다.
 
 ### 하드웨어 영향
 

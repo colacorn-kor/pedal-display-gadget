@@ -63,6 +63,13 @@ int main(void)
     expect_near("INST input voltage", reading.input_vrms,
                 0.095930f, 0.0005f);
 
+    audio_level_calculate_gg(
+        1.0f / sqrtf(2.0f), 1.0f, &reading);
+    expect_near("GG full-scale sine RMS dBFS", reading.rms_dbfs,
+                -3.010300f, 0.0005f);
+    expect_near("GG full-scale input Vrms", reading.input_vrms,
+                AUDIO_GG_INPUT_FULL_SCALE_VRMS, 0.0005f);
+
     if (failures != 0) {
         fprintf(stderr, "audio level tests failed: %d\n", failures);
         return 1;

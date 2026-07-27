@@ -407,7 +407,7 @@ TL072 V+(8번) = 깨끗한 9V,  V−(4번) = GND
      핀을 신호에 둬 GND와 깨끗한 9V 사이로 clamp한 뒤 첫 OPA2192 A의
      `Rf=30k / Rg=10k to Vref` 비반전 증폭. 입력잭 기준 gain 약 3.98x
    - HOT: `(10MΩ || 2.2pF)` 상단과 `(1.5MΩ || 15pF)` Vref 쪽 하단으로 분압한 뒤
-     추가 TL072 A의 unity buffer, gain 약 0.1304x
+     두 번째 OPA2192 A의 unity buffer, gain 약 0.1304x
 4. HOT의 두 커패시터는 10MΩ×2.2pF와 1.5MΩ×15pF의 시정수를 맞춰 고값 저항과
    op-amp 입력 커패시턴스로 생기는 고역 감쇠를 보상하는 시작값이다.
 5. HOT 출력은 `1µF -> 100Ω -> PCM1808 VINL`, SENSITIVE 출력은
@@ -427,7 +427,8 @@ sweep 보정을 확정한다. 사용자 화면은 범위를 자동으로 고르�
 튜너·Curve·Reference·dB Meter 값이 뛰지 않아야 한다.
 
 🚫 **지금 하지 말 것:** 현재 USB-only 실기 장치를 선행 개조하거나, 두 PCM 채널을 합선하거나,
-HOT/SENSITIVE 중 하나만 연결한 채 자동 선택 펌웨어를 올리지 않는다.
+HOT/SENSITIVE 중 하나만 연결한 채 자동 선택 펌웨어를 올리지 않는다. 자동 선택 코드는
+`AUDIO_DUAL_RANGE=1` 변형에서만 켜지며 기본 빌드는 현재 VINL 단일채널을 유지한다.
 
 ---
 

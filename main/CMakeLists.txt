@@ -3,6 +3,7 @@ include("${PROJECT_ROOT}/sim/UI_SOURCES.cmake")
 
 set(APP_SOURCES
     "${PROJECT_ROOT}/app_main.c"
+    "${PROJECT_ROOT}/audio_autorange.c"
     "${PROJECT_ROOT}/display_bringup.c"
     "${PROJECT_ROOT}/fft_map.c"
     "${PROJECT_ROOT}/midi.c"
@@ -18,6 +19,12 @@ idf_component_register(SRCS ${APP_SOURCES} INCLUDE_DIRS "..")
 if(DEFINED INPUT_TRS_LADDER)
     target_compile_definitions(
         ${COMPONENT_LIB} PRIVATE INPUT_TRS_LADDER=${INPUT_TRS_LADDER}
+    )
+endif()
+
+if(DEFINED AUDIO_DUAL_RANGE)
+    target_compile_definitions(
+        ${COMPONENT_LIB} PRIVATE AUDIO_DUAL_RANGE=${AUDIO_DUAL_RANGE}
     )
 endif()
 

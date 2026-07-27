@@ -8,7 +8,7 @@
 - 플래시 이미지 기준 커밋: `052f2876` (`Record Color Mode hardware verification`)
 - 마지막 실기 펌웨어: 위 커밋의 dirty 작업 트리에서 빌드한 Curve/Reference 개발본
 - 현재 펌웨어 상태: 자동 빌드·플래시·25초 부팅 로그 통과, Curve/Reference 사용자
-  화면·버튼 실기 확인 대기
+  화면·버튼 실기 확인 통과
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
@@ -32,7 +32,7 @@ COM4에 일반 플래시했다. 전체 삭제, 파티션 변경과 NVS 초기화
   LVGL task 시작 확인
 - 25초 로그에서 ladder IDLE 24회, 3208~3210mV, ratio 0.9996~1.0002
 - WDT, panic, 비의도 reset, I2S·메모리 오류 0회
-- Curve/Reference 화면과 방향키 조작의 사용자 육안 확인은 아직 대기
+- Curve/Reference 화면과 방향키 조작은 이후 사용자 육안 확인에서 통과
 
 ### 2026-07-27 Basic 래더 전압 이동
 
@@ -53,6 +53,26 @@ UP, DOWN, LEFT, RIGHT, OK, HOME을 이 순서로 각각 약 1초간 눌렀다.
 TRS Sleeve/GND 접점 또는 공통 경로에 생긴 작은 직렬저항을 우선 의심한다. 판정창을 넓히면
 동시입력을 다른 키로 오인할 수 있어 펌웨어 문턱은 바꾸지 않았다. 양쪽 TRS 플러그 재장착 뒤
 같은 1초 로그를 다시 수집하는 것이 다음 분리 시험이다.
+
+### 2026-07-27 Basic 6키 기능 복구
+
+사용자가 6키를 다시 시험했고 모든 키가 정상 동작한다고 확인했다. 이번 확인은 UI 동작
+기준이며 ADC mV 재수집은 하지 않았다. 펌웨어 판정창을 변경하지 않은 채 복구됐으므로
+앞선 이탈은 일시적인 TRS Sleeve/GND 또는 브레드보드 접점 변화로 우선 분류한다. 현재
+차단 요인에서는 해제하되 같은 증상이 재발하면 플러그 재장착 전후 ADC 로그를 비교한다.
+
+### 2026-07-27 Curve/Reference 실기 확인
+
+사용자가 Sound Monitor의 Curve에서 상·하 tilt와 좌·우
+DETAIL/BALANCED/SIMPLE 조작이 모두 정상이라고 확인했다. Reference는 `FLAT` 표시,
+짧은 HOME과 FOOTSW 응답이 모두 정상이다.
+
+외부 9V가 없는 USB 단독·무입력 상태에서 Reference와 Curve
+`0.0dB/oct + DETAIL`은 20~70Hz 부근이 약 -65dBFS로 보였다.
+`1.5dB/oct`에서는 70Hz 부근만 약하게 남고 `3.0dB/oct` 이상에서는 표시 하한 아래로
+내려갔다. 양의 tilt가 1kHz 아래를 옥타브당 지정 dB만큼 낮추는 계산과 일치한다.
+TL072 무전원 상태에서 PCM1808 입력이 부유하므로 이 저역 성분은 유효 입력 성능으로
+판정하지 않고 60Hz 주변 전원 험·누설 관찰로 기록한다.
 
 ### 2026-07-27 공통 Color/Mode + Nyan 제거 펌웨어
 
@@ -165,23 +185,25 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd2040 bytes, 18% 여유) |
-| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xce9c0` bytes, 19% 여유) |
-| 호스트 테스트 4/4 | 통과 (MIDI, tuner, audio level, FFT normalization) |
-| PC 시뮬레이터 | Curve 조작·Reference 포함 깨끗한 빌드와 결정론적 smoke 통과 |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd2250 bytes, 18% 여유) |
+| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xcebd0` bytes, 19% 여유) |
+| `AUDIO_DUAL_RANGE=1` 컴파일 | 통과 (`0xd25d0` bytes, 18% 여유), 현재 장치에는 미플래시 |
+| 호스트 검증 5/5 | 통과 (CTest 4개: MIDI, tuner, audio level, autorange + FFT normalization) |
+| PC 시뮬레이터 | 깨끗한 빌드와 전체 결정론적 smoke 통과 |
 | COM4 탐지 | 2026-07-27 확인 |
 | USB 플래시 | Curve/Reference 개발본 통과, 외부 9V 분리·USB 단독 전제 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
 | WDT 5분 무발생 | 통과 (310초, ladder 310회, WDT/panic/reset 0) |
 | 정상 UI 표시 | 통과 (Tuner, Sound Monitor 육안 확인) |
 | FOOTSW 짧게 | 통과 (Tuner -> Sound Monitor) |
-| 6키 ADC | 7/26 전부 통과 후 7/27 UP/DOWN/LEFT deadzone 이탈, 접점 재시험 대기 |
+| 6키 ADC | 7/26 전부 통과, 7/27 일시 이탈 뒤 펌웨어 변경 없이 6키 UI 동작 복구 확인 |
 | HOME 롱·FOOTSW 롱 | 통과 (Launcher / Tuner) |
 | 3행 런처·Settings·Reorder UI | 통과 (사용자 조작·커서 시인성 확인) |
 | 신회로 7상태 ADC 로그 | 통과 |
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 | dB Meter 전압·시간평균 실기 | 사용자 요청으로 보류, 1kHz 1점 교정 대기 |
 | 공통 Color/Mode + Nyan 제거 실기 | 플래시·25초 로그·사용자 화면/입력 확인 통과 |
+| Curve/Reference 실기 | tilt·단순화·FLAT 표시와 짧은 HOME/FOOTSW 모두 통과 |
 
 ## 6. PC 시뮬레이터 자동 확인
 
@@ -361,13 +383,29 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - VS 2026의 깨끗한 PC 시뮬레이터 빌드와 결정론 smoke가 통과했다. smoke는 Curve
   기울기·단순화, Reference flat 선택, 기존 런처·앱·튜너·Bounce·dB Meter 흐름을 확인했다.
 - ESP-IDF 기본/래더 비활성 전체 빌드, COM4 일반 플래시와 25초 부팅 로그가 통과했다.
-  Curve/Reference 화면과 방향키의 사용자 실기 확인은 대기 중이다.
+  이후 사용자 실기에서 Curve/Reference 화면과 방향키 응답도 통과했다.
+
+### 2026-07-27 자동 듀얼레인지 캡처 소프트웨어
+
+- 기본 `AUDIO_DUAL_RANGE=0`은 현재 구형 브레드보드의 PCM1808 VINL 단일채널을 그대로
+  읽는다. Step 5B 전에는 이 기본값을 유지한다.
+- `AUDIO_DUAL_RANGE=1` 변형은 32-bit stereo I2S의 left=HOT, right=SENSITIVE를
+  동시에 읽고 `audio_autorange`가 두 경로를 고정 GG 입력 스케일로 환산한다.
+- SENSITIVE ADC peak 0.82에서 HOT으로 전환하고, 0.45 아래가 500ms 지속돼야
+  SENSITIVE로 복귀한다. 클리핑 전환을 제외한 변경 블록에는 crossfade를 적용한다.
+- dB Meter는 이 변형에서 수동 LINE/INST 대신 `AUTO SENSITIVE/HOT`과 clip 상태를
+  표시하며, dBFS와 입력 Vrms·dBV·dBu를 명목 GG Input Full Scale로 계산한다.
+- 호스트 autorange 테스트는 스케일 일치, 즉시 HOT 전환, hysteresis 복귀, clip 우회와
+  비유한값 정리를 통과했다. CTest 4개와 별도 FFT normalization 검사까지 5/5 통과했다.
+- ESP-IDF `-Werror` 기본 `0xd2250`, 래더 비활성 `0xcebd0`, 듀얼레인지 `0xd25d0`가
+  모두 통과했고 PC 시뮬레이터 전체 smoke도 통과했다.
+- 현재 하드웨어는 VINR SENSITIVE가 준비되지 않았으므로 듀얼레인지 이미지는 플래시하지
+  않았다. 실제 두 채널 순서·overlap 일치·전환 연속성·I2S overflow는 Step 5B 뒤 검증한다.
 
 ## 7. 다음 작업
 
-1. Basic 컨트롤러 양쪽 TRS 플러그를 재장착하고 6키를 각각 1초간 다시 측정한다.
-2. 실기에서 Sound Monitor Mode의 Curve/Reference 전환, Curve 상하 기울기와
-   좌우 DETAIL/BALANCED/SIMPLE 조작을 확인한다.
-3. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
-4. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
-5. 현행 LINE/INST 회로를 기준 측정한 뒤, 스테레오 캡처 구현 후 Step 5B로 개조한다.
+1. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
+2. 현행 LINE/INST 회로의 1kHz gain·noise·clip 기준을 측정한다.
+3. Step 5B 부품을 준비한 뒤 HOT/SENSITIVE 회로로 개조하고 듀얼레인지 변형을 플래시한다.
+4. 범위별 1kHz와 20Hz~20kHz sweep으로 교정값과 GG Input Full Scale을 확정한다.
+5. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.

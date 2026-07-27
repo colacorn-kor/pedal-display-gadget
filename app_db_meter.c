@@ -87,6 +87,8 @@ static uint64_t s_last_sample_total;
 static int s_history_head;
 static int s_history_count;
 static audio_input_range_t s_input_range = AUDIO_INPUT_LINE;
+static audio_input_source_t s_input_source = AUDIO_INPUT_SOURCE_LEGACY;
+static bool s_input_clipped;
 static db_average_mode_t s_average_mode = DB_AVERAGE_LIVE;
 static db_control_t s_control = DB_CONTROL_INPUT;
 static bool s_options_dirty;
@@ -231,11 +233,18 @@ static void style_control(lv_obj_t *control, lv_obj_t *label, bool selected)
 static void refresh_controls(void)
 {
     char text[32];
+#if AUDIO_DUAL_RANGE
+    const char *range_name =
+        s_input_source == AUDIO_INPUT_SOURCE_HOT ? "HOT" : "SENSITIVE";
+    snprintf(text, sizeof(text), "AUTO  %s%s", range_name,
+             s_input_clipped ? " CLIP" : "");
+#else
     const char *input_name =
         s_input_range == AUDIO_INPUT_INST ? "INST" : "LINE";
 
     snprintf(text, sizeof(text), "INPUT  %s %.2fx", input_name,
              audio_level_input_gain(s_input_range));
+#endif
     lv_label_set_text(s_input_control_label, text);
     snprintf(text, sizeof(text), "WINDOW  %s",
              average_mode_name(s_average_mode));
@@ -243,7 +252,11 @@ static void refresh_controls(void)
     lv_label_set_text(s_rms_caption, rms_caption(s_average_mode));
 
     style_control(s_input_control, s_input_control_label,
+#if AUDIO_DUAL_RANGE
+                  false);
+#else
                   s_control == DB_CONTROL_INPUT);
+#endif
     style_control(s_average_control, s_average_control_label,
                   s_control == DB_CONTROL_AVERAGE);
 }
@@ -389,7 +402,11 @@ static void db_meter_enter(int variant)
     audio_set_mode(AUDIO_SPECTRUM);
     audio_set_viz_mode(VIZ_MONITOR);
     load_options();
+#if AUDIO_DUAL_RANGE
+    s_control = DB_CONTROL_AVERAGE;
+#else
     s_control = DB_CONTROL_INPUT;
+#endif
 
     s_display_rms_db = METER_FLOOR_DB;
     s_peak_hold_db = METER_FLOOR_DB;
@@ -399,6 +416,8 @@ static void db_meter_enter(int variant)
     s_last_display_ms = s_last_sample_ms;
     s_last_peak_x = -1;
     plat_audio_viz_get(&s_snapshot);
+    s_input_source = s_snapshot.input_source;
+    s_input_clipped = s_snapshot.input_clipped;
     reset_power_history(&s_snapshot);
     s_rms_text[0] = '\0';
     s_peak_text[0] = '\0';
@@ -454,7 +473,12 @@ static void db_meter_enter(int variant)
     create_metric_column(theme, 330, "INPUT dBu*", &s_dbu_value);
 
     lv_obj_t *footer = make_label(
-        s_root, "* PCM1808 3.0 Vpp FS | nominal gain | calibration pending",
+        s_root,
+#if AUDIO_DUAL_RANGE
+        "* GG input scale | auto range | calibration pending",
+#else
+        "* PCM1808 3.0 Vpp FS | nominal gain | calibration pending",
+#endif
         &lv_font_montserrat_12, theme->text);
     lv_obj_set_width(footer, SCREEN_W);
     lv_obj_set_style_text_align(footer, LV_TEXT_ALIGN_CENTER, 0);
@@ -588,6 +612,14 @@ static void db_meter_render(void)
     s_last_sample_ms = now;
 
     plat_audio_viz_get(&s_snapshot);
+#if AUDIO_DUAL_RANGE
+    if (s_input_source != s_snapshot.input_source ||
+        s_input_clipped != s_snapshot.input_clipped) {
+        s_input_source = s_snapshot.input_source;
+        s_input_clipped = s_snapshot.input_clipped;
+        refresh_controls();
+    }
+#endif
     if (sample_elapsed_ms > 250U) {
         reset_power_history(&s_snapshot);
     } else {
@@ -606,8 +638,13 @@ static void db_meter_render(void)
 
     float displayed_rms = selected_rms(rms, now);
     audio_level_reading_t displayed;
-    audio_level_calculate(displayed_rms, s_window_peak, s_input_range,
-                          &displayed);
+    if (s_snapshot.uses_gg_input_scale) {
+        audio_level_calculate_gg(
+            displayed_rms, s_window_peak, &displayed);
+    } else {
+        audio_level_calculate(
+            displayed_rms, s_window_peak, s_input_range, &displayed);
+    }
     s_display_rms_db = displayed.rms_dbfs;
     update_peak_hold(displayed.peak_dbfs, now,
                      (float)display_elapsed_ms * 0.001f);
@@ -642,8 +679,12 @@ static void db_meter_render(void)
 static bool db_meter_on_event(ui_event_t event)
 {
     if (event == EV_UP || event == EV_DOWN) {
+#if AUDIO_DUAL_RANGE
+        s_control = DB_CONTROL_AVERAGE;
+#else
         s_control = event == EV_UP
             ? DB_CONTROL_INPUT : DB_CONTROL_AVERAGE;
+#endif
         refresh_controls();
         return true;
     }
@@ -657,6 +698,12 @@ static bool db_meter_on_event(ui_event_t event)
         return false;
     }
 
+#if AUDIO_DUAL_RANGE
+    int next = (int)s_average_mode + delta;
+    if (next < 0) next = DB_AVERAGE_COUNT - 1;
+    if (next >= DB_AVERAGE_COUNT) next = 0;
+    s_average_mode = (db_average_mode_t)next;
+#else
     if (s_control == DB_CONTROL_INPUT) {
         int next = (int)s_input_range + delta;
         if (next < 0) next = AUDIO_INPUT_RANGE_COUNT - 1;
@@ -668,6 +715,7 @@ static bool db_meter_on_event(ui_event_t event)
         if (next >= DB_AVERAGE_COUNT) next = 0;
         s_average_mode = (db_average_mode_t)next;
     }
+#endif
 
     s_options_dirty = true;
     s_options_changed_ms = plat_millis();

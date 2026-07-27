@@ -34,6 +34,7 @@
 #include "lvgl.h"
 
 #include "app.h"
+#include "audio_autorange.h"
 #include "content_screen.h"
 #include "display_bringup.h"
 #include "fft_map.h"
@@ -260,7 +261,12 @@ static void audio_init(void)
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(AUDIO_SAMPLE_RATE),
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(
-            I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
+            I2S_DATA_BIT_WIDTH_32BIT,
+#if AUDIO_DUAL_RANGE
+            I2S_SLOT_MODE_STEREO),
+#else
+            I2S_SLOT_MODE_MONO),
+#endif
         .gpio_cfg = {
             .mclk = I2S_MCK,
             .bclk = I2S_BCK,
@@ -269,7 +275,9 @@ static void audio_init(void)
             .din = I2S_DIN,
         },
     };
+#if !AUDIO_DUAL_RANGE
     std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+#endif
 
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_rx, &std_cfg));
     const i2s_event_callbacks_t callbacks = {
@@ -282,7 +290,13 @@ static void audio_init(void)
 static void audio_task(void *arg)
 {
     (void)arg;
+#if AUDIO_DUAL_RANGE
+    static int32_t raw[DMA_FRAMES * 2];
+    static float hot_samples[DMA_FRAMES];
+    static float sensitive_samples[DMA_FRAMES];
+#else
     static int32_t raw[DMA_FRAMES];
+#endif
     static float samples[DMA_FRAMES];
 
     ESP_ERROR_CHECK(fft_map_init());
@@ -300,6 +314,10 @@ static void audio_task(void *arg)
     unsigned processed_blocks = 0;
     double meter_energy_total = 0.0;
     uint64_t meter_sample_total = 0;
+#if AUDIO_DUAL_RANGE
+    audio_autorange_t autorange;
+    audio_autorange_reset(&autorange);
+#endif
     static TickType_t last_overflow_log;
     static TickType_t last_invalid_count_log;
 
@@ -315,7 +333,12 @@ static void audio_task(void *arg)
             processed_blocks = 0;
             vTaskDelay(1);
         }
-        if (got == 0 || (got % sizeof(raw[0])) != 0) {
+#if AUDIO_DUAL_RANGE
+        const size_t frame_bytes = sizeof(raw[0]) * 2U;
+#else
+        const size_t frame_bytes = sizeof(raw[0]);
+#endif
+        if (got == 0 || (got % frame_bytes) != 0) {
             TickType_t now = xTaskGetTickCount();
             if ((now - last_invalid_count_log) >= pdMS_TO_TICKS(2000)) {
                 ESP_LOGW(TAG, "I2S returned an invalid byte count: %u",
@@ -342,13 +365,48 @@ static void audio_task(void *arg)
             last_overflow_log = now;
         }
 
-        int n = (int)(got / sizeof(raw[0]));
+        int n = (int)(got / frame_bytes);
+#if AUDIO_DUAL_RANGE
+        for (int i = 0; i < n; i++) {
+            /* ESP-IDF returns standard stereo frames as left, then right. */
+            hot_samples[i] =
+                (float)raw[i * 2] / 2147483648.0f;
+            sensitive_samples[i] =
+                (float)raw[i * 2 + 1] / 2147483648.0f;
+        }
+        audio_autorange_status_t range_status;
+        audio_autorange_process(&autorange,
+                                hot_samples,
+                                sensitive_samples,
+                                samples,
+                                (size_t)n,
+                                &range_status);
+        if (range_status.switched) {
+            ESP_LOGI(TAG, "audio input range: %s (hot %.3f, sensitive %.3f)",
+                     range_status.active == AUDIO_AUTORANGE_HOT
+                         ? "HOT" : "SENSITIVE",
+                     (double)range_status.hot_adc_peak,
+                     (double)range_status.sensitive_adc_peak);
+        }
+        audio_input_source_t input_source =
+            range_status.active == AUDIO_AUTORANGE_HOT
+                ? AUDIO_INPUT_SOURCE_HOT
+                : AUDIO_INPUT_SOURCE_SENSITIVE;
+        bool input_clipped = range_status.output_clipped;
+#else
+        audio_input_source_t input_source = AUDIO_INPUT_SOURCE_LEGACY;
+        bool input_clipped = false;
+#endif
         float sum = 0.0f;
         float sample_peak = 0.0f;
         for (int i = 0; i < n; i++) {
+#if !AUDIO_DUAL_RANGE
             /* PCM1808's 24 valid bits are left-aligned in this 32-bit slot. */
             float sample = (float)raw[i] / 2147483648.0f;
             samples[i] = sample;
+#else
+            float sample = samples[i];
+#endif
             sum += sample * sample;
             float magnitude = fabsf(sample);
             if (magnitude > sample_peak) sample_peak = magnitude;
@@ -407,6 +465,9 @@ static void audio_task(void *arg)
         s_viz[producer].sample_peak = sample_peak;
         s_viz[producer].meter_energy_total = meter_energy_total;
         s_viz[producer].meter_sample_total = meter_sample_total;
+        s_viz[producer].input_source = input_source;
+        s_viz[producer].uses_gg_input_scale = AUDIO_DUAL_RANGE != 0;
+        s_viz[producer].input_clipped = input_clipped;
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_release);
 
         if (produced) {

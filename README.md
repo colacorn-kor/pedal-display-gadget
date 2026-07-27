@@ -88,6 +88,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `app_tuner.c` | Tuner 앱과 뮤트/오디오 모드 생명주기 |
 | `app_bounce.c` | 온셋 기반 고양이 러너 Bounce 앱 |
 | `app_db_meter.c` | dB Meter 앱 |
+| `audio_autorange.{c,h}` | HOT/SENSITIVE 입력 스케일 환산, clip margin과 hysteresis 선택 |
 | `app_slots.{c,h}` | LIVE/STASH 슬롯과 NVS 영속성 |
 | `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |
 | `renderer*.c`, `theme.c` | 로그·12밴드·원형 모니터 렌더러와 테마 |
@@ -108,6 +109,10 @@ ESP-IDF v5.4.4 환경에서:
 idf.py set-target esp32s3
 idf.py build
 ```
+
+기본 빌드는 현재 브레드보드의 PCM1808 VINL 단일채널을 사용한다. Step 5B에서 HOT와
+SENSITIVE를 모두 연결한 뒤에만 `-D AUDIO_DUAL_RANGE=1`로 스테레오 자동 범위 변형을
+구성한다. 한 채널만 연결된 현재 장치에는 이 변형을 플래시하지 않는다.
 
 `sdkconfig.defaults`가 바뀌었거나 오래된 환경 캐시가 의심되면 파생 설정을 지우고 다시
 구성한다.

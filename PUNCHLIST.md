@@ -4,19 +4,11 @@
 
 ## P0 - 현재 차단 요인
 
-- **Basic 래더 UP/DOWN/LEFT 판정 이탈**
-  - 1초 유지 실측: UP 90mV/0.0280, DOWN 252mV/0.0786, LEFT 385mV/0.1200은 deadzone
-  - RIGHT 633mV/0.1972, OK 1100~1112mV/0.3427~0.3465, HOME
-    1721~1732mV/0.5362~0.5396은 정상 판정
-  - 무부하 3209~3210mV는 정상. 낮은 키일수록 위로 밀린 패턴이므로 TRS Sleeve/GND
-    접점 또는 공통 직렬저항을 우선 점검한다. 판정창 확대는 동시입력 오인식 때문에 보류한다.
+- 없음
 
 ## P1 - 다음 실측
 
-1. **Basic 컨트롤러 체감 평가**
-   - 양쪽 TRS 플러그 재장착 뒤 6키 1초 로그 재수집
-   - 복구 후 UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게
-   - 결과로 Smart 컨트롤러 착수 여부 결정
+- 없음
 
 ## P2 - 하드웨어 및 제품 튜닝
 
@@ -29,7 +21,9 @@
 8. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
 9. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
 10. 외부 9V와 실제 기타 입력에서 Curve/Reference 주파수 응답·피크 감쇠 실기 튜닝
-11. PCM1808 L/R 동시 캡처와 HOT/SENSITIVE 자동 선택·hysteresis 구현
+11. `AUDIO_DUAL_RANGE=1` L/R 자동 선택의 Step 5B 실기 검증
+   - 소프트웨어·호스트 테스트·ESP 컴파일 완료
+   - 두 채널 overlap 일치, 실제 전환 연속성, clip 상태와 I2S overflow는 하드웨어 뒤 확인
 12. Step 5B 자동 듀얼레인지 프론트엔드 조립
    - OPA2192 dual ×2, SENSITIVE 보호 clamp, HOT 보상 divider 적용
 13. 범위별 1kHz gain 및 20Hz~20kHz sweep 교정, GG Input Full Scale 확정
@@ -71,3 +65,8 @@
   좌우 DETAIL/BALANCED/SIMPLE, 별도 flat Reference 모드 구현. 시뮬레이터 smoke 통과
 - Curve/Reference 개발본: ESP-IDF 기본 `0xd2040`·래더 비활성 `0xce9c0`,
   호스트 4/4, COM4 일반 플래시와 25초 무오류 부팅 로그 통과
+- Basic 래더는 판정창 변경 없이 6키 UI 동작이 다시 정상임을 사용자가 확인했다.
+  전압 재수집은 하지 않았으며 앞선 이탈은 일시적 접점 변화로 관찰한다.
+- 사용자 실기에서 Curve tilt·단순화 조작과 Reference `FLAT`, 짧은 HOME/FOOTSW가
+  모두 정상 동작했다. USB-only 무입력의 20~70Hz 약 -65dBFS 성분은 TL072 무전원
+  부유 입력의 60Hz 주변 험으로 분류하며 외부 9V 실오디오 시험 전에는 성능 판정에서 제외한다.

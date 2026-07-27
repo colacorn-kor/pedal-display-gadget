@@ -24,6 +24,16 @@ if(NOT MSVC)
 endif()
 add_test(NAME audio_level_units COMMAND test_audio_level)
 
+add_executable(test_audio_autorange
+    test_audio_autorange.c
+    ../audio_autorange.c
+)
+target_include_directories(test_audio_autorange PRIVATE ..)
+if(NOT MSVC)
+    target_link_libraries(test_audio_autorange PRIVATE m)
+endif()
+add_test(NAME audio_autorange_selection COMMAND test_audio_autorange)
+
 if(MSVC)
     target_compile_options(test_midi PRIVATE /utf-8 /wd4819)
     target_compile_options(test_tuner PRIVATE
@@ -32,6 +42,7 @@ if(MSVC)
         /experimental:c11atomics
     )
     target_compile_options(test_audio_level PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_audio_autorange PRIVATE /utf-8 /wd4819)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

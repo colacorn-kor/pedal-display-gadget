@@ -52,3 +52,19 @@ void audio_level_calculate(float rms, float sample_peak,
     out->input_dbu =
         amplitude_db(out->input_vrms, AUDIO_DBU_REFERENCE_VRMS);
 }
+
+void audio_level_calculate_gg(float rms, float sample_peak,
+                              audio_level_reading_t *out)
+{
+    if (!out) return;
+
+    rms = sanitize_unit(rms);
+    sample_peak = sanitize_unit(sample_peak);
+    out->rms_dbfs = amplitude_db(rms, 1.0f);
+    out->peak_dbfs = amplitude_db(sample_peak, 1.0f);
+    out->adc_vrms = rms * AUDIO_ADC_FULL_SCALE_VPEAK;
+    out->input_vrms = rms * AUDIO_GG_INPUT_FULL_SCALE_VPEAK;
+    out->input_dbv = amplitude_db(out->input_vrms, 1.0f);
+    out->input_dbu =
+        amplitude_db(out->input_vrms, AUDIO_DBU_REFERENCE_VRMS);
+}

@@ -10,6 +10,11 @@
 #include "renderer.h"
 
 typedef enum { AUDIO_SPECTRUM, AUDIO_TUNER } audio_mode_t;
+typedef enum {
+    AUDIO_INPUT_SOURCE_LEGACY = 0,
+    AUDIO_INPUT_SOURCE_SENSITIVE,
+    AUDIO_INPUT_SOURCE_HOT,
+} audio_input_source_t;
 void         audio_set_mode(audio_mode_t mode);
 audio_mode_t audio_get_mode(void);
 void         audio_set_viz_mode(viz_mode_t mode);
@@ -25,6 +30,9 @@ typedef struct {
     float sample_peak;
     double meter_energy_total;
     uint64_t meter_sample_total;
+    audio_input_source_t input_source;
+    bool uses_gg_input_scale;
+    bool input_clipped;
 } audio_viz_snapshot_t;
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out);
 

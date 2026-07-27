@@ -24,3 +24,5 @@ float audio_level_input_voltage_correction(audio_input_range_t range);
 void audio_level_calculate(float rms, float sample_peak,
                            audio_input_range_t input_range,
                            audio_level_reading_t *out);
+void audio_level_calculate_gg(float rms, float sample_peak,
+                              audio_level_reading_t *out);
