@@ -1,42 +1,107 @@
 #include "gadget_app.h"
 
+#include "app_slots.h"
 #include "platform.h"
 #include "renderer.h"
+#include "theme.h"
 
-typedef struct {
-    const char *name;
-    const char *renderer;
-    int theme;
-} monitor_preset_t;
+typedef enum {
+    MONITOR_MODE_SPECTRUM = 0,
+    MONITOR_MODE_12_BAND,
+    MONITOR_MODE_CIRCULAR,
+    MONITOR_MODE_COUNT,
+} monitor_mode_t;
 
-static const monitor_preset_t PRESETS[] = {
-    { "Spectrum (Blue)",  "curve",    1 },
-    { "Spectrum (Green)", "curve",    0 },
-    { "12-Band (Multi)",  "bars",     0 },
-    { "12-Band (Blue)",   "bars",     1 },
-    { "Circular (Blue)",  "circular", 1 },
-    { "Circular (Green)", "circular", 0 },
+static const char *const MODE_NAMES[MONITOR_MODE_COUNT] = {
+    "Spectrum",
+    "12-Band",
+    "Circular",
 };
 
-static int s_renderer;
-static int s_theme = 1;
+static const char *const MODE_RENDERERS[MONITOR_MODE_COUNT] = {
+    "curve",
+    "bars",
+    "circular",
+};
+
+static monitor_mode_t s_mode = MONITOR_MODE_SPECTRUM;
+static int s_renderer = -1;
 static lv_obj_t *s_host;
+static viz_theme_t s_viz_theme;
 static audio_viz_snapshot_t s_viz_snapshot;
+
+static uint32_t color_hex(lv_color_t color)
+{
+    return lv_color_to_u32(color) & 0xffffffU;
+}
+
+static uint32_t mix_hex(uint32_t base, uint32_t overlay, uint8_t opacity)
+{
+    const uint32_t inverse = 255U - opacity;
+    const uint32_t red = ((((base >> 16) & 0xffU) * inverse) +
+                          (((overlay >> 16) & 0xffU) * opacity) + 127U) /
+                         255U;
+    const uint32_t green = ((((base >> 8) & 0xffU) * inverse) +
+                            (((overlay >> 8) & 0xffU) * opacity) + 127U) /
+                           255U;
+    const uint32_t blue = (((base & 0xffU) * inverse) +
+                           ((overlay & 0xffU) * opacity) + 127U) /
+                          255U;
+    return (red << 16) | (green << 8) | blue;
+}
+
+static void build_viz_theme(void)
+{
+    const ui_theme_t *ui =
+        theme_for_app_color(app_slots_color(&APP_MONITOR));
+    const uint32_t bg = color_hex(ui->bg);
+    const uint32_t accent = color_hex(ui->accent);
+    const uint32_t accent2 = color_hex(ui->accent2);
+
+    s_viz_theme = (viz_theme_t) {
+        .bg = bg,
+        .grid = color_hex(ui->grid),
+        .accent = accent,
+        .line = color_hex(ui->text),
+        .peak = accent2,
+        .lo = mix_hex(bg, accent, 70),
+        .mid = mix_hex(bg, accent2, 84),
+        .hi = mix_hex(bg, accent2, 150),
+        .show_grid = 1,
+        .show_axis = 1,
+    };
+}
 
 static void monitor_select_renderer(void)
 {
     if (!s_host) return;
-    renderer_select(s_renderer, s_host, viz_theme_at(s_theme));
-    const bool analyzer =
-        s_renderer == renderer_find("curve") ||
-        s_renderer == renderer_find("bars");
-    audio_set_viz_mode(analyzer ? VIZ_MONITOR : VIZ_DECOR);
+
+    s_renderer = renderer_find(MODE_RENDERERS[s_mode]);
+    if (s_renderer < 0) return;
+    build_viz_theme();
+    renderer_select(s_renderer, s_host, &s_viz_theme);
+    audio_set_viz_mode(
+        s_mode == MONITOR_MODE_CIRCULAR ? VIZ_DECOR : VIZ_MONITOR);
 }
 
 void monitor_app_set_scene(int theme, int renderer)
 {
-    s_theme = theme;
-    s_renderer = renderer;
+    const renderer_t *selected = renderer_at(renderer);
+    if (selected) {
+        for (int i = 0; i < MONITOR_MODE_COUNT; i++) {
+            if (renderer_find(MODE_RENDERERS[i]) == renderer) {
+                s_mode = (monitor_mode_t)i;
+                break;
+            }
+        }
+    }
+
+    app_color_t color = APP_COLOR_DEFAULT;
+    if (theme == 0) color = APP_COLOR_GREEN;
+    else if (theme == 1) color = APP_COLOR_BLUE;
+    else if (theme == 2) color = APP_COLOR_WHITE;
+    app_slots_set_color_runtime(&APP_MONITOR, color);
+    app_slots_set_mode_runtime(&APP_MONITOR, (uint8_t)s_mode);
 }
 
 void monitor_app_refresh(void)
@@ -44,37 +109,27 @@ void monitor_app_refresh(void)
     monitor_select_renderer();
 }
 
-int monitor_app_preset_count(void)
+static int monitor_mode_count(void)
 {
-    return (int)(sizeof(PRESETS) / sizeof(PRESETS[0]));
+    return MONITOR_MODE_COUNT;
 }
 
-const char *monitor_app_preset_name(int idx)
+static const char *monitor_mode_name(int idx)
 {
-    return idx >= 0 && idx < monitor_app_preset_count()
-        ? PRESETS[idx].name
+    return idx >= 0 && idx < MONITOR_MODE_COUNT
+        ? MODE_NAMES[idx]
         : "";
 }
 
-int monitor_app_preset_index(void)
+static int monitor_mode_index(void)
 {
-    for (int i = 0; i < monitor_app_preset_count(); i++) {
-        if (renderer_find(PRESETS[i].renderer) == s_renderer &&
-            PRESETS[i].theme == s_theme) {
-            return i;
-        }
-    }
-    return 0;
+    return s_mode;
 }
 
-void monitor_app_set_preset(int idx)
+static void monitor_mode_set(int idx)
 {
-    if (idx < 0 || idx >= monitor_app_preset_count()) return;
-
-    const int renderer = renderer_find(PRESETS[idx].renderer);
-    if (renderer < 0) return;
-    s_renderer = renderer;
-    s_theme = PRESETS[idx].theme;
+    if (idx < 0 || idx >= MONITOR_MODE_COUNT) return;
+    s_mode = (monitor_mode_t)idx;
     monitor_select_renderer();
 }
 
@@ -96,7 +151,7 @@ static void monitor_enter(int variant)
 static void monitor_exit(void)
 {
     renderer_teardown();
-    s_host = 0;
+    s_host = NULL;
 }
 
 static void monitor_render(void)
@@ -126,8 +181,9 @@ const gadget_app_t APP_MONITOR = {
     .on_exit = monitor_exit,
     .on_render = monitor_render,
     .on_event = monitor_on_event,
-    .local_theme_count = monitor_app_preset_count,
-    .local_theme_name = monitor_app_preset_name,
-    .local_theme_index = monitor_app_preset_index,
-    .local_theme_set = monitor_app_set_preset,
+    .on_appearance_changed = monitor_app_refresh,
+    .mode_count = monitor_mode_count,
+    .mode_name = monitor_mode_name,
+    .mode_index = monitor_mode_index,
+    .mode_set = monitor_mode_set,
 };

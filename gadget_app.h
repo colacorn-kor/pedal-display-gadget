@@ -24,10 +24,11 @@ typedef void (*app_enter_fn)(int variant);
 typedef void (*app_exit_fn)(void);
 typedef void (*app_render_fn)(void);
 typedef bool (*app_event_fn)(ui_event_t event);
-typedef int (*app_local_theme_count_fn)(void);
-typedef const char *(*app_local_theme_name_fn)(int idx);
-typedef int (*app_local_theme_index_fn)(void);
-typedef void (*app_local_theme_set_fn)(int idx);
+typedef void (*app_appearance_fn)(void);
+typedef int (*app_mode_count_fn)(void);
+typedef const char *(*app_mode_name_fn)(int idx);
+typedef int (*app_mode_index_fn)(void);
+typedef void (*app_mode_set_fn)(int idx);
 
 struct gadget_app {
     const char *id;
@@ -40,10 +41,11 @@ struct gadget_app {
     app_render_fn on_render;
     app_event_fn on_event;
 
-    app_local_theme_count_fn local_theme_count;
-    app_local_theme_name_fn local_theme_name;
-    app_local_theme_index_fn local_theme_index;
-    app_local_theme_set_fn local_theme_set;
+    app_appearance_fn on_appearance_changed;
+    app_mode_count_fn mode_count;
+    app_mode_name_fn mode_name;
+    app_mode_index_fn mode_index;
+    app_mode_set_fn mode_set;
 
     app_input_source_t input_sources; /* Phase 2 reserved; zero means default inputs. */
     app_output_route_t output_routes; /* Phase 2 reserved; no enum value exists for main output. */
@@ -66,17 +68,13 @@ extern const gadget_app_t APP_DB_METER;
 
 void monitor_app_set_scene(int theme, int renderer);
 void monitor_app_refresh(void);
-int monitor_app_preset_count(void);
-const char *monitor_app_preset_name(int idx);
-int monitor_app_preset_index(void);
-void monitor_app_set_preset(int idx);
 void images_app_set_content(int content);
 int images_app_count(void);
 
 #ifdef PEDAL_SIM
 int bounce_app_debug_cat_y(void);
 bool bounce_app_debug_game_over(void);
-int bounce_app_debug_theme_index(void);
+int bounce_app_debug_mode_index(void);
 int db_meter_debug_input_range(void);
 int db_meter_debug_average_mode(void);
 #endif

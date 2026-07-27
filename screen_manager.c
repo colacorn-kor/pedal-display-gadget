@@ -26,7 +26,8 @@ typedef enum {
     POPUP_APP_MENU,
     POPUP_SETTINGS,
     POPUP_GLOBAL_THEME,
-    POPUP_APP_THEME,
+    POPUP_APP_COLOR,
+    POPUP_APP_MODE,
     POPUP_INFO,
 } popup_page_t;
 
@@ -121,17 +122,22 @@ static const gadget_app_t *active_app(void)
     return app_registry_at(s_active_app);
 }
 
-static bool app_has_local_themes(const gadget_app_t *app)
+static bool app_has_modes(const gadget_app_t *app)
 {
-    return app && app->local_theme_count && app->local_theme_name &&
-           app->local_theme_index && app->local_theme_set &&
-           app->local_theme_count() > 0;
+    return app && app->mode_count && app->mode_name &&
+           app->mode_index && app->mode_set &&
+           app->mode_count() > 0;
 }
 
-static bool popup_settings_has_theme(void)
+static int app_mode_count(const gadget_app_t *app)
 {
-    return s_popup_origin == POPUP_FROM_LAUNCHER ||
-           app_has_local_themes(active_app());
+    return app_has_modes(app) ? app->mode_count() : 1;
+}
+
+static const char *app_mode_name(const gadget_app_t *app, int idx)
+{
+    if (app_has_modes(app)) return app->mode_name(idx);
+    return idx == 0 ? "Default" : "";
 }
 
 static int app_index(const gadget_app_t *app)
@@ -554,12 +560,20 @@ static void popup_set_page(popup_page_t page)
 {
     s_popup_page = page;
     const gadget_app_t *app = active_app();
-    s_popup_sel = page == POPUP_APP_THEME && app_has_local_themes(app)
-        ? app->local_theme_index()
-        : 0;
-    if (page == POPUP_APP_THEME && app_has_local_themes(app) &&
-        (s_popup_sel < 0 ||
-         s_popup_sel >= app->local_theme_count() ||
+    if (page == POPUP_APP_COLOR) {
+        s_popup_sel = (int)app_slots_color(app);
+    } else if (page == POPUP_APP_MODE) {
+        s_popup_sel = app_has_modes(app)
+            ? app->mode_index()
+            : (int)app_slots_mode(app);
+    } else {
+        s_popup_sel = 0;
+    }
+    const int count = page == POPUP_APP_COLOR
+        ? APP_COLOR_COUNT
+        : (page == POPUP_APP_MODE ? app_mode_count(app) : 0);
+    if ((page == POPUP_APP_COLOR || page == POPUP_APP_MODE) &&
+        (s_popup_sel < 0 || s_popup_sel >= count ||
          s_popup_sel >= POPUP_ITEM_MAX)) {
         s_popup_sel = 0;
     }
@@ -569,8 +583,8 @@ static void popup_set_page(popup_page_t page)
 static void popup_build(void)
 {
     static const char *const app_menu[] = { "Exit", "Settings" };
-    static const char *const settings[] = { "Theme", "Info" };
-    static const char *const info_only[] = { "Info" };
+    static const char *const launcher_settings[] = { "Theme", "Info" };
+    static const char *const app_settings[] = { "Color", "Mode", "Info" };
     const char *const *labels = 0;
     const char *title_text = "MENU";
     int panel_w = 280;
@@ -582,19 +596,23 @@ static void popup_build(void)
         labels = app_menu;
         s_popup_item_count = 2;
     } else if (s_popup_page == POPUP_SETTINGS) {
-        const bool has_theme = popup_settings_has_theme();
-        labels = has_theme ? settings : info_only;
+        const bool launcher = s_popup_origin == POPUP_FROM_LAUNCHER;
+        labels = launcher ? launcher_settings : app_settings;
         title_text = "SETTINGS";
-        s_popup_item_count = has_theme ? 2 : 1;
+        s_popup_item_count = launcher ? 2 : 3;
     } else if (s_popup_page == POPUP_GLOBAL_THEME) {
         title_text = "Theme";
         panel_h = 150;
-    } else if (s_popup_page == POPUP_APP_THEME) {
-        const gadget_app_t *app = active_app();
-        title_text = "Theme";
+    } else if (s_popup_page == POPUP_APP_COLOR) {
+        title_text = "Color";
         panel_w = 310;
-        s_popup_item_count =
-            app_has_local_themes(app) ? app->local_theme_count() : 0;
+        s_popup_item_count = APP_COLOR_COUNT;
+        panel_h = 82 + s_popup_item_count * 34;
+    } else if (s_popup_page == POPUP_APP_MODE) {
+        const gadget_app_t *app = active_app();
+        title_text = "Mode";
+        panel_w = 310;
+        s_popup_item_count = app_mode_count(app);
         if (s_popup_item_count > POPUP_ITEM_MAX) {
             s_popup_item_count = POPUP_ITEM_MAX;
         }
@@ -657,23 +675,27 @@ static void popup_build(void)
     } else {
         const gadget_app_t *app = active_app();
         for (int i = 0; i < s_popup_item_count; i++) {
-            const char *label = s_popup_page == POPUP_APP_THEME &&
-                                app_has_local_themes(app)
-                ? app->local_theme_name(i)
-                : labels[i];
+            const bool appearance_page =
+                s_popup_page == POPUP_APP_COLOR ||
+                s_popup_page == POPUP_APP_MODE;
+            const char *label = s_popup_page == POPUP_APP_COLOR
+                ? theme_app_color_name(i)
+                : (s_popup_page == POPUP_APP_MODE
+                    ? app_mode_name(app, i)
+                    : labels[i]);
             s_popup_item[i] = lv_label_create(panel);
             lv_label_set_text(s_popup_item[i], label);
             lv_obj_set_style_text_font(
                 s_popup_item[i],
-                s_popup_page == POPUP_APP_THEME
+                appearance_page
                     ? font_small()
                     : font_pixel(),
                 0);
             lv_obj_align(
                 s_popup_item[i],
                 LV_ALIGN_TOP_LEFT,
-                s_popup_page == POPUP_APP_THEME ? 42 : 54,
-                54 + i * (s_popup_page == POPUP_APP_THEME ? 34 : 42));
+                appearance_page ? 42 : 54,
+                54 + i * (appearance_page ? 34 : 42));
         }
         popup_highlight();
     }
@@ -727,8 +749,8 @@ static void enter_app(int idx, int variant)
     s_mode = MODE_LIVE;
     s_active_app = idx;
     s_return_app = app;
-    if (app_has_local_themes(app)) {
-        app->local_theme_set(app_slots_local_theme(app));
+    if (app_has_modes(app)) {
+        app->mode_set(app_slots_mode(app));
     }
     if (app->on_enter) app->on_enter(variant);
     s_last_view_save_pending = true;
@@ -794,19 +816,31 @@ static void popup_activate(void)
             popup_set_page(POPUP_SETTINGS);
         }
     } else if (s_popup_page == POPUP_SETTINGS) {
-        const bool has_theme = popup_settings_has_theme();
-        if (has_theme && s_popup_sel == 0) {
-            popup_set_page(s_popup_origin == POPUP_FROM_LAUNCHER
+        if (s_popup_origin == POPUP_FROM_LAUNCHER) {
+            popup_set_page(s_popup_sel == 0
                 ? POPUP_GLOBAL_THEME
-                : POPUP_APP_THEME);
+                : POPUP_INFO);
+        } else if (s_popup_sel == 0) {
+            popup_set_page(POPUP_APP_COLOR);
+        } else if (s_popup_sel == 1) {
+            popup_set_page(POPUP_APP_MODE);
         } else {
             popup_set_page(POPUP_INFO);
         }
-    } else if (s_popup_page == POPUP_APP_THEME) {
+    } else if (s_popup_page == POPUP_APP_COLOR) {
         const gadget_app_t *app = active_app();
-        if (app_has_local_themes(app)) {
-            app->local_theme_set(s_popup_sel);
-            app_slots_set_local_theme(app, (uint8_t)s_popup_sel);
+        if (app) {
+            app_slots_set_color(app, (app_color_t)s_popup_sel);
+            if (app->on_appearance_changed) {
+                app->on_appearance_changed();
+            }
+        }
+        popup_set_page(POPUP_SETTINGS);
+    } else if (s_popup_page == POPUP_APP_MODE) {
+        const gadget_app_t *app = active_app();
+        if (app) {
+            if (app_has_modes(app)) app->mode_set(s_popup_sel);
+            app_slots_set_mode(app, (uint8_t)s_popup_sel);
         }
         popup_set_page(POPUP_SETTINGS);
     } else if (s_popup_page == POPUP_GLOBAL_THEME ||
@@ -1034,9 +1068,6 @@ void sm_load_scene(int content, int theme, int renderer)
 
     const int monitor = app_registry_find("monitor");
     const int images = app_registry_find("images");
-    const gadget_app_t *monitor_app = app_registry_at(monitor);
-    app_slots_set_local_theme_runtime(
-        monitor_app, (uint8_t)monitor_app_preset_index());
     if (s_active_app == monitor) {
         monitor_app_refresh();
     } else {

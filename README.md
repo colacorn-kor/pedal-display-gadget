@@ -44,10 +44,10 @@ PC simulator
 
 | ID | 표시명 | 역할 |
 |---|---|---|
-| `monitor` | Sound Monitor | 로그 스펙트럼, 기타·베이스 12밴드, 원형 스펙트럼의 6개 프리셋 |
+| `monitor` | Sound Monitor | 로그 Spectrum, 기타·베이스 12-Band, Circular 모드 |
 | `images` | Images | 내장 및 향후 SD 콘텐츠 표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
-| `bounce` | Bounce | 소리 온셋 고양이 러너, Classic/Nyan Cat 로컬 테마 |
+| `bounce` | Bounce | 소리 온셋 고양이·종이컵 러너, Classic Cat 모드 |
 | `dbmeter` | dB Meter | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu 표시 |
 
 앱은 `gadget_app_t` 계약과 `gadget_app.c` 레지스트리에 등록된다. 런처 항목은 레지스트리에서
@@ -57,9 +57,9 @@ PC simulator
 이동하고 좌·우는 현재 행 안에서만 이동한다. 앱 화면에서 홈을 누르면
 `Exit/Settings`, 런처의 Settings에는 `Theme/Info`가 열린다.
 
-런처의 Theme은 런처와 모든 공통 팝업의 전역 UI 팔레트를 바꾼다. 앱 안의
-`Settings → Theme`은 해당 앱의 콘텐츠 외형만 바꾸며, 로컬 Theme을 제공하지 않는
-앱에서는 Theme 항목을 표시하지 않는다.
+런처의 Theme은 런처와 모든 공통 팝업의 전역 UI 팔레트를 바꾼다. 모든 앱의
+`Settings → Color`는 해당 앱 콘텐츠만 바꾸며 `Default`는 런처 Theme을 상속한다.
+`Settings → Mode`는 색과 독립적으로 앱의 화면 형식을 선택한다.
 
 ## 입력
 

@@ -1,6 +1,8 @@
 #include "gadget_app.h"
 
+#include "app_slots.h"
 #include "content_screen.h"
+#include "theme.h"
 
 static const char *IMG_F[] = {
     "S:content/img1.bin", "S:content/img2.bin", "S:content/img3.bin"
@@ -9,6 +11,11 @@ static const char *IMG_N[] = { "img1", "img2", "img3" };
 #define IMGN ((int)(sizeof(IMG_F) / sizeof(IMG_F[0])))
 
 static int s_image;
+
+static const ui_theme_t *images_theme(void)
+{
+    return theme_for_app_color(app_slots_color(&APP_IMAGES));
+}
 
 int images_app_count(void)
 {
@@ -29,6 +36,7 @@ static void images_enter(int variant)
 {
     (void)variant;
     audio_set_mode(AUDIO_SPECTRUM);
+    content_screen_apply_theme(images_theme());
     content_screen_create();
     images_show_current();
 }
@@ -53,6 +61,31 @@ static bool images_on_event(ui_event_t event)
     return false;
 }
 
+static void images_appearance_changed(void)
+{
+    content_screen_apply_theme(images_theme());
+}
+
+static int images_mode_count(void)
+{
+    return 1;
+}
+
+static const char *images_mode_name(int idx)
+{
+    return idx == 0 ? "Gallery" : "";
+}
+
+static int images_mode_index(void)
+{
+    return 0;
+}
+
+static void images_mode_set(int idx)
+{
+    (void)idx;
+}
+
 const gadget_app_t APP_IMAGES = {
     .id = "images",
     .name = "Images",
@@ -61,4 +94,9 @@ const gadget_app_t APP_IMAGES = {
     .on_enter = images_enter,
     .on_exit = images_exit,
     .on_event = images_on_event,
+    .on_appearance_changed = images_appearance_changed,
+    .mode_count = images_mode_count,
+    .mode_name = images_mode_name,
+    .mode_index = images_mode_index,
+    .mode_set = images_mode_set,
 };

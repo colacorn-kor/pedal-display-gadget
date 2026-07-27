@@ -4,12 +4,12 @@
 > 이 문서를 근거로 작성될 Codex 지시서(단계별)에서 다룬다. 코드 블록은 *설계 의도*를
 > 보여주는 예시이며 최종 구현 디테일은 지시서/Codex가 확정한다.
 >
-> **구현 진척(2026-07-26 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
+> **구현 진척(2026-07-27 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
 > 이벤트와 홈·풋스위치 정책, ③-A 슬롯/NVS, ③-B/C 런처·순서변경·테마를 구현했다.
 > 런처는 `LIVE`·`STASH`·`Reorder/Settings`의 3행 내비게이션이며, 앱 홈 메뉴와
-> `Settings → Theme/Info` 계층도 동작한다. 전역 UI 테마는 런처와 모든 공통 팝업의
-> 팔레트를 함께 바꾸며, 앱 안의 Theme은 해당 앱의 로컬 테마만 바꾼다. Sound Monitor와
-> Bounce가 이 로컬 테마 계약을 구현한다.
+> `Settings → Color/Mode/Info` 계층도 동작한다. 전역 UI 테마는 런처와 모든 공통 팝업의
+> 팔레트를 함께 바꾸고, 각 앱의 Color와 Mode는 콘텐츠 팔레트와 화면 형식을 독립적으로
+> 바꾼다.
 > 진척 상세는 §13 표 참조.
 
 ---
@@ -84,10 +84,11 @@ typedef void (*app_enter_fn)(int variant);
 typedef void (*app_exit_fn)(void);
 typedef void (*app_render_fn)(void);
 typedef bool (*app_event_fn)(ui_event_t event);
-typedef int (*app_local_theme_count_fn)(void);
-typedef const char *(*app_local_theme_name_fn)(int idx);
-typedef int (*app_local_theme_index_fn)(void);
-typedef void (*app_local_theme_set_fn)(int idx);
+typedef void (*app_appearance_fn)(void);
+typedef int (*app_mode_count_fn)(void);
+typedef const char *(*app_mode_name_fn)(int idx);
+typedef int (*app_mode_index_fn)(void);
+typedef void (*app_mode_set_fn)(int idx);
 
 struct gadget_app {
     const char  *id;            /* "tuner" — 안정적 식별자(설정 키) */
@@ -100,11 +101,11 @@ struct gadget_app {
     app_render_fn on_render;    /* 매 프레임(LVGL lock 안) */
     app_event_fn  on_event;     /* 위임된 키 처리. 소비하면 true */
 
-    /* 선택 사항. 모두 NULL이면 앱 Settings에서 Theme 항목을 숨긴다. */
-    app_local_theme_count_fn local_theme_count;
-    app_local_theme_name_fn  local_theme_name;
-    app_local_theme_index_fn local_theme_index;
-    app_local_theme_set_fn   local_theme_set;
+    app_appearance_fn on_appearance_changed; /* Color 적용 뒤 현재 화면 재스타일 */
+    app_mode_count_fn mode_count;
+    app_mode_name_fn  mode_name;
+    app_mode_index_fn mode_index;
+    app_mode_set_fn   mode_set;
 
     app_input_source_t input_sources;  /* [Phase 2 예약] 0 = 기본 입력 */
     app_output_route_t output_routes;  /* [Phase 2 예약] 0 = 없음 */
@@ -217,10 +218,11 @@ typedef enum {
 
 - **Launcher Settings**: `Theme · Info`. Theme은 전역 UI 테마
   `BLUE/WHITE/GREEN`을 좌우로 즉시 바꾸고, 런처와 모든 공통 팝업에 함께 적용한다.
-- **App Settings**: 로컬 테마 훅을 구현한 앱만 `Theme · Info`를 보인다. 여기의 Theme은
-  활성 앱만 바꾸며 전역 UI 테마에는 손대지 않는다. 훅이 없는 앱은 `Info`만 보인다.
-- **Sound Monitor**는 6개 렌더러·팔레트 프리셋, **Bounce**는
-  `Classic Cat/Nyan Cat`을 로컬 Theme 목록으로 제공한다.
+- **App Settings**: 모든 앱이 `Color · Mode · Info`를 보인다. Color의 `Default`는
+  현재 전역 UI 테마를 상속하고 `Blue/White/Green`은 앱 콘텐츠만 고정한다. 어느 선택도
+  런처나 공통 팝업 팔레트에는 영향을 주지 않는다.
+- **Sound Monitor**의 Mode는 `Spectrum/12-Band/Circular`, **Bounce**의 Mode는
+  `Classic Cat`이다. 색과 화면 형식을 서로 독립적으로 저장한다.
 
 ### Sound Monitor 스펙트럼 표시 계약
 
@@ -415,7 +417,7 @@ typedef struct {
 ### Phase 1 (지금 하드웨어로 동작)
 | id | 이름 | audio_mode | 변형 | 비고 |
 |----|------|-----------|------|------|
-| `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. 홈→Settings→Theme에서 6개 프리셋 선택 |
+| `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Spectrum/12-Band/Circular` |
 | `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, LINE/INST 입력잭 명목 Vrms·dBV·dBu |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
 | `images` | Images | SPECTRUM | — | 이미지·폴더 탐색(좌/우 전환) |
@@ -423,7 +425,7 @@ typedef struct {
 | `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
 | `settings` | Settings / About | NONE | — | |
-| `bounce` | Bounce | SPECTRUM | — | 오디오 온셋 러너. 로컬 Theme=`Classic Cat/Nyan Cat` |
+| `bounce` | Bounce | SPECTRUM | — | 오디오 온셋 러너. Mode=`Classic Cat` |
 
 > 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce`·`dbmeter` 5개.
 > 나머지는 카탈로그다.
@@ -442,7 +444,7 @@ typedef struct {
 
 | 현재 (`screen_manager.c`) | 앱 모델 | 진척 |
 |---------------------------|---------|------|
-| `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩, 프리셋 API 제공 | **완료** — 앱 직접 상·하 변경을 제거하고 `Settings → Theme` 6개 프리셋으로 통합 |
+| `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩 | **완료** — `Settings → Color/Mode`로 팔레트와 `Spectrum/12-Band/Circular`를 분리 |
 | `SCR_IMAGES` + 이미지 순환 | **`images` 앱.** `on_event`로 이미지 전환 | **①·②완료** (②: `EV_LEFT/RIGHT` 순환) |
 | `SCR_TUNER` + 뮤트 특별취급 | **`tuner` 앱.** enter=뮤트, audio=TUNER, variant=2 | **①·②완료** (뮤트/모드 자기소유, 입력 미소비) |
 | `SCR_HOME` 메뉴 | **런처**로 역할 변경(단순 메뉴 → 두 체인 + 메뉴 행 + 순서/설정) | **완료** — 빈 행 포함 3행 내비게이션 |
@@ -450,7 +452,7 @@ typedef struct {
 | `sm_on_event`의 화면별 분기 | 매니저는 풋스위치/홈만, 나머지는 활성 앱 `on_event` 디스패치 | **②완료** — 매니저 전담 `{FOOTSW, FOOTSW_HOLD, HOME, HOME_HOLD}` + 표준 팝업, 5키 앱 위임 |
 | `ui_event_t {PREV,NEXT,SELECT,BACK,FOOTSW}` | `{UP,DOWN,LEFT,RIGHT,OK,HOME,HOME_HOLD,FOOTSW,FOOTSW_HOLD}` | **②완료** — `app.h` 9종 교체, 낡은 enum 잔재 0 |
 | (②신규) `input_task` 입력단 | 6버튼 + 풋스위치 상태기계(디바운스·롱프레스·오토리피트) | **②완료** (GPIO 1/2/4/5/6/13/7) |
-| (②신규) 표준 팝업 | 매니저 소유 공통 메뉴와 설정 계층 | **완료** — 전역 UI Theme과 앱 로컬 Theme을 분리한 공통 페이지 |
+| (②신규) 표준 팝업 | 매니저 소유 공통 메뉴와 설정 계층 | **완료** — 전역 UI Theme과 앱 Color/Mode를 분리한 공통 페이지 |
 
 **①에서 생성/변경된 파일:** `gadget_app.h`·`gadget_app.c`(인터페이스+레지스트리),
 `app_monitor.c`·`app_images.c`·`app_tuner.c`(3앱), `screen_manager.c`(디스패처로 일반화),

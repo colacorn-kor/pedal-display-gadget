@@ -146,37 +146,51 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    const int initial_preset = monitor_app_preset_index();
-    const int circular_preset = 4;
+    const gadget_app_t *monitor =
+        app_registry_at(app_registry_find("monitor"));
+    const int initial_mode = monitor && monitor->mode_index
+        ? monitor->mode_index()
+        : -1;
+    if (!monitor ||
+        app_slots_color(monitor) != APP_COLOR_DEFAULT ||
+        theme_for_app_color(app_slots_color(monitor)) != theme_get()) {
+        fprintf(stderr,
+                "SMOKE FAIL: monitor Default color did not inherit UI theme\n");
+        return false;
+    }
     if (!smoke_send(EV_UP, "monitor direct up is inert") ||
-        monitor_app_preset_index() != initial_preset) {
-        fprintf(stderr, "SMOKE FAIL: monitor theme changed outside settings\n");
+        !monitor->mode_index ||
+        monitor->mode_index() != initial_mode) {
+        fprintf(stderr, "SMOKE FAIL: monitor mode changed outside settings\n");
         return false;
     }
     if (!smoke_send(EV_HOME, "monitor -> app menu") ||
         !smoke_send(EV_DOWN, "app menu -> settings") ||
         !smoke_send(EV_OK, "open app settings") ||
-        !smoke_send(EV_OK, "app settings -> monitor theme")) {
+        !smoke_send(EV_OK, "app settings -> monitor color") ||
+        !smoke_send(EV_DOWN, "monitor Default -> Blue") ||
+        !smoke_send(EV_OK, "apply monitor Blue color")) {
         return false;
     }
-    int preset_steps =
-        (circular_preset - initial_preset + monitor_app_preset_count()) %
-        monitor_app_preset_count();
-    for (int i = 0; i < preset_steps; i++) {
-        if (!smoke_send(EV_DOWN, "advance to circular preset")) return false;
-    }
-    if (!smoke_send(EV_OK, "apply circular preset") ||
-        monitor_app_preset_index() != circular_preset) {
-        fprintf(stderr, "SMOKE FAIL: circular preset was not applied\n");
-        return false;
-    }
-    const gadget_app_t *monitor =
-        app_registry_at(app_registry_find("monitor"));
     if (theme_index() != app_popup_palette ||
-        app_slots_local_theme(monitor) != circular_preset) {
+        app_slots_color(monitor) != APP_COLOR_BLUE ||
+        theme_for_app_color(app_slots_color(monitor)) != theme_at(0)) {
         fprintf(stderr,
-                "SMOKE FAIL: monitor theme changed the popup palette or "
-                "missed its saved app theme\n");
+                "SMOKE FAIL: monitor color changed popup palette or was "
+                "not saved independently\n");
+        return false;
+    }
+    if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
+        !smoke_send(EV_OK, "open monitor mode") ||
+        !smoke_send(EV_DOWN, "Spectrum -> 12-Band") ||
+        !smoke_send(EV_DOWN, "12-Band -> Circular") ||
+        !smoke_send(EV_OK, "apply Circular mode")) {
+        return false;
+    }
+    if (monitor->mode_index() != 2 ||
+        app_slots_mode(monitor) != 2) {
+        fprintf(stderr,
+                "SMOKE FAIL: monitor Circular mode was not applied or saved\n");
         return false;
     }
     if (!run_frames_for(150)) return false;
@@ -221,19 +235,25 @@ static bool run_smoke_test(void)
     const int bounce_popup_palette = theme_index();
     const gadget_app_t *bounce =
         app_registry_at(app_registry_find("bounce"));
+    if (app_slots_color(bounce) != APP_COLOR_DEFAULT ||
+        theme_for_app_color(app_slots_color(bounce)) != theme_get()) {
+        fprintf(stderr,
+                "SMOKE FAIL: bounce Default color did not inherit UI theme\n");
+        return false;
+    }
     if (!smoke_send(EV_HOME, "bounce -> app menu") ||
         !smoke_send(EV_DOWN, "bounce app menu -> settings") ||
         !smoke_send(EV_OK, "open bounce settings") ||
-        !smoke_send(EV_OK, "bounce settings -> theme") ||
-        !smoke_send(EV_DOWN, "classic cat -> nyan cat") ||
-        !smoke_send(EV_OK, "apply nyan cat")) {
+        !smoke_send(EV_DOWN, "bounce settings color -> mode") ||
+        !smoke_send(EV_OK, "open bounce mode") ||
+        !smoke_send(EV_OK, "apply Classic Cat mode")) {
         return false;
     }
-    if (bounce_app_debug_theme_index() != 1 ||
-        app_slots_local_theme(bounce) != 1 ||
+    if (bounce_app_debug_mode_index() != 0 ||
+        app_slots_mode(bounce) != 0 ||
         theme_index() != bounce_popup_palette) {
         fprintf(stderr,
-                "SMOKE FAIL: bounce app theme, saved selection, and popup "
+                "SMOKE FAIL: bounce mode, saved selection, and popup "
                 "palette are inconsistent\n");
         return false;
     }
@@ -305,7 +325,7 @@ static bool run_smoke_test(void)
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
            "monitor viz, images, live cycle, tuner %.2f Hz (%s%d), "
-           "bounce runner with local Nyan theme, input-voltage dB meter, "
+           "Color/Mode app settings, Classic Cat runner, input-voltage meter, "
            "quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
@@ -313,11 +333,30 @@ static bool run_smoke_test(void)
 
 static bool open_preview(const char *preview)
 {
+    if (strcmp(preview, "monitor-settings") == 0 ||
+        strcmp(preview, "monitor-color") == 0 ||
+        strcmp(preview, "monitor-mode") == 0) {
+        sm_on_event(EV_OK);
+        sm_on_event(EV_HOME);
+        sm_on_event(EV_DOWN);
+        sm_on_event(EV_OK);
+        if (strcmp(preview, "monitor-color") == 0) {
+            sm_on_event(EV_OK);
+        } else if (strcmp(preview, "monitor-mode") == 0) {
+            sm_on_event(EV_DOWN);
+            sm_on_event(EV_OK);
+        }
+        return true;
+    }
+
     if (strcmp(preview, "bars") == 0 ||
         strcmp(preview, "circular") == 0) {
         sm_on_event(EV_OK);
-        monitor_app_set_preset(
-            strcmp(preview, "bars") == 0 ? 2 : 4);
+        const gadget_app_t *monitor =
+            app_registry_at(app_registry_find("monitor"));
+        const int mode = strcmp(preview, "bars") == 0 ? 1 : 2;
+        if (monitor && monitor->mode_set) monitor->mode_set(mode);
+        app_slots_set_mode_runtime(monitor, (uint8_t)mode);
         return smoke_expect_app("monitor");
     }
 
@@ -329,18 +368,11 @@ static bool open_preview(const char *preview)
         return smoke_expect_app("dbmeter");
     }
 
-    if (strcmp(preview, "bounce") == 0 ||
-        strcmp(preview, "bounce-nyan") == 0) {
+    if (strcmp(preview, "bounce") == 0) {
         int idx = app_registry_find("bounce");
         if (idx < 0) return false;
         for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
         sm_on_event(EV_OK);
-        if (strcmp(preview, "bounce-nyan") == 0) {
-            const gadget_app_t *bounce = app_registry_at(idx);
-            if (bounce && bounce->local_theme_set) {
-                bounce->local_theme_set(1);
-            }
-        }
         return smoke_expect_app("bounce");
     }
 

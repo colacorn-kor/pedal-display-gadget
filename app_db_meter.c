@@ -26,6 +26,7 @@
 #define DB_OPTIONS_AVERAGE_SHIFT 1u
 #define DB_OPTIONS_AVERAGE_MASK 0x06u
 #define DB_OPTIONS_SAVE_DELAY_MS 750U
+#define DB_ACCENT_LABEL_MAX 5
 
 typedef enum {
     DB_AVERAGE_LIVE = 0,
@@ -72,7 +73,10 @@ static lv_obj_t *s_voltage_value;
 static lv_obj_t *s_dbv_value;
 static lv_obj_t *s_dbu_value;
 static lv_obj_t *s_zone_fill[METER_ZONE_COUNT];
+static lv_obj_t *s_meter_track[METER_ZONE_COUNT];
 static lv_obj_t *s_peak_tick;
+static lv_obj_t *s_accent_label[DB_ACCENT_LABEL_MAX];
+static int s_accent_label_count;
 static audio_viz_snapshot_t s_snapshot;
 static float s_display_rms_db = METER_FLOOR_DB;
 static float s_peak_hold_db = METER_FLOOR_DB;
@@ -97,6 +101,11 @@ static char s_peak_text[16];
 static char s_voltage_text[16];
 static char s_dbv_text[16];
 static char s_dbu_text[16];
+
+static const ui_theme_t *db_meter_theme(void)
+{
+    return theme_for_app_color(app_slots_color(&APP_DB_METER));
+}
 
 static uint32_t mix_hex(uint32_t base, uint32_t overlay, uint8_t opacity)
 {
@@ -210,7 +219,7 @@ static lv_obj_t *create_control(const ui_theme_t *theme, int x, int width,
 
 static void style_control(lv_obj_t *control, lv_obj_t *label, bool selected)
 {
-    const ui_theme_t *theme = theme_get();
+    const ui_theme_t *theme = db_meter_theme();
     lv_obj_set_style_border_color(
         control, selected ? theme->accent : theme->grid, 0);
     lv_obj_set_style_bg_color(control, theme->accent, 0);
@@ -316,10 +325,12 @@ static void create_meter(const ui_theme_t *theme)
         int x1 = db_to_x(METER_ZONES[i].hi_db);
         int width = x1 - x0 + 1;
 
-        lv_obj_t *track = lv_obj_create(s_root);
-        lv_obj_set_size(track, width, METER_H);
-        lv_obj_set_pos(track, METER_X + x0, METER_Y);
-        style_rect(track, mix_hex(background, METER_ZONES[i].color, 52));
+        s_meter_track[i] = lv_obj_create(s_root);
+        lv_obj_set_size(s_meter_track[i], width, METER_H);
+        lv_obj_set_pos(s_meter_track[i], METER_X + x0, METER_Y);
+        style_rect(
+            s_meter_track[i],
+            mix_hex(background, METER_ZONES[i].color, 52));
 
         s_zone_fill[i] = lv_obj_create(s_root);
         lv_obj_set_size(s_zone_fill[i], 0, METER_H);
@@ -358,6 +369,9 @@ static void create_metric_column(const ui_theme_t *theme, int x,
     lv_obj_t *caption_label = make_label(s_root, caption,
                                          &lv_font_montserrat_12,
                                          theme->accent);
+    if (s_accent_label_count < DB_ACCENT_LABEL_MAX) {
+        s_accent_label[s_accent_label_count++] = caption_label;
+    }
     lv_obj_set_width(caption_label, 130);
     lv_obj_set_style_text_align(caption_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_pos(caption_label, x, 220);
@@ -371,7 +385,7 @@ static void create_metric_column(const ui_theme_t *theme, int x,
 static void db_meter_enter(int variant)
 {
     (void)variant;
-    const ui_theme_t *theme = theme_get();
+    const ui_theme_t *theme = db_meter_theme();
     audio_set_mode(AUDIO_SPECTRUM);
     audio_set_viz_mode(VIZ_MONITOR);
     load_options();
@@ -391,6 +405,8 @@ static void db_meter_enter(int variant)
     s_voltage_text[0] = '\0';
     s_dbv_text[0] = '\0';
     s_dbu_text[0] = '\0';
+    s_accent_label_count = 0;
+    memset(s_accent_label, 0, sizeof(s_accent_label));
 
     s_root = lv_obj_create(lv_screen_active());
     lv_obj_set_size(s_root, SCREEN_W, SCREEN_H);
@@ -399,6 +415,7 @@ static void db_meter_enter(int variant)
 
     lv_obj_t *title = make_label(s_root, "dB METER",
                                  &lv_font_montserrat_14, theme->accent);
+    s_accent_label[s_accent_label_count++] = title;
     lv_obj_set_pos(title, 14, 9);
 
     s_input_control = create_control(theme, 112, 176,
@@ -415,6 +432,7 @@ static void db_meter_enter(int variant)
     lv_obj_set_pos(s_rms_value, 16, 56);
     lv_obj_t *rms_unit = make_label(s_root, "dBFS",
                                     &lv_font_montserrat_14, theme->accent);
+    s_accent_label[s_accent_label_count++] = rms_unit;
     lv_obj_set_pos(rms_unit, 205, 91);
 
     lv_obj_t *peak_caption = make_label(s_root, "SAMPLE PEAK",
@@ -444,6 +462,49 @@ static void db_meter_enter(int variant)
     lv_obj_set_pos(footer, 0, 294);
 }
 
+static void apply_text_color_tree(lv_obj_t *obj, lv_color_t color)
+{
+    if (!obj) return;
+    lv_obj_set_style_text_color(obj, color, 0);
+    const uint32_t child_count = lv_obj_get_child_count(obj);
+    for (uint32_t i = 0; i < child_count; i++) {
+        apply_text_color_tree(lv_obj_get_child(obj, (int32_t)i), color);
+    }
+}
+
+static void db_meter_appearance_changed(void)
+{
+    if (!s_root) return;
+    const ui_theme_t *theme = db_meter_theme();
+    const uint32_t background =
+        lv_color_to_u32(theme->bg) & 0xffffffU;
+
+    lv_obj_set_style_bg_color(s_root, theme->bg, 0);
+    apply_text_color_tree(s_root, theme->text);
+    for (int i = 0; i < s_accent_label_count; i++) {
+        if (s_accent_label[i]) {
+            lv_obj_set_style_text_color(
+                s_accent_label[i], theme->accent, 0);
+        }
+    }
+    if (s_peak_value) {
+        lv_obj_set_style_text_color(s_peak_value, theme->accent2, 0);
+    }
+    if (s_peak_tick) {
+        lv_obj_set_style_bg_color(s_peak_tick, theme->text, 0);
+    }
+    for (int i = 0; i < METER_ZONE_COUNT; i++) {
+        if (s_meter_track[i]) {
+            lv_obj_set_style_bg_color(
+                s_meter_track[i],
+                lv_color_hex(mix_hex(
+                    background, METER_ZONES[i].color, 52)),
+                0);
+        }
+    }
+    refresh_controls();
+}
+
 static void db_meter_exit(void)
 {
     save_options_if_due(plat_millis(), true);
@@ -460,7 +521,12 @@ static void db_meter_exit(void)
     s_dbv_value = NULL;
     s_dbu_value = NULL;
     s_peak_tick = NULL;
-    for (int i = 0; i < METER_ZONE_COUNT; i++) s_zone_fill[i] = NULL;
+    for (int i = 0; i < METER_ZONE_COUNT; i++) {
+        s_zone_fill[i] = NULL;
+        s_meter_track[i] = NULL;
+    }
+    memset(s_accent_label, 0, sizeof(s_accent_label));
+    s_accent_label_count = 0;
 }
 
 static void update_peak_hold(float peak_db, uint32_t now, float dt_seconds)
@@ -609,6 +675,26 @@ static bool db_meter_on_event(ui_event_t event)
     return true;
 }
 
+static int db_meter_mode_count(void)
+{
+    return 1;
+}
+
+static const char *db_meter_mode_name(int idx)
+{
+    return idx == 0 ? "Level Meter" : "";
+}
+
+static int db_meter_mode_index(void)
+{
+    return 0;
+}
+
+static void db_meter_mode_set(int idx)
+{
+    (void)idx;
+}
+
 const gadget_app_t APP_DB_METER = {
     .id = "dbmeter",
     .name = "dB Meter",
@@ -618,6 +704,11 @@ const gadget_app_t APP_DB_METER = {
     .on_exit = db_meter_exit,
     .on_render = db_meter_render,
     .on_event = db_meter_on_event,
+    .on_appearance_changed = db_meter_appearance_changed,
+    .mode_count = db_meter_mode_count,
+    .mode_name = db_meter_mode_name,
+    .mode_index = db_meter_mode_index,
+    .mode_set = db_meter_mode_set,
 };
 
 #ifdef PEDAL_SIM

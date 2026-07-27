@@ -56,6 +56,11 @@ const ui_theme_t *theme_get(void)
     return &THEMES[s_theme_idx];
 }
 
+const ui_theme_t *theme_at(int idx)
+{
+    return &THEMES[clamp_index(idx)];
+}
+
 int theme_count(void)
 {
     return (int)(sizeof(THEMES) / sizeof(THEMES[0]));
@@ -78,4 +83,21 @@ void theme_set_index(int idx)
 void theme_on_change(void (*cb)(void))
 {
     s_on_change = cb;
+}
+
+const ui_theme_t *theme_for_app_color(app_color_t color)
+{
+    if (color == APP_COLOR_DEFAULT) return theme_get();
+    const int theme_idx = (int)color - 1;
+    return theme_idx >= 0 && theme_idx < theme_count()
+        ? theme_at(theme_idx)
+        : theme_get();
+}
+
+const char *theme_app_color_name(int idx)
+{
+    static const char *const NAMES[APP_COLOR_COUNT] = {
+        "Default", "Blue", "White", "Green",
+    };
+    return idx >= 0 && idx < APP_COLOR_COUNT ? NAMES[idx] : "";
 }

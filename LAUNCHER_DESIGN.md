@@ -31,11 +31,11 @@ typedef struct {
     void (*on_render)(void);        /* 매 프레임 (오디오 스냅샷 소비) */
     bool (*on_event)(ui_event_t e); /* 5키(상하좌우+확인) 위임. 처리시 true */
 
-    /* 선택형 앱 로컬 Theme 계약. 모두 NULL이면 Theme 항목을 숨긴다. */
-    int (*local_theme_count)(void);
-    const char *(*local_theme_name)(int idx);
-    int (*local_theme_index)(void);
-    void (*local_theme_set)(int idx);
+    void (*on_appearance_changed)(void); /* Color 적용 뒤 현재 화면 재스타일 */
+    int (*mode_count)(void);
+    const char *(*mode_name)(int idx);
+    int (*mode_index)(void);
+    void (*mode_set)(int idx);
 
     /* [Phase 2 예약] 라우팅 — Phase 1 전부 0 */
     app_input_source_t input_sources;
@@ -46,7 +46,7 @@ typedef struct {
 ```
 
 **3자 앱 작성자가 채우는 것(계약):** id·name·audio_mode·**icon**·4개 생명주기 콜백과,
-필요하면 4개 로컬 Theme 훅.
+Color 재스타일 콜백 및 Mode 열거 훅.
 (아이콘은 앱이 리소스로 제공 — 확정. 없으면 기본 아이콘으로 표시.)
 **앱이 접근 가능한 것(제공 API):**
 - 오디오: `audio_viz_snapshot_get()` (스펙트럼 bars/peaks/level, seqlock 스냅샷)
@@ -72,7 +72,8 @@ typedef struct {
     chain_t chain;            /* 라이브(순환) / 보관함(비활성) */
     uint8_t order;            /* 체인 내 위치 */
     uint8_t variant;          /* 선택된 변형 */
-    uint8_t local_theme;      /* 앱 로컬 Theme 선택값 */
+    uint8_t color;            /* Default/Blue/White/Green */
+    uint8_t mode;             /* 앱별 화면 형식 */
     uint8_t options;          /* 앱별 소형 설정 비트 */
 } app_slot_t;
 
@@ -133,12 +134,12 @@ static app_slot_t s_slots[APP_COUNT];
   모든 앱의 공통 팝업 배경·패널·글자·강조색에도 적용된다.
 - 앱 화면 홈 → `Exit`, `Settings`. 세로 메뉴는 상·하로만 이동하며 좌·우는 항목 이동에
   쓰지 않는다.
-- 앱의 `Settings → Theme`은 그 앱의 `local_theme_*` 훅만 호출한다. 런처나 팝업의
-  전역 UI 테마는 바꾸지 않는다. 훅이 없는 앱은 Settings에서 `Info`만 표시한다.
-- Sound Monitor는 `Spectrum (Blue)`, `Spectrum (Green)`,
-  `12-Band (Multi)`, `12-Band (Blue)`, `Circular (Blue)`, `Circular (Green)`을 제공한다.
-  Bounce는 `Classic Cat`, `Nyan Cat`을 제공한다. 앱 화면의 상·하 직접 테마 변경은
-  사용하지 않는다.
+- 모든 앱의 `Settings`는 `Color`, `Mode`, `Info`를 표시한다. Color는
+  `Default/Blue/White/Green`이며, `Default`는 현재 런처 Theme을 상속한다. 고정 Color도
+  앱 콘텐츠만 바꾸고 런처나 공통 팝업 팔레트에는 영향을 주지 않는다.
+- Sound Monitor의 Mode는 `Spectrum`, `12-Band`, `Circular`이고 Bounce의 Mode는
+  `Classic Cat`이다. 나머지 현재 앱도 확장 위치를 일관되게 유지하기 위해 한 개의
+  명명된 Mode를 제공한다. 앱 화면의 상·하 직접 외형 변경은 사용하지 않는다.
 
 ---
 
@@ -146,7 +147,7 @@ static app_slot_t s_slots[APP_COUNT];
 ```c
 typedef struct {
     chain_t chain; uint8_t order; uint8_t variant;
-    uint8_t local_theme; uint8_t options;
+    uint8_t appearance; uint8_t options;
 } app_setting_t;
 
 typedef struct {
@@ -159,12 +160,13 @@ typedef struct {
 - **③ Phase 1**: NVS(비휘발성 저장)에 저장/로드. 하드코딩 기본값 → 첫 부팅 시 기록.
   (SSOT 원문의 "하드코딩 → 추후 SD"에서, ③은 **NVS까지** 올리는 걸 권장 — 재빌드 없이
   순서/변형 저장됨. SD 매니페스트는 Phase 2.)
-- **저장 트리거**: 순서변경 drop, 변형·앱 로컬 Theme 변경, 퀵앱 변경 시.
+- **저장 트리거**: 순서변경 drop, 변형·앱 Color/Mode 변경, 퀵앱 변경 시.
 - **id 없는 슬롯**(앱 제거됨) = 무시. **새 앱**(설정에 없음) = 기본값으로 보관함 추가.
-- 현재 `platform_config`는 **version 4**다. v3 뒤에 남아 있던 구조체 패딩 1바이트를
-  앱별 `options`로 사용해 blob 크기를 유지한다. v2는 `local_theme`과 `options`를,
-  v3는 `options`만 0으로 초기화한 뒤 v4로 저장한다. dB Meter는 이 바이트에
-  LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 저장한다.
+- 현재 `platform_config`는 **version 5**다. 기존 `local_theme` 1바이트를
+  `appearance`로 재사용해 하위 2비트에 Color, 상위 6비트에 Mode를 저장하므로 v2~v4와
+  blob 크기가 같다. v4의 Monitor 6개 프리셋은 같은 Color/Mode 조합으로 변환하고,
+  제거된 Bounce Nyan 값은 `Default + Classic Cat`으로 변환한다. dB Meter의 `options`
+  바이트는 LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 그대로 저장한다.
 
 ---
 

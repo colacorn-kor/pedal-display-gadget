@@ -28,8 +28,9 @@ typedef struct {
 | **WHITE** | #F2EFE8 | #FFFFFF | #22262B | #2F6FED | #E4572E | #D8D2C4 |
 | **GREEN** | #061006 | #0A1A0A | #B7F5B7 | #39FF14 | #F5F53C | #123312 |
 - 전역 테마는 런처와 모든 공통 팝업의 크롬(배경/패널/글자/커서)을 함께 관장한다.
-- 앱 로컬 테마는 별개다. Sound Monitor의 렌더러·스펙트럼 색이나 Bounce의 캐릭터
-  외형을 바꾸며, 런처와 공통 팝업 팔레트에는 영향을 주지 않는다.
+- 앱 Color는 별개다. `Default`는 현재 전역 테마를 상속하고 고정
+  `Blue/White/Green`은 앱 콘텐츠에만 적용되어 런처와 공통 팝업 팔레트에는 영향을
+  주지 않는다. 렌더러·게임 형식은 Color와 독립된 앱 Mode가 결정한다.
 
 ## 3. 다운로드 테마 (메신저 꾸미기 모델, Phase 2 로더)
 - 파일 포맷 `.ggt` (SD `/themes/*.ggt`), 리틀엔디언 고정 크기:
@@ -66,18 +67,20 @@ typedef struct {
 
 ## 6. 앱 화면 공통 규약
 - 상단 상태띠(높이 20): 좌=앱 이름(UNSCII_8, text), 우=상태점(accent2, 예: 튜너 voiced).
-- 앱 콘텐츠는 y=24 아래. 전역 테마 토큰 소비(`theme_get()`), 씬 전용 색은 앱 자유.
+- 앱 콘텐츠는 y=24 아래. 저장된 앱 Color를 `theme_for_app_color()`로 해석하고,
+  씬 전용 색은 앱 자유다.
 - **미디어(Images)** = 미디어 재생 앱으로 위치 지정. 정지 이미지 + (추후) 스프라이트 애니 헬퍼(§ Bounce 인프라 재사용)로 확장.
 
 ## 7. 결정 로그 ("알아서" 판단들 — 뒤집기 가능)
 1. 픽셀폰트=**내장 UNSCII** (커스텀 폰트 에셋 제작은 나중 선택지).
 2. 아이콘 포맷=**32×32 A8**(알파만, 테마 text색으로 리컬러 → 테마 자동 적응, 앱당 ~1KB).
-3. 전역 UI 테마 vs 앱 로컬 테마 **분리** (전역=런처+모든 공통 팝업,
-   로컬=각 앱 콘텐츠).
+3. 전역 UI Theme과 앱 Color/Mode **분리** (전역=런처+모든 공통 팝업,
+   Color=각 앱 콘텐츠 팔레트, Mode=각 앱 화면 형식).
 4. 테마 선택 UI=런처 하단 **[SETTINGS] → Theme**. 좌우로 순환해 즉시 적용+NVS 저장.
-5. Bounce의 `Nyan Cat` 로컬 테마는 외부 이미지 에셋 없이 LVGL 사각형으로 다시 그린
-   선택형 픽셀 외형이다. 제품화 전 명칭·외형의 권리 검토는 별도로 한다.
-6. platform_config **version 4**는 v3의 마지막 패딩 바이트를 앱별 `options`로 사용한다.
-   v2/v3 blob 크기와 기존 설정은 보존하고 새 필드만 기본값 0으로 마이그레이션한다.
+5. 모든 앱 Settings는 `Color/Mode/Info`를 제공한다. Sound Monitor Mode는
+   `Spectrum/12-Band/Circular`, Bounce Mode는 `Classic Cat`이다.
+6. platform_config **version 5**는 기존 1바이트 외형 필드에 Color 2비트와 Mode 6비트를
+   패킹한다. v2~v4 blob 크기를 보존하며 이전 Monitor 프리셋은 대응 조합으로,
+   제거된 Nyan 값은 `Default + Classic Cat`으로 마이그레이션한다.
 7. dB Meter 상단은 `INPUT LINE/INST`와 `WINDOW LIVE/AVG 1s/AVG 3s` 두 선택기로
    구성한다. 상·하로 선택기를 고르고 좌·우/확인으로 값을 바꾸며, 선택은 NVS에 유지한다.

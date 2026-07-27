@@ -1,12 +1,13 @@
 # LAB_STATE.md - 현재 장치 및 실기 상태
 
-> 갱신일: 2026-07-26
+> 갱신일: 2026-07-27
 > 이 문서는 마지막 플래시와 현재 실험 상태의 SSOT다.
 
 ## 1. 기준 상태
 
 - 저장소 인수 기준: `166141c` (`CLAUDE_HANDOFF.md` 추가)
-- 마지막 실기 펌웨어 기준: 전역 UI/앱 로컬 Theme 분리 + Bounce Nyan Cat 로컬 빌드
+- 마지막 실기 펌웨어 기준: 전역 UI/앱 로컬 Theme 분리 + Bounce Nyan Cat 빌드
+  (테마 적용 정상, Nyan 장애물 구간 심한 프레임·입력 지연 확인)
 - 마지막 확인 포트: COM4
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
@@ -110,10 +111,10 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd1540 bytes, 18% 여유) |
-| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xcdec0` bytes, 20% 여유) |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xd1c40 bytes, 18% 여유) |
+| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xce5c0` bytes, 19% 여유) |
 | 호스트 테스트 4/4 | 통과 (MIDI, tuner, audio level, FFT normalization) |
-| PC 시뮬레이터 | 빌드·창 실행 통과, 결정론적 smoke 2/2 통과 |
+| PC 시뮬레이터 | 깨끗한 빌드·Color/Mode 시각 검수·결정론적 smoke 통과 |
 | COM4 탐지 | 2026-07-26 확인 |
 | USB 플래시 | 통과, 외부 9V 분리·USB 단독 상태 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
@@ -126,6 +127,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | 신회로 7상태 ADC 로그 | 통과 |
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 | dB Meter 전압·시간평균 실기 | 사용자 요청으로 보류, 1kHz 1점 교정 대기 |
+| 공통 Color/Mode + Nyan 제거 실기 | 미플래시, Bounce 장애물 구간 짧은 키 응답 확인 대기 |
 
 ## 6. PC 시뮬레이터 자동 확인
 
@@ -268,9 +270,33 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 사용자가 실기 확인을 보류했고 현재 USB 단독이라 TL072가 꺼져 있으므로 플래시와 실제
   전압 판정은 수행하지 않았다. 마지막 실기 펌웨어 기준은 위 Theme 분리 빌드 그대로다.
 
+### 2026-07-27 공통 Color/Mode와 Nyan 제거
+
+- 사용자가 마지막 실기 펌웨어에서 전역 Theme 적용과 앱 설정 팝업 팔레트 연동이
+  정상임을 확인했다. 같은 빌드의 Nyan Cat은 장애물이 등장하면 화면이 버벅이고 짧은
+  키 입력을 거의 받지 못하는 실기 회귀가 확인됐다.
+- Nyan Cat Mode와 전용 얼굴·몸통·무지개 LVGL 오브젝트 및 매프레임 갱신 경로를
+  제거했다. Bounce Mode는 `Classic Cat` 하나만 남겼다.
+- 모든 앱 Settings를 `Color/Mode/Info`로 통일했다. Color는
+  `Default/Blue/White/Green`이며 Default는 런처 Theme을 상속한다. 고정 Color는 앱
+  콘텐츠만 바꾸고 런처와 공통 팝업은 계속 전역 Theme을 따른다.
+- Sound Monitor는 색과 독립된 `Spectrum/12-Band/Circular` Mode를 제공한다. Images,
+  Tuner, Bounce, dB Meter도 향후 확장 위치가 흔들리지 않도록 각각 한 개의 명명된
+  Mode를 제공한다.
+- NVS schema는 v5다. 기존 8바이트 앱 설정 blob의 외형 1바이트를 Color 2비트와 Mode
+  6비트로 재사용한다. v2~v4 설정 크기를 유지하며 Monitor 6프리셋은 대응 Color/Mode로,
+  이전 Nyan 선택은 `Default + Classic Cat`으로 변환한다.
+- 깨끗한 PC 시뮬레이터 빌드·결정론 smoke와 Color/Mode 세 페이지의 480x320 시각 검수,
+  호스트 테스트 4/4가 통과했다. `sdkconfig.defaults` 전체 빌드는 `0xd1c40` bytes
+  (18% 여유), `INPUT_TRS_LADDER=0` 빌드는 `0xce5c0` bytes(19% 여유)로 둘 다
+  `-Werror`를 통과했다.
+- 이번 변경은 아직 플래시하지 않았다. 다음 실기는 외부 9V 분리 확인 뒤 새 빌드를
+  플래시하고 Classic Cat 장애물 구간에서 HOME/FOOTSW 짧은 입력 응답을 확인한다.
+
 ## 7. 다음 작업
 
 1. Basic 컨트롤러의 장시간 체감 평가는 실제 사용 중 이상이 있을 때 묶어서 수행한다.
-2. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
-3. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
-4. 알려진 1kHz Vrms 신호로 LINE/INST 전압 보정계수를 각각 확정한다.
+2. 공통 Color/Mode 빌드를 플래시해 Bounce 장애물 구간의 짧은 키 응답을 확인한다.
+3. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+4. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
+5. 알려진 1kHz Vrms 신호로 LINE/INST 전압 보정계수를 각각 확정한다.

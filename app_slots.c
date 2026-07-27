@@ -6,22 +6,25 @@
 #include "platform.h"
 
 #define APP_CFG_MAGIC 0x6741u
-#define APP_CFG_VERSION 4u
+#define APP_CFG_VERSION 5u
+#define APP_CFG_VERSION_OPTIONS 4u
 #define APP_CFG_VERSION_THEME 3u
 #define APP_CFG_VERSION_BASE 2u
 #define APP_ID_LEN 16
 #define APP_QUICK_DEFAULT "tuner"
+#define APP_APPEARANCE_COLOR_MASK 0x03u
+#define APP_APPEARANCE_MODE_SHIFT 2u
 
 typedef struct {
     chain_t chain;
     uint8_t order;
     uint8_t variant;
-    uint8_t local_theme;
+    uint8_t appearance;
     uint8_t options;
 } app_setting_t;
 
 _Static_assert(sizeof(app_setting_t) == 8,
-               "app config v2-v4 blob layout must stay compatible");
+               "app config v2-v5 blob layout must stay compatible");
 
 typedef struct {
     char id[APP_ID_LEN];
@@ -57,6 +60,22 @@ static bool same_id(const char saved[APP_ID_LEN], const char *id)
     return id && strncmp(saved, id, APP_ID_LEN) == 0;
 }
 
+static uint8_t pack_appearance(app_color_t color, uint8_t mode)
+{
+    return ((uint8_t)color & APP_APPEARANCE_COLOR_MASK) |
+           (uint8_t)(mode << APP_APPEARANCE_MODE_SHIFT);
+}
+
+static app_color_t unpack_color(uint8_t appearance)
+{
+    return (app_color_t)(appearance & APP_APPEARANCE_COLOR_MASK);
+}
+
+static uint8_t unpack_mode(uint8_t appearance)
+{
+    return appearance >> APP_APPEARANCE_MODE_SHIFT;
+}
+
 static uint8_t max_variant_for_app(const gadget_app_t *app)
 {
     if (!app || app->variant_count <= 1) return 0;
@@ -73,22 +92,29 @@ static uint8_t clamp_variant(const gadget_app_t *app, uint8_t variant,
     return max_variant;
 }
 
-static uint8_t max_local_theme_for_app(const gadget_app_t *app)
+static uint8_t max_mode_for_app(const gadget_app_t *app)
 {
-    if (!app || !app->local_theme_count) return 0;
-    const int count = app->local_theme_count();
+    if (!app || !app->mode_count) return 0;
+    const int count = app->mode_count();
     if (count <= 1) return 0;
-    if (count > 256) return 255;
+    if (count > 64) return 63;
     return (uint8_t)(count - 1);
 }
 
-static uint8_t clamp_local_theme(const gadget_app_t *app, uint8_t theme,
-                                 bool *changed)
+static uint8_t clamp_mode(const gadget_app_t *app, uint8_t mode,
+                          bool *changed)
 {
-    const uint8_t max_theme = max_local_theme_for_app(app);
-    if (theme <= max_theme) return theme;
+    const uint8_t max_mode = max_mode_for_app(app);
+    if (mode <= max_mode) return mode;
     if (changed) *changed = true;
-    return max_theme;
+    return max_mode;
+}
+
+static app_color_t clamp_color(app_color_t color, bool *changed)
+{
+    if (color >= APP_COLOR_DEFAULT && color < APP_COLOR_COUNT) return color;
+    if (changed) *changed = true;
+    return APP_COLOR_DEFAULT;
 }
 
 static void default_config(platform_config_t *cfg)
@@ -107,9 +133,36 @@ static void default_config(platform_config_t *cfg)
         cfg->apps[i].s.chain = CHAIN_LIVE;
         cfg->apps[i].s.order = (uint8_t)i;
         cfg->apps[i].s.variant = 0;
-        cfg->apps[i].s.local_theme = 0;
+        cfg->apps[i].s.appearance =
+            pack_appearance(APP_COLOR_DEFAULT, 0);
         cfg->apps[i].s.options = 0;
     }
+}
+
+static void migrate_legacy_appearance(app_cfg_entry_t *entry,
+                                      uint16_t version)
+{
+    uint8_t legacy_theme =
+        version == APP_CFG_VERSION_BASE ? 0 : entry->s.appearance;
+    app_color_t color = APP_COLOR_DEFAULT;
+    uint8_t mode = 0;
+
+    if (same_id(entry->id, "monitor")) {
+        switch (legacy_theme) {
+        case 0: color = APP_COLOR_BLUE;  mode = 0; break;
+        case 1: color = APP_COLOR_GREEN; mode = 0; break;
+        case 2: color = APP_COLOR_DEFAULT; mode = 1; break;
+        case 3: color = APP_COLOR_BLUE;  mode = 1; break;
+        case 4: color = APP_COLOR_BLUE;  mode = 2; break;
+        case 5: color = APP_COLOR_GREEN; mode = 2; break;
+        default: break;
+        }
+    }
+
+    /* Bounce legacy theme 1 was Nyan Cat. It intentionally migrates to
+     * Classic Cat with the launcher color after that expensive mode's removal. */
+    entry->s.appearance = pack_appearance(color, mode);
+    if (version < APP_CFG_VERSION_OPTIONS) entry->s.options = 0;
 }
 
 static void terminate_config_strings(platform_config_t *cfg)
@@ -176,7 +229,8 @@ static bool bind_slots_from_config(void)
         slot->chain = CHAIN_LIVE;
         slot->order = (uint8_t)i;
         slot->variant = 0;
-        slot->local_theme = 0;
+        slot->color = APP_COLOR_DEFAULT;
+        slot->mode = 0;
         slot->options = 0;
 
         const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
@@ -185,7 +239,8 @@ static bool bind_slots_from_config(void)
             slot->chain = setting->chain;
             slot->order = setting->order;
             slot->variant = setting->variant;
-            slot->local_theme = setting->local_theme;
+            slot->color = (uint8_t)unpack_color(setting->appearance);
+            slot->mode = unpack_mode(setting->appearance);
             slot->options = setting->options;
         } else {
             ESP_LOGW(TAG, "Adding new app slot for '%s'", app->id);
@@ -199,8 +254,9 @@ static bool bind_slots_from_config(void)
         }
 
         slot->variant = clamp_variant(app, slot->variant, &changed);
-        slot->local_theme =
-            clamp_local_theme(app, slot->local_theme, &changed);
+        slot->color = (uint8_t)clamp_color(
+            (app_color_t)slot->color, &changed);
+        slot->mode = clamp_mode(app, slot->mode, &changed);
         s_slot_count++;
     }
 
@@ -301,18 +357,15 @@ void app_slots_init(void)
     bool needs_save = !found;
     if (found && loaded.magic == APP_CFG_MAGIC &&
         (loaded.version == APP_CFG_VERSION ||
+         loaded.version == APP_CFG_VERSION_OPTIONS ||
          loaded.version == APP_CFG_VERSION_THEME ||
          loaded.version == APP_CFG_VERSION_BASE)) {
         s_cfg = loaded;
         terminate_config_strings(&s_cfg);
-        if (loaded.version == APP_CFG_VERSION_BASE) {
-            for (int i = 0; i < APP_SLOT_MAX; i++) {
-                s_cfg.apps[i].s.local_theme = 0;
-            }
-        }
         if (loaded.version != APP_CFG_VERSION) {
             for (int i = 0; i < APP_SLOT_MAX; i++) {
-                s_cfg.apps[i].s.options = 0;
+                migrate_legacy_appearance(
+                    &s_cfg.apps[i], loaded.version);
             }
             s_cfg.version = APP_CFG_VERSION;
             ESP_LOGI(TAG, "Migrated config v%u -> v%u",
@@ -339,13 +392,15 @@ void app_slots_save(void)
         app_slot_t *slot = &s_slots[i];
         if (!slot->app) continue;
         slot->variant = clamp_variant(slot->app, slot->variant, NULL);
-        slot->local_theme =
-            clamp_local_theme(slot->app, slot->local_theme, NULL);
+        slot->color = (uint8_t)clamp_color(
+            (app_color_t)slot->color, NULL);
+        slot->mode = clamp_mode(slot->app, slot->mode, NULL);
         copy_id(s_cfg.apps[i].id, slot->app->id);
         s_cfg.apps[i].s.chain = slot->chain;
         s_cfg.apps[i].s.order = slot->order;
         s_cfg.apps[i].s.variant = slot->variant;
-        s_cfg.apps[i].s.local_theme = slot->local_theme;
+        s_cfg.apps[i].s.appearance = pack_appearance(
+            (app_color_t)slot->color, slot->mode);
         s_cfg.apps[i].s.options = slot->options;
     }
 
@@ -414,31 +469,59 @@ void app_slots_set_theme(uint8_t idx)
     app_slots_save();
 }
 
-uint8_t app_slots_local_theme(const gadget_app_t *app)
+app_color_t app_slots_color(const gadget_app_t *app)
 {
     const int slot = find_slot_for_app(app);
-    return slot >= 0 ? s_slots[slot].local_theme : 0;
+    return slot >= 0
+        ? (app_color_t)s_slots[slot].color
+        : APP_COLOR_DEFAULT;
 }
 
-void app_slots_set_local_theme_runtime(const gadget_app_t *app, uint8_t idx)
+void app_slots_set_color_runtime(const gadget_app_t *app, app_color_t color)
 {
     const int slot = find_slot_for_app(app);
     if (slot < 0) return;
-    s_slots[slot].local_theme =
-        clamp_local_theme(app, idx, NULL);
+    s_slots[slot].color = (uint8_t)clamp_color(color, NULL);
 }
 
-void app_slots_set_local_theme(const gadget_app_t *app, uint8_t idx)
+void app_slots_set_color(const gadget_app_t *app, app_color_t color)
 {
     const int slot = find_slot_for_app(app);
     if (slot < 0) return;
-    const uint8_t next = clamp_local_theme(app, idx, NULL);
+    const app_color_t next = clamp_color(color, NULL);
     const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
-    if (s_slots[slot].local_theme == next && cfg_idx >= 0 &&
-        s_cfg.apps[cfg_idx].s.local_theme == next) {
+    if ((app_color_t)s_slots[slot].color == next && cfg_idx >= 0 &&
+        unpack_color(s_cfg.apps[cfg_idx].s.appearance) == next) {
         return;
     }
-    s_slots[slot].local_theme = next;
+    s_slots[slot].color = (uint8_t)next;
+    app_slots_save();
+}
+
+uint8_t app_slots_mode(const gadget_app_t *app)
+{
+    const int slot = find_slot_for_app(app);
+    return slot >= 0 ? s_slots[slot].mode : 0;
+}
+
+void app_slots_set_mode_runtime(const gadget_app_t *app, uint8_t mode)
+{
+    const int slot = find_slot_for_app(app);
+    if (slot < 0) return;
+    s_slots[slot].mode = clamp_mode(app, mode, NULL);
+}
+
+void app_slots_set_mode(const gadget_app_t *app, uint8_t mode)
+{
+    const int slot = find_slot_for_app(app);
+    if (slot < 0) return;
+    const uint8_t next = clamp_mode(app, mode, NULL);
+    const int cfg_idx = find_cfg_entry(&s_cfg, app->id);
+    if (s_slots[slot].mode == next && cfg_idx >= 0 &&
+        unpack_mode(s_cfg.apps[cfg_idx].s.appearance) == next) {
+        return;
+    }
+    s_slots[slot].mode = next;
     app_slots_save();
 }
 

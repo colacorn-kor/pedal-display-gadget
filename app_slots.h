@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "gadget_app.h"
+#include "theme.h"
 
 #define APP_SLOT_MAX 32
 
@@ -16,7 +17,8 @@ typedef struct {
     chain_t chain;
     uint8_t order;
     uint8_t variant;
-    uint8_t local_theme;
+    uint8_t color;
+    uint8_t mode;
     uint8_t options;
 } app_slot_t;
 
@@ -32,8 +34,11 @@ void app_slots_set_last_view(const char *id);
 const char *app_slots_quick_app(void);
 uint8_t app_slots_theme(void);
 void app_slots_set_theme(uint8_t idx);
-uint8_t app_slots_local_theme(const gadget_app_t *app);
-void app_slots_set_local_theme(const gadget_app_t *app, uint8_t idx);
-void app_slots_set_local_theme_runtime(const gadget_app_t *app, uint8_t idx);
+app_color_t app_slots_color(const gadget_app_t *app);
+void app_slots_set_color(const gadget_app_t *app, app_color_t color);
+void app_slots_set_color_runtime(const gadget_app_t *app, app_color_t color);
+uint8_t app_slots_mode(const gadget_app_t *app);
+void app_slots_set_mode(const gadget_app_t *app, uint8_t mode);
+void app_slots_set_mode_runtime(const gadget_app_t *app, uint8_t mode);
 uint8_t app_slots_options(const gadget_app_t *app);
 void app_slots_set_options(const gadget_app_t *app, uint8_t options);
