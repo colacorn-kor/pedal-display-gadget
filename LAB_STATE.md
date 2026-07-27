@@ -17,6 +17,8 @@
 - Ring 100Ω / Tip 220Ω: `ASSEMBLY.md` 완료 범위에 포함되어 장착됨
 - 오디오 입력 프론트엔드: 조립됨, 외부 9V 미연결 상태라 동작 미검증
 - 목표 자동 듀얼레인지 회로는 문서만 확정했으며 현재 브레드보드는 구형 SPDT 회로 그대로
+- Step 5B용 Range Diagnostics 소프트웨어와 핀 단위 개조·교정 절차는 준비됐지만,
+  Step 5A 구형 회로 기준 측정과 실제 부품 실장은 아직 수행하지 않음
 
 ## 2. 마지막 실기 결과
 
@@ -397,15 +399,37 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   표시하며, dBFS와 입력 Vrms·dBV·dBu를 명목 GG Input Full Scale로 계산한다.
 - 호스트 autorange 테스트는 스케일 일치, 즉시 HOT 전환, hysteresis 복귀, clip 우회와
   비유한값 정리를 통과했다. CTest 4개와 별도 FFT normalization 검사까지 5/5 통과했다.
-- ESP-IDF `-Werror` 기본 `0xd2250`, 래더 비활성 `0xcebd0`, 듀얼레인지 `0xd25d0`가
+- ESP-IDF `-Werror=all` 기본 `0xd2190`, 래더 비활성 `0xceb10`, 듀얼레인지 `0xd2e60`가
   모두 통과했고 PC 시뮬레이터 전체 smoke도 통과했다.
 - 현재 하드웨어는 VINR SENSITIVE가 준비되지 않았으므로 듀얼레인지 이미지는 플래시하지
   않았다. 실제 두 채널 순서·overlap 일치·전환 연속성·I2S overflow는 Step 5B 뒤 검증한다.
 
+### 2026-07-27 Step 5B 조립·교정 준비
+
+- 듀얼 빌드의 dB Meter Mode에 `Range Diagnostics`를 추가했다. HOT=VINL와
+  SENSITIVE=VINR의 block RMS/peak dBFS, 각 범위의 입력잭 환산 Vrms, raw S/H와 교정 후
+  mismatch를 한 화면에서 표시한다. 외부 9V 단독 운용 중 USB 로그 없이 측정하기 위한
+  작업 화면이며 기본 `AUDIO_DUAL_RANGE=0` 빌드에는 노출되지 않는다.
+- 1kHz scalar correction과 GG Input Full Scale을 CMake cache 변수로 주입할 수 있게 했다.
+  실제 값은 알려진 Vrms 측정 전까지 1.0/명목값을 유지한다.
+- OPA2192의 전형적 공통모드 입력 용량 6.4pF를 반영해 HOT 보상 시작값을
+  `10M||3.3pF : 1.5M||15pF`로 정정했다. 고임피던스/pF 노드는 솔더리스 브레드보드가
+  아니라 세척한 만능기판 또는 PCB에 실장하고, 최종 C값은 sweep으로 정한다.
+- `ASSEMBLY.md` Step 5A/5B를 구형 기준 측정, 해체 범위, U4/U6·BAV199 핀,
+  VINL/VINR 배선, 무전원·레일 검사, 듀얼 플래시, 1kHz 보정식과 sweep 표 순서로 구체화했다.
+- 현재 변경분으로 ESP-IDF 기본·`INPUT_TRS_LADDER=0`·`AUDIO_DUAL_RANGE=1`
+  `-Werror=all` 전체 빌드, CTest 4개, FFT normalization, PC 시뮬레이터 smoke를 다시
+  통과했다. 듀얼 이미지는 `0xd2e60`이고 1MiB 앱 파티션에 18%가 남는다.
+- 이 항목은 소프트웨어·문서 준비 기록이다. 외부 9V 측정, TL072 해체, OPA2192 실장,
+  듀얼 이미지 플래시는 아직 수행하지 않았다.
+
 ## 7. 다음 작업
 
-1. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
-2. 현행 LINE/INST 회로의 1kHz gain·noise·clip 기준을 측정한다.
-3. Step 5B 부품을 준비한 뒤 HOT/SENSITIVE 회로로 개조하고 듀얼레인지 변형을 플래시한다.
-4. 범위별 1kHz와 20Hz~20kHz sweep으로 교정값과 GG Input Full Scale을 확정한다.
-5. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+1. `ASSEMBLY.md` Step 5A에 따라 USB를 분리하고 외부 9V에서 구형 LINE/INST의
+   noise·100mVrms gain·clip·Thru 기준을 기록한다.
+2. OPA2192×2, BAV199, 고값 저항, C0G pF 세트와 납땜용 소형 기판의 실제 보유 여부를 확인한다.
+3. Step 5B 회로를 무전원 상태에서 조립하고 넷리스트·단락·레일 검사를 통과시킨다.
+4. 외부 9V를 끄고 USB만 연결해 듀얼레인지 변형을 플래시한 뒤, USB를 다시 분리하고
+   외부 9V에서 Range Diagnostics로 1kHz 교정과 범위 전환을 확인한다.
+5. 20Hz~20kHz sweep으로 HOT 보상 C와 남은 correction 후보를 확정한다.
+6. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.

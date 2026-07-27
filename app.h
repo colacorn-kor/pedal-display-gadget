@@ -33,6 +33,10 @@ typedef struct {
     audio_input_source_t input_source;
     bool uses_gg_input_scale;
     bool input_clipped;
+    float hot_adc_rms;
+    float hot_adc_peak;
+    float sensitive_adc_rms;
+    float sensitive_adc_peak;
 } audio_viz_snapshot_t;
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out);
 

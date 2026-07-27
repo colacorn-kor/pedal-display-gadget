@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "app_slots.h"
+#include "audio_autorange.h"
 #include "audio_level.h"
 #include "platform.h"
 #include "theme.h"
@@ -40,6 +41,11 @@ typedef enum {
     DB_CONTROL_AVERAGE,
 } db_control_t;
 
+typedef enum {
+    DB_MODE_LEVEL = 0,
+    DB_MODE_RANGE_DIAGNOSTICS,
+} db_meter_mode_t;
+
 typedef struct {
     float lo_db;
     float hi_db;
@@ -72,6 +78,14 @@ static lv_obj_t *s_peak_value;
 static lv_obj_t *s_voltage_value;
 static lv_obj_t *s_dbv_value;
 static lv_obj_t *s_dbu_value;
+static lv_obj_t *s_diag_status;
+static lv_obj_t *s_diag_hot_rms;
+static lv_obj_t *s_diag_hot_peak;
+static lv_obj_t *s_diag_hot_input;
+static lv_obj_t *s_diag_sensitive_rms;
+static lv_obj_t *s_diag_sensitive_peak;
+static lv_obj_t *s_diag_sensitive_input;
+static lv_obj_t *s_diag_comparison;
 static lv_obj_t *s_zone_fill[METER_ZONE_COUNT];
 static lv_obj_t *s_meter_track[METER_ZONE_COUNT];
 static lv_obj_t *s_peak_tick;
@@ -89,8 +103,10 @@ static int s_history_count;
 static audio_input_range_t s_input_range = AUDIO_INPUT_LINE;
 static audio_input_source_t s_input_source = AUDIO_INPUT_SOURCE_LEGACY;
 static bool s_input_clipped;
+static db_meter_mode_t s_mode = DB_MODE_LEVEL;
 static db_average_mode_t s_average_mode = DB_AVERAGE_LIVE;
 static db_control_t s_control = DB_CONTROL_INPUT;
+static bool s_rebuild_pending;
 static bool s_options_dirty;
 static uint32_t s_options_changed_ms;
 static uint32_t s_peak_hold_until;
@@ -395,48 +411,22 @@ static void create_metric_column(const ui_theme_t *theme, int x,
     lv_obj_set_pos(*value, x, 239);
 }
 
-static void db_meter_enter(int variant)
+static void create_root(const ui_theme_t *theme, const char *title_text)
 {
-    (void)variant;
-    const ui_theme_t *theme = db_meter_theme();
-    audio_set_mode(AUDIO_SPECTRUM);
-    audio_set_viz_mode(VIZ_MONITOR);
-    load_options();
-#if AUDIO_DUAL_RANGE
-    s_control = DB_CONTROL_AVERAGE;
-#else
-    s_control = DB_CONTROL_INPUT;
-#endif
-
-    s_display_rms_db = METER_FLOOR_DB;
-    s_peak_hold_db = METER_FLOOR_DB;
-    s_window_peak = 0.0f;
-    s_peak_hold_until = 0;
-    s_last_sample_ms = plat_millis();
-    s_last_display_ms = s_last_sample_ms;
-    s_last_peak_x = -1;
-    plat_audio_viz_get(&s_snapshot);
-    s_input_source = s_snapshot.input_source;
-    s_input_clipped = s_snapshot.input_clipped;
-    reset_power_history(&s_snapshot);
-    s_rms_text[0] = '\0';
-    s_peak_text[0] = '\0';
-    s_voltage_text[0] = '\0';
-    s_dbv_text[0] = '\0';
-    s_dbu_text[0] = '\0';
-    s_accent_label_count = 0;
-    memset(s_accent_label, 0, sizeof(s_accent_label));
-
     s_root = lv_obj_create(lv_screen_active());
     lv_obj_set_size(s_root, SCREEN_W, SCREEN_H);
     lv_obj_set_pos(s_root, 0, 0);
     style_rect(s_root, lv_color_to_u32(theme->bg) & 0xffffffU);
 
-    lv_obj_t *title = make_label(s_root, "dB METER",
+    lv_obj_t *title = make_label(s_root, title_text,
                                  &lv_font_montserrat_14, theme->accent);
     s_accent_label[s_accent_label_count++] = title;
     lv_obj_set_pos(title, 14, 9);
+}
 
+static void create_level_view(const ui_theme_t *theme)
+{
+    create_root(theme, "dB METER");
     s_input_control = create_control(theme, 112, 176,
                                      &s_input_control_label);
     s_average_control = create_control(theme, 296, 168,
@@ -486,53 +476,96 @@ static void db_meter_enter(int variant)
     lv_obj_set_pos(footer, 0, 294);
 }
 
-static void apply_text_color_tree(lv_obj_t *obj, lv_color_t color)
+#if AUDIO_DUAL_RANGE
+static lv_obj_t *create_diagnostic_value(
+    const ui_theme_t *theme, int x, int y)
 {
-    if (!obj) return;
-    lv_obj_set_style_text_color(obj, color, 0);
-    const uint32_t child_count = lv_obj_get_child_count(obj);
-    for (uint32_t i = 0; i < child_count; i++) {
-        apply_text_color_tree(lv_obj_get_child(obj, (int32_t)i), color);
-    }
+    lv_obj_t *label = make_label(
+        s_root, "--", &lv_font_montserrat_28, theme->text);
+    lv_obj_set_width(label, 164);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, x, y);
+    return label;
 }
 
-static void db_meter_appearance_changed(void)
+static void create_range_diagnostics_view(const ui_theme_t *theme)
 {
-    if (!s_root) return;
-    const ui_theme_t *theme = db_meter_theme();
-    const uint32_t background =
-        lv_color_to_u32(theme->bg) & 0xffffffU;
+    create_root(theme, "RANGE DIAGNOSTICS");
 
-    lv_obj_set_style_bg_color(s_root, theme->bg, 0);
-    apply_text_color_tree(s_root, theme->text);
-    for (int i = 0; i < s_accent_label_count; i++) {
-        if (s_accent_label[i]) {
-            lv_obj_set_style_text_color(
-                s_accent_label[i], theme->accent, 0);
-        }
+    s_diag_status = make_label(
+        s_root, "WAITING FOR AUDIO", &lv_font_montserrat_14,
+        theme->accent2);
+    lv_obj_set_width(s_diag_status, 270);
+    lv_obj_set_style_text_align(
+        s_diag_status, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_pos(s_diag_status, 194, 8);
+
+    lv_obj_t *hot_header = make_label(
+        s_root, "HOT / VINL", &lv_font_montserrat_14, theme->accent);
+    lv_obj_set_width(hot_header, 164);
+    lv_obj_set_style_text_align(
+        hot_header, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(hot_header, 132, 42);
+
+    lv_obj_t *sensitive_header = make_label(
+        s_root, "SENSITIVE / VINR", &lv_font_montserrat_14,
+        theme->accent);
+    lv_obj_set_width(sensitive_header, 164);
+    lv_obj_set_style_text_align(
+        sensitive_header, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(sensitive_header, 300, 42);
+
+    const char *captions[] = {
+        "ADC RMS dBFS", "ADC PEAK dBFS", "INPUT RMS*",
+    };
+    const int caption_y[] = { 79, 133, 187 };
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t *caption = make_label(
+            s_root, captions[i], &lv_font_montserrat_12, theme->text);
+        lv_obj_set_width(caption, 112);
+        lv_obj_set_style_text_align(
+            caption, LV_TEXT_ALIGN_RIGHT, 0);
+        lv_obj_set_pos(caption, 10, caption_y[i]);
     }
-    if (s_peak_value) {
-        lv_obj_set_style_text_color(s_peak_value, theme->accent2, 0);
-    }
-    if (s_peak_tick) {
-        lv_obj_set_style_bg_color(s_peak_tick, theme->text, 0);
-    }
-    for (int i = 0; i < METER_ZONE_COUNT; i++) {
-        if (s_meter_track[i]) {
-            lv_obj_set_style_bg_color(
-                s_meter_track[i],
-                lv_color_hex(mix_hex(
-                    background, METER_ZONES[i].color, 52)),
-                0);
-        }
-    }
-    refresh_controls();
+
+    s_diag_hot_rms = create_diagnostic_value(theme, 132, 67);
+    s_diag_sensitive_rms =
+        create_diagnostic_value(theme, 300, 67);
+    s_diag_hot_peak = create_diagnostic_value(theme, 132, 121);
+    s_diag_sensitive_peak =
+        create_diagnostic_value(theme, 300, 121);
+    s_diag_hot_input = create_diagnostic_value(theme, 132, 175);
+    s_diag_sensitive_input =
+        create_diagnostic_value(theme, 300, 175);
+
+    s_diag_comparison = make_label(
+        s_root, "S/H -- | MISMATCH --", &lv_font_montserrat_14,
+        theme->accent2);
+    lv_obj_set_width(s_diag_comparison, SCREEN_W);
+    lv_obj_set_style_text_align(
+        s_diag_comparison, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(s_diag_comparison, 0, 237);
+
+    lv_obj_t *target = make_label(
+        s_root, "Raw S/H target +29.7 dB | corrected mismatch target 0.0 dB",
+        &lv_font_montserrat_12, theme->text);
+    lv_obj_set_width(target, SCREEN_W);
+    lv_obj_set_style_text_align(target, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_opa(target, LV_OPA_60, 0);
+    lv_obj_set_pos(target, 0, 265);
+
+    lv_obj_t *footer = make_label(
+        s_root, "* nominal input estimate until 1 kHz calibration",
+        &lv_font_montserrat_12, theme->text);
+    lv_obj_set_width(footer, SCREEN_W);
+    lv_obj_set_style_text_align(footer, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_opa(footer, LV_OPA_50, 0);
+    lv_obj_set_pos(footer, 0, 294);
 }
+#endif
 
-static void db_meter_exit(void)
+static void clear_ui_references(void)
 {
-    save_options_if_due(plat_millis(), true);
-    if (s_root) lv_obj_delete(s_root);
     s_root = NULL;
     s_input_control = NULL;
     s_input_control_label = NULL;
@@ -544,6 +577,14 @@ static void db_meter_exit(void)
     s_voltage_value = NULL;
     s_dbv_value = NULL;
     s_dbu_value = NULL;
+    s_diag_status = NULL;
+    s_diag_hot_rms = NULL;
+    s_diag_hot_peak = NULL;
+    s_diag_hot_input = NULL;
+    s_diag_sensitive_rms = NULL;
+    s_diag_sensitive_peak = NULL;
+    s_diag_sensitive_input = NULL;
+    s_diag_comparison = NULL;
     s_peak_tick = NULL;
     for (int i = 0; i < METER_ZONE_COUNT; i++) {
         s_zone_fill[i] = NULL;
@@ -551,6 +592,71 @@ static void db_meter_exit(void)
     }
     memset(s_accent_label, 0, sizeof(s_accent_label));
     s_accent_label_count = 0;
+}
+
+static void destroy_ui(void)
+{
+    if (s_root) lv_obj_delete(s_root);
+    clear_ui_references();
+}
+
+static void build_ui(void)
+{
+    s_accent_label_count = 0;
+    memset(s_accent_label, 0, sizeof(s_accent_label));
+    const ui_theme_t *theme = db_meter_theme();
+#if AUDIO_DUAL_RANGE
+    if (s_mode == DB_MODE_RANGE_DIAGNOSTICS) {
+        create_range_diagnostics_view(theme);
+        return;
+    }
+#endif
+    create_level_view(theme);
+}
+
+static void db_meter_enter(int variant)
+{
+    (void)variant;
+    audio_set_mode(AUDIO_SPECTRUM);
+    audio_set_viz_mode(VIZ_MONITOR);
+    load_options();
+#if AUDIO_DUAL_RANGE
+    s_control = DB_CONTROL_AVERAGE;
+#else
+    s_control = DB_CONTROL_INPUT;
+    s_mode = DB_MODE_LEVEL;
+#endif
+
+    s_display_rms_db = METER_FLOOR_DB;
+    s_peak_hold_db = METER_FLOOR_DB;
+    s_window_peak = 0.0f;
+    s_peak_hold_until = 0;
+    s_last_sample_ms = plat_millis();
+    s_last_display_ms = s_last_sample_ms;
+    s_last_peak_x = -1;
+    s_rebuild_pending = false;
+    plat_audio_viz_get(&s_snapshot);
+    s_input_source = s_snapshot.input_source;
+    s_input_clipped = s_snapshot.input_clipped;
+    reset_power_history(&s_snapshot);
+    s_rms_text[0] = '\0';
+    s_peak_text[0] = '\0';
+    s_voltage_text[0] = '\0';
+    s_dbv_text[0] = '\0';
+    s_dbu_text[0] = '\0';
+    build_ui();
+}
+
+static void db_meter_appearance_changed(void)
+{
+    if (s_root) s_rebuild_pending = true;
+}
+
+static void db_meter_exit(void)
+{
+    save_options_if_due(plat_millis(), true);
+    destroy_ui();
+    s_rebuild_pending = false;
 }
 
 static void update_peak_hold(float peak_db, uint32_t now, float dt_seconds)
@@ -601,11 +707,113 @@ static void format_voltage(char *out, size_t size, float vrms)
     }
 }
 
+#if AUDIO_DUAL_RANGE
+static float diagnostic_dbfs(float amplitude)
+{
+    if (!isfinite(amplitude) || amplitude <= 0.000001f) {
+        return -120.0f;
+    }
+    return 20.0f * log10f(fabsf(amplitude));
+}
+
+static void format_diagnostic_dbfs(
+    char *out, size_t size, float amplitude)
+{
+    const float db = diagnostic_dbfs(amplitude);
+    if (db <= -120.0f) {
+        snprintf(out, size, "-INF");
+    } else {
+        snprintf(out, size, "%.1f", db);
+    }
+}
+
+static void render_range_diagnostics(uint32_t now)
+{
+    if (now - s_last_display_ms < METER_DISPLAY_MS) return;
+    s_last_display_ms = now;
+    plat_audio_viz_get(&s_snapshot);
+
+    const float hot_rms = fabsf(s_snapshot.hot_adc_rms);
+    const float hot_peak = fabsf(s_snapshot.hot_adc_peak);
+    const float sensitive_rms =
+        fabsf(s_snapshot.sensitive_adc_rms);
+    const float sensitive_peak =
+        fabsf(s_snapshot.sensitive_adc_peak);
+    const float hot_input =
+        audio_autorange_adc_rms_to_input_vrms(
+            AUDIO_AUTORANGE_HOT, hot_rms);
+    const float sensitive_input =
+        audio_autorange_adc_rms_to_input_vrms(
+            AUDIO_AUTORANGE_SENSITIVE, sensitive_rms);
+
+    char text[64];
+    const char *active =
+        s_snapshot.input_source == AUDIO_INPUT_SOURCE_HOT
+            ? "HOT" : "SENSITIVE";
+    const bool hot_clipped =
+        hot_peak >= AUDIO_DUAL_ADC_CLIP_PEAK;
+    const bool sensitive_clipped =
+        sensitive_peak >= AUDIO_DUAL_ADC_CLIP_PEAK;
+    if (hot_clipped && sensitive_clipped) {
+        snprintf(text, sizeof(text), "ACTIVE %s | BOTH CLIP", active);
+    } else if (hot_clipped) {
+        snprintf(text, sizeof(text), "ACTIVE %s | HOT CLIP", active);
+    } else if (sensitive_clipped) {
+        snprintf(text, sizeof(text), "ACTIVE %s | SENS CLIP", active);
+    } else {
+        snprintf(text, sizeof(text), "ACTIVE %s", active);
+    }
+    lv_label_set_text(s_diag_status, text);
+
+    format_diagnostic_dbfs(text, sizeof(text), hot_rms);
+    lv_label_set_text(s_diag_hot_rms, text);
+    format_diagnostic_dbfs(text, sizeof(text), hot_peak);
+    lv_label_set_text(s_diag_hot_peak, text);
+    format_diagnostic_dbfs(text, sizeof(text), sensitive_rms);
+    lv_label_set_text(s_diag_sensitive_rms, text);
+    format_diagnostic_dbfs(text, sizeof(text), sensitive_peak);
+    lv_label_set_text(s_diag_sensitive_peak, text);
+
+    format_voltage(text, sizeof(text), hot_input);
+    lv_label_set_text(s_diag_hot_input, text);
+    format_voltage(text, sizeof(text), sensitive_input);
+    lv_label_set_text(s_diag_sensitive_input, text);
+
+    if (hot_rms > 0.000001f && sensitive_rms > 0.000001f &&
+        hot_input > 0.000001f && sensitive_input > 0.000001f) {
+        const float raw_ratio_db =
+            diagnostic_dbfs(sensitive_rms) -
+            diagnostic_dbfs(hot_rms);
+        const float mismatch_db =
+            20.0f * log10f(sensitive_input / hot_input);
+        snprintf(text, sizeof(text),
+                 "S/H %+.1f dB | MISMATCH %+.1f dB",
+                 raw_ratio_db, mismatch_db);
+    } else {
+        snprintf(text, sizeof(text), "S/H -- | MISMATCH --");
+    }
+    lv_label_set_text(s_diag_comparison, text);
+}
+#endif
+
 static void db_meter_render(void)
 {
     if (!s_root) return;
 
     uint32_t now = plat_millis();
+    if (s_rebuild_pending) {
+        destroy_ui();
+        build_ui();
+        s_rebuild_pending = false;
+        s_last_display_ms = now;
+    }
+#if AUDIO_DUAL_RANGE
+    if (s_mode == DB_MODE_RANGE_DIAGNOSTICS) {
+        render_range_diagnostics(now);
+        return;
+    }
+#endif
+
     save_options_if_due(now, false);
     uint32_t sample_elapsed_ms = now - s_last_sample_ms;
     if (sample_elapsed_ms < METER_SAMPLE_MS) return;
@@ -678,6 +886,9 @@ static void db_meter_render(void)
 
 static bool db_meter_on_event(ui_event_t event)
 {
+#if AUDIO_DUAL_RANGE
+    if (s_mode == DB_MODE_RANGE_DIAGNOSTICS) return false;
+#endif
     if (event == EV_UP || event == EV_DOWN) {
 #if AUDIO_DUAL_RANGE
         s_control = DB_CONTROL_AVERAGE;
@@ -725,22 +936,34 @@ static bool db_meter_on_event(ui_event_t event)
 
 static int db_meter_mode_count(void)
 {
+#if AUDIO_DUAL_RANGE
+    return 2;
+#else
     return 1;
+#endif
 }
 
 static const char *db_meter_mode_name(int idx)
 {
-    return idx == 0 ? "Level Meter" : "";
+    if (idx == DB_MODE_LEVEL) return "Level Meter";
+#if AUDIO_DUAL_RANGE
+    if (idx == DB_MODE_RANGE_DIAGNOSTICS) return "Range Diagnostics";
+#endif
+    return "";
 }
 
 static int db_meter_mode_index(void)
 {
-    return 0;
+    return (int)s_mode;
 }
 
 static void db_meter_mode_set(int idx)
 {
-    (void)idx;
+    if (idx < DB_MODE_LEVEL || idx >= db_meter_mode_count()) return;
+    const db_meter_mode_t next = (db_meter_mode_t)idx;
+    if (next == s_mode) return;
+    s_mode = next;
+    if (s_root) s_rebuild_pending = true;
 }
 
 const gadget_app_t APP_DB_METER = {

@@ -503,6 +503,7 @@ static void synthetic_viz_get(audio_viz_snapshot_t *out)
     const float f0 = synthetic_pitch_hz();
     float level = 0.34f + 0.18f * sinf(t * 2.4f) + 0.42f * kick;
 
+    memset(out, 0, sizeof(*out));
     level = clampf(level, 0.0f, 1.0f);
     for (int i = 0; i < VIZ_POINTS; i++) {
         float x = (float)i / (float)(VIZ_POINTS - 1);

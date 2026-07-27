@@ -28,3 +28,14 @@ if(DEFINED AUDIO_DUAL_RANGE)
     )
 endif()
 
+foreach(calibration_var
+        AUDIO_DUAL_HOT_VOLTAGE_CORRECTION
+        AUDIO_DUAL_SENSITIVE_VOLTAGE_CORRECTION
+        AUDIO_GG_INPUT_FULL_SCALE_VPEAK)
+    if(DEFINED ${calibration_var})
+        target_compile_definitions(
+            ${COMPONENT_LIB} PRIVATE
+            ${calibration_var}=${${calibration_var}}
+        )
+    endif()
+endforeach()

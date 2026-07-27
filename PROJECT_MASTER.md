@@ -35,7 +35,7 @@
 [완료] input 태스크 WDT 핫픽스: 310초 무재발 · 정상 UI · FOOTSW 전환 확인
 [완료] 신회로 TRS 6키 ADC 실측 · HOME/FOOTSW 롱 동작 확인
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
-[현재] 자동 듀얼레인지 캡처 소프트웨어 완료 · Step 5B 실기 준비
+[현재] Range Diagnostics·Step 5B 배선/교정 절차 완료 · Step 5A 기준 측정 대기
 [병행 HW] 자동 듀얼레인지 분석 탭 · 교정 지그 · KiCad 풋프린트/스키매틱
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
        → S6 스마트 컨트롤러 → S7 GG Analog Meter
@@ -85,7 +85,7 @@
 - 현재 `ASSEMBLY.md` 조립은 SD 카드 모듈과 뮤트 회로를 제외하고 완료됐다.
 - [ ] 코덱 모듈 선정(PCM5102A vs ES8388) — S2 착수 조건
 - [ ] 현재 TL072 LINE/INST 프로토타입을 외부 9V에서 기준 측정
-- [x] PCM1808 두 채널 자동 듀얼레인지 펌웨어·호스트 테스트·분리 빌드
+- [x] PCM1808 두 채널 자동 듀얼레인지·Range Diagnostics·교정값 주입 경로
 - [ ] Step 5B 회로 개조 뒤 자동 범위 전환 실기 검증
 - [ ] HOT/SENSITIVE 범위별 1kHz 및 20Hz~20kHz sweep 교정
 - [ ] SD 카드 모듈과 뮤트 회로의 장착 시점 및 회로 확정

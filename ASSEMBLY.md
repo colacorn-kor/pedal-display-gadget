@@ -25,9 +25,11 @@
 > 3. **납땜인두는 350℃ 쇳덩이다.** 받침대에 두고, 환기하고, 손 데지 않게.
 
 > **이 가이드의 큰 그림 (데이터 흐름)**
-> 기타 신호 → (TL072로 살짝 복사해서 따옴, 원래 소리는 그대로 통과) → PCM1808이 디지털로
-> 바꿈 → ESP32-S3가 분석(음정/스펙트럼) → ST7796 화면에 표시. 버튼·풋스위치로 앱을 바꾼다.
-> 처음엔 화면+버튼만, 그다음 전원, 마지막에 오디오 순서로 붙인다.
+> 기타 신호 → (현재 Step 5는 TL072 단일 범위, Step 5B 뒤에는 OPA2192
+> HOT/SENSITIVE 두 범위로 분석 탭만 복사) → PCM1808이 디지털로 바꿈 → ESP32-S3가
+> 분석(음정/스펙트럼) → ST7796 화면에 표시. 입력잭과 출력잭 사이의 원 신호는 두 회로
+> 모두 하드와이어로 직접 통과한다. 처음엔 화면+버튼만, 그다음 전원, 마지막에 오디오
+> 순서로 붙인다.
 
 > **튜너 음역 = 30~1300Hz** (베이스 5현 저B 31Hz·드롭튜닝 포함). 비주얼라이저는 20Hz~20kHz.
 > J201(뮤트)·SD카드·MIDI는 **나중 단계** (맨 아래 "보류 항목").
@@ -74,8 +76,10 @@
 - [ ] **(Step 5B 개조용, 지금 미장착)** OPA2192 dual op-amp ×2와
       SOIC-8→DIP-8 어댑터 ×2, 22MΩ ×1,
       10MΩ ×1, 1.5MΩ ×1, 30kΩ ×1, 10kΩ ×1, 100kΩ ×1, 100Ω ×2,
-      BAV199 저누설 dual-series 다이오드 ×1, 2.2pF ×1, 15pF ×1,
-      1µF ×2, 10nF ×2, 100nF ×1
+      BAV199 저누설 dual-series 다이오드 ×1, **3.3pF C0G/NP0 ×1**,
+      15pF C0G/NP0 ×1, 튜닝용 C0G/NP0 1.0/1.5/2.2/4.7pF 각 1개,
+      1µF ×2, 10nF ×2, 100nF ×1(기존 op-amp 전원용 100nF 하나를 U4에 재사용하고
+      새 부품은 U6에 사용), 소형 만능기판 또는 Step 5B 전용 PCB ×1
 
 > **저항·콘덴서 값 읽기:** 저항은 색띠로(예: 갈-검-주황 = 10k). 헷갈리면 멀티미터 저항(Ω)
 > 모드로 직접 재라. 콘덴서는 보통 숫자(104 = 100nF, 105 = 1µF) 또는 µF로 표기.
@@ -120,6 +124,12 @@
   (PCM1808 모듈이 온보드 레귤레이터로 아날로그 3.3V를 자체 생성). 나중에 별도 클린 레일이 필요하면 사용.
 - **TL072CP**: 검은 8핀 칩(DIP). 한쪽 끝에 **반원 홈/점** = 1번 핀 기준. 빵판 중앙 골에 걸쳐 꽂는다.
   - 1=OUT A, 2=IN− A, 3=IN+ A, 4=V−(GND), 5=IN+ B, 6=IN− B, 7=OUT B, 8=V+(9V)
+- **OPA2192**: 목표 회로용 SOIC-8 dual op-amp. SOIC→DIP 어댑터에 납땜해 쓰며 핀 기능은
+  위 TL072와 같다. 두 칩 모두 8번=깨끗한 9V, 4번=GND이고 각 칩의 8↔4 가까이에
+  100nF를 둔다.
+- **BAV199(SOT-23)**: 1=A1, 2=K2, 3=K1/A2(두 다이오드 중점). Step 5B에서는
+  `1→GND`, `2→+9V_OPAMP`, `3→SENSE_P`다. 외형만 보고 방향을 추측하지 말고
+  구입한 제조사의 데이터시트 핀표를 다시 확인한다.
 - **ELB040202**: 배럴잭을 나사 터미널로 빼주는 어댑터. 9V 어댑터를 여기 꽂고 `+ / −` 나온다.
 
 ---
@@ -387,48 +397,164 @@ TL072 V+(8번) = 깨끗한 9V,  V−(4번) = GND
 - **저역 확장**: 베이스 저E(~41Hz)·드롭D(~73Hz), 가능하면 5현 저B(~31Hz)까지 음 이름이
   *안정적으로* 뜨는지. 저역에서 음이 흔들리거나 한 옥타브 위로 튀면 → 커플링 캡/게인/노이즈 점검.
 🚫 **흔한 실수:**
-- 출력이 항상 한쪽으로 쏠려 반응 안 함 → ★ Rg를 4.5V에 안 걸고 GND에 걸었음.
-- 과반응/파형 깨짐(클리핑) → **게인 스위치를 LINE으로**(또는 값 조정). 약해서 반응 둔함 → INST로.
-- Vref가 4.5V가 아님 → 분압 저항(10k+10k)·버퍼(B쪽) 배선 확인.
+- 현재 Step 5 출력이 항상 한쪽으로 쏠림 → ★ Rg를 Vref에 안 걸고 GND에 걸었음.
+- 현재 Step 5 과반응/클리핑 → 게인 스위치를 LINE으로. 약하면 INST로.
+- Step 5B에서 한 채널만 보임 → PCM `VINL=HOT`, `VINR=SENSITIVE`, BAV199 핀과
+  두 출력 커플링선을 다시 확인.
+- Vref가 전원 레일의 절반이 아님 → 10k+10k 분압과 U4 B 버퍼 배선 확인.
 - 참고: 튜너 갱신 주기 48ms(약 21Hz). 저역은 원래 천천히 맞춰지므로 체감 무방.
 
 ---
 
-### Step 5B — 목표 자동 듀얼레인지 개조 (펌웨어 준비 뒤)
-**목표:** LINE/INST 스위치를 없애고 약한 기타 직결 신호와 강한 페달·라인 출력을 동시에
-받는다. 이 단계는 **PCM1808 L/R 동시 캡처, 자동 선택과 교정 코드가 통과한 뒤에만** 한다.
+### Step 5A — 개조 전 LINE/INST 기준 측정
+**목표:** 구형 회로를 해체하기 전에 비교 기준을 남겨 Step 5B가 실제로 개선됐는지 판단한다.
 
-1. 입력잭 Tip과 출력잭 Tip의 직접 연결은 손대지 않는다.
-2. 현재 TL072를 제거하고 OPA2192 두 개를 장착한다. OPA2192는 9V 단전원 RRIO라
-   HOT full-scale의 공통모드와 출력 swing을 감당한다. SOIC 부품이면 DIP 어댑터에
-   먼저 납땜한 뒤 브레드보드에 꽂는다.
-3. 기존 1µF 뒤 분석 탭을 두 갈래로 나눈다.
-   - SENSITIVE: 100kΩ 직렬 보호 뒤 22MΩ로 Vref에 바이어스하고, BAV199의 중간
-     핀을 신호에 둬 GND와 깨끗한 9V 사이로 clamp한 뒤 첫 OPA2192 A의
-     `Rf=30k / Rg=10k to Vref` 비반전 증폭. 입력잭 기준 gain 약 3.98x
-   - HOT: `(10MΩ || 2.2pF)` 상단과 `(1.5MΩ || 15pF)` Vref 쪽 하단으로 분압한 뒤
-     두 번째 OPA2192 A의 unity buffer, gain 약 0.1304x
-4. HOT의 두 커패시터는 10MΩ×2.2pF와 1.5MΩ×15pF의 시정수를 맞춰 고값 저항과
-   op-amp 입력 커패시턴스로 생기는 고역 감쇠를 보상하는 시작값이다.
-5. HOT 출력은 `1µF -> 100Ω -> PCM1808 VINL`, SENSITIVE 출력은
-   `1µF -> 100Ω -> PCM1808 VINR`에 연결한다. 각 VIN에서 GND로 10nF를 둔다.
-6. 두 번째 OPA2192의 남은 B쪽은 +입력을 Vref에 두고 출력과 -입력을 묶어 안정적으로
-   종단한다. 8번은 깨끗한 9V, 4번은 GND이며 칩 가까이에 100nF를 둔다.
-7. 두 입력 가지의 합성 DC 부하는 `(100k+22M) || (10M+1.5M)`, 약 7.56MΩ다.
-8. SPDT, 기존 15k/2.2k gain 네트는 제거한다. 정확한 넷 이름과 핀은
-   `hardware/NETLIST_SPEC.md` §2~3을 그대로 따른다.
+**필요 장비:** 알려진 1kHz sine 출력, 그 전압을 확인할 true-RMS 멀티미터 또는 오실로스코프.
+일반 멀티미터는 1kHz 정확도가 보장되지 않을 수 있으므로 사양을 확인한다. 20Hz~20kHz
+sweep은 오디오 인터페이스 loopback 또는 오실로스코프처럼 주파수별 레벨을 확인할 수 있는
+장비가 필요하다.
+
+1. GG의 USB와 외부 9V를 모두 분리한 뒤 현재 배선 사진을 위·옆에서 찍고 SPDT의
+   LINE/INST 방향을 표시한다.
+2. **USB는 계속 분리한 채** 외부 9V만 연결해 부팅한다.
+3. 입력을 비운 상태에서 dB Meter `INPUT LINE`, `LIVE`의 RMS와 sample peak를 30초 관찰해
+   바닥값 범위를 기록한다.
+4. 입력잭에 `100.0mVrms, 1kHz sine`를 넣는다. 물리 SPDT=LINE, 앱 INPUT=LINE을 맞춘 뒤
+   `AVG 1s`의 INPUT Vrms와 sample peak dBFS를 기록한다.
+5. 신호를 잠시 끄고 물리 SPDT=INST, 앱 INPUT=INST로 바꾼 뒤 같은 측정을 반복한다.
+6. 가능하면 입력을 천천히 높여 각 범위가 sample peak `-1dBFS` 근처에 이르는 입력 Vrms를
+   기록한다. 0dBFS를 넘겨 장시간 포화시키지 않는다.
+7. 1kHz에서 `source 직결`과 `GG INPUT→THRU OUTPUT`의 Vrms를 GG 전원 ON/OFF 각각 비교한다.
+   하드와이어 Thru 레벨 차이는 측정 오차 안이어야 한다.
+8. 아래 표를 채운 뒤에만 Step 5B를 시작한다.
+
+| 항목 | 무입력 | 100mVrms 표시 | peak 약 -1dBFS 입력 | 비고 |
+|---|---:|---:|---:|---|
+| LINE 2.00x |  |  |  |  |
+| INST 7.82x |  |  |  |  |
+| THRU 전원 OFF | 해당 없음 |  | 해당 없음 | source 대비 |
+| THRU 전원 ON | 해당 없음 |  | 해당 없음 | source 대비 |
+
+⚠ 측정 중에도 **GG의 USB와 외부 9V를 동시에 연결하지 않는다.** PC의 오디오 인터페이스를
+신호원으로 쓰는 것은 가능하지만 GG 자체 USB 전원은 반드시 분리한다.
+
+---
+
+### Step 5B — 목표 자동 듀얼레인지 개조
+**목표:** LINE/INST 스위치를 없애고 약한 기타 직결 신호와 강한 페달·라인 출력을 동시에
+받는다. 듀얼 캡처·자동 선택 소프트웨어는 `AUDIO_DUAL_RANGE=1`로 준비돼 있다.
+
+> **실장 방식:** `HOT_DIV`, `SENSE_P`, OPA2192 입력 주변은 솔더리스 브레드보드에 만들지
+> 않는다. 10MΩ/22MΩ 노드는 브레드보드 누설과 수 pF 기생 용량만으로도 오디오 대역 응답이
+> 달라진다. OPA2192 어댑터와 고값 저항·pF 커패시터는 세척한 소형 만능기판 또는 전용 PCB에
+> 짧게 납땜하고, 그 보드를 기존 브레드보드의 전원·Vref·PCM1808에 연결한다.
+
+#### 5B-1. 전원 OFF 해체
+
+1. Step 5A 기록이 끝났는지 확인하고 USB·외부 9V·오디오 케이블을 전부 분리한다.
+2. 멀티미터 DC V로 +9V_OPAMP, +5V, +3V3가 모두 0V인지 확인한다.
+3. **입력잭 Tip↔출력잭 Tip 직접선과 두 잭 Sleeve↔GND는 절대 제거하지 않는다.**
+4. 제거 대상만 떼어낸다: TL072, SPDT, Rf 15k, Rg 15k/2.2k, 기존 1M 바이어스,
+   TL072 OUTA→PCM VINL 출력 커플링선.
+5. 유지 대상: 전원 체인, 10k+10k VREF 분압, VREF 100µF/100nF, 입력잭에서 시작하는
+   1µF `C1u_in`, PCM1808 디지털/I2S 배선. 기존 VREF 버퍼 출력선은 U4 B로 옮긴다.
+
+#### 5B-2. OPA2192와 Vref
+
+1. U4/U6 OPA2192를 SOIC→DIP 어댑터에 납땜한다. 점/홈 방향을 표시한다.
+2. 두 칩 모두 `8→+9V_OPAMP`, `4→GND`, 각 칩 바로 옆 `8↔4`에 100nF를 둔다.
+3. 기존 VREF_DIV를 `U4.5(+INB)`에 연결하고 `U4.6(-INB)↔U4.7(OUTB)`를 묶는다.
+   U4.7이 새 `VREF`다.
+4. 미사용 U6 B는 `U6.5→VREF`, `U6.6↔U6.7`로 묶는다.
+
+#### 5B-3. SENSITIVE → PCM1808 VINR
+
+1. `C1u_in`의 출력 `ANALYZER_TAP → 100k → SENSE_P`.
+2. `SENSE_P → U4.3(+INA)` 및 `SENSE_P → 22M → VREF`.
+3. BAV199은 제조사 핀표를 확인하고 `pin1(A1)→GND`,
+   `pin2(K2)→+9V_OPAMP`, `pin3(K1/A2)→SENSE_P`.
+4. `U4.2(-INA) → 10k → VREF`, `U4.1(OUTA) → 30k → U4.2`.
+5. `U4.1 → 1µF → 100Ω → PCM1808 VINR`, VINR에서 GND로 10nF.
+   입력잭 기준 명목 gain은 약 3.98x다.
+
+#### 5B-4. HOT → PCM1808 VINL
+
+1. `ANALYZER_TAP → (10M || 3.3pF C0G) → HOT_DIV`.
+2. `HOT_DIV → (1.5M || 15pF C0G) → VREF`, `HOT_DIV → U6.3(+INA)`.
+3. `U6.2(-INA)↔U6.1(OUTA)`를 묶어 unity buffer로 만든다.
+4. `U6.1 → 1µF → 100Ω → PCM1808 VINL`, VINL에서 GND로 10nF.
+   입력잭 기준 명목 gain은 약 0.1304x다.
+5. OPA2192의 전형적 공통모드 입력 용량 6.4pF를 포함하면 깨끗한 납땜 기판의 첫 근사는
+   `10M×3.3pF≈33µs`, `1.5M×(15pF+6.4pF)≈32.1µs`다. 기판·저항 기생 용량 때문에
+   확정값은 아니며, 1.0/1.5/2.2/4.7pF C0G 병렬 튜닝 패드를 남겨 sweep으로 조정한다.
+
+#### 5B-5. 무전원 검사
+
+1. J1 Tip↔J2 Tip 연속성은 거의 0Ω, 각 Tip↔GND는 단락이 아니어야 한다.
+2. +9V_OPAMP↔GND, +5V↔GND, +3V3↔GND가 단락이 아닌지 저항 모드로 확인한다.
+3. U4/U6의 8번과 4번 방향, BAV199 1/2/3번, PCM VINL=HOT/VINR=SENSITIVE를
+   소리 내어 읽으며 `hardware/NETLIST_SPEC.md` §1~3과 한 줄씩 대조한다.
+4. PCM VINL과 VINR은 서로 연결되면 안 된다. SPDT와 `GAIN_LINE/GAIN_INST` 네트는
+   완전히 사라져야 한다.
+
+#### 5B-6. 전원 레일 검사와 듀얼 펌웨어
+
+1. 아직 오디오 입력을 연결하지 않는다. **USB는 분리하고 외부 9V만** 켠다.
+2. GND 기준 `+5V=4.9~5.1V`, `+3V3=3.2~3.4V`, `+9V_OPAMP`, `VREF≈+9V_OPAMP/2`를
+   확인한다. U4.1/U6.1은 무신호에서 VREF 근처여야 한다.
+3. 이상이 있으면 즉시 9V를 분리한다. 정상일 때 9V를 끄고 방전한 뒤 USB만 연결한다.
+4. 깨끗한 빌드에서 `AUDIO_DUAL_RANGE=1`을 켜 일반 플래시한다. 전체 삭제·파티션 변경은
+   하지 않는다.
+5. 플래시가 끝나면 USB를 분리하고 외부 9V만 연결해 부팅한다. dB Meter의
+   `Settings → Mode → Range Diagnostics`에서 HOT=VINL, SENSITIVE=VINR를 동시에 확인한다.
 
 명목 PCM1808 3.0Vpp 기준 sine 입력 한계는 SENSITIVE 약 0.265Vrms, HOT 약 8.13Vrms다.
 두 경로의 겹치는 구간에서 표시값이 같은지 확인한 뒤 범위별 1kHz gain과 20Hz~20kHz
 sweep 보정을 확정한다. 사용자 화면은 범위를 자동으로 고르며 LINE/INST 선택을 요구하지 않는다.
 
-✅ **확인:** 입력 없이 두 채널이 안정되고, 같은 100mVrms 신호에서 환산된 두 입력잭 값이
-교정 오차 안에서 일치하며, 1Vrms 이상에서는 HOT가 포화 없이 유지된다. 범위 전환 때
-튜너·Curve·Reference·dB Meter 값이 뛰지 않아야 한다.
+#### 5B-7. 1kHz 교정
+
+1. `100.0mVrms, 1kHz sine`를 입력하고 Range Diagnostics에서 다음을 확인한다.
+   - HOT ADC RMS와 SENSITIVE ADC RMS가 모두 `-INF`가 아니다.
+   - raw `S/H`는 명목 `+29.7dB` 부근이다. 음수면 L/R 배선이 뒤바뀐 것이다.
+   - 두 INPUT RMS*가 100mVrms 부근이고 corrected `MISMATCH`가 0dB 부근이다.
+2. 화면의 HOT/SENSITIVE INPUT RMS*를 각각 `Vhot_shown`, `Vsens_shown`으로 기록한다.
+3. 보정값은 다음으로 계산한다.
+   - `HOT correction_new = correction_old × 0.1000 / Vhot_shown`
+   - `SENSITIVE correction_new = correction_old × 0.1000 / Vsens_shown`
+4. 계산값을 CMake의 `AUDIO_DUAL_HOT_VOLTAGE_CORRECTION`과
+   `AUDIO_DUAL_SENSITIVE_VOLTAGE_CORRECTION`에 넣어 다시 빌드·플래시한다.
+5. 같은 신호에서 두 INPUT RMS가 100mVrms ±1%, MISMATCH가 ±0.1dB 안이면 1점 교정 통과다.
+
+#### 5B-8. 범위 전환·클립·스윕
+
+1. 1kHz 입력을 낮은 레벨부터 올린다. SENSITIVE→HOT 전환 때 Level Meter의 Vrms와
+   Reference/Curve가 눈에 띄게 뛰면 안 된다.
+2. `1.0Vrms, 1kHz`에서 SENSITIVE CLIP은 허용되지만 HOT CLIP은 없어야 하며 ACTIVE HOT이어야 한다.
+3. HOT까지 CLIP이면 즉시 입력을 낮춘다. 제품 허용 최대 입력은 실제 HOT clip 측정값에서
+   안전 마진을 뺀 값으로 확정한다.
+4. 일정한 `100mVrms`로 아래 sweep 표를 채운다. 각 주파수에서 신호원 자체 전압도 확인한다.
+
+| Hz | 20 | 31.5 | 50 | 100 | 200 | 500 | 1k | 2k | 5k | 10k | 15k | 20k |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| HOT 표시 mVrms | | | | | | | | | | | | |
+| SENS 표시 mVrms | | | | | | | | | | | | |
+| Mismatch dB | | | | | | | | | | | | |
+
+5. 먼저 HOT 보상 C0G 값을 조정해 1kHz 대비 20kHz 편차를 줄인다. 그 뒤 남는 완만한
+   범위별 편차만 펌웨어 sweep 보정표 후보로 기록한다. 솔더리스 브레드보드 측정값은
+   최종 LUT에 사용하지 않는다.
+6. 최종 확인: 무입력 안정, 100mVrms 두 범위 일치, 1Vrms HOT 유지, 전환 연속성,
+   20Hz~20kHz 편차, Tuner/Curve/Reference/dB Meter, I2S overflow 0회.
 
 🚫 **지금 하지 말 것:** 현재 USB-only 실기 장치를 선행 개조하거나, 두 PCM 채널을 합선하거나,
 HOT/SENSITIVE 중 하나만 연결한 채 자동 선택 펌웨어를 올리지 않는다. 자동 선택 코드는
 `AUDIO_DUAL_RANGE=1` 변형에서만 켜지며 기본 빌드는 현재 VINL 단일채널을 유지한다.
+
+데이터시트 근거:
+[TI OPA2192](https://www.ti.com/lit/ds/symlink/opa2192.pdf),
+[TI PCM1808](https://www.ti.com/lit/ds/symlink/pcm1808.pdf),
+[Nexperia BAV199](https://assets.nexperia.com/documents/data-sheet/BAV199.pdf).
 
 ---
 
@@ -502,7 +628,10 @@ TRS_jack.Tip    → [220Ω] → G4 (TRS_SIG, ADC1_CH3)
 | 특정 버튼 무반응 | 그 GPIO↔GND 배선(대각선 다리 쌍), 풀업은 펌웨어가 켬 |
 | 가만히 있는데 입력 들어옴 | 핀끼리/핀↔GND 쇼트, 점퍼 벗겨짐 |
 | Monitor 무반응 | I2S 4선(8/9/10/18), PCM1808 슬레이브·I2S 점퍼, 아날로그 전원 |
-| Tuner 검출 안 됨 | TL072 Vref 4.5V, 게인, 커플링 캡, ★Rg가 4.5V에 연결됐는지 |
+| Tuner 검출 안 됨 | 현재 Step 5는 TL072 Vref·게인·커플링 캡, Step 5B는 U4/U6 출력·VINL/VINR·Range Diagnostics |
+| Range Diagnostics 한 열이 `-INF` | 해당 HOT/SENSITIVE op-amp 출력, 1µF·100Ω, PCM VINL/VINR 배선 |
+| S/H가 약 `-29.7dB` | PCM VINL/VINR가 뒤바뀜. `VINL=HOT`, `VINR=SENSITIVE`로 수정 |
+| 두 INPUT RMS가 다름 | 먼저 1kHz scalar correction, 이후 주파수별이면 HOT C0G 보상과 sweep 확인 |
 | 저역에서 음 튐/흔들림 | 입력 1µF 줄이지 않았는지, 게인·노이즈 |
 | 노이즈 과다 | 스타 그라운드, 입력 점퍼 최단화, 아날로그/디지털 레일 분리 |
 | 보드 재부팅 반복 | 전원 부족(MP1584 전류/발열), 5V 강하 |
@@ -519,7 +648,8 @@ TRS_jack.Tip    → [220Ω] → G4 (TRS_SIG, ADC1_CH3)
 - **I2S**: 디지털 오디오 전송 규격. MCLK/BCK/LRCK(클럭들) + 데이터선.
 - **마스터/슬레이브**: 클럭을 *만드는* 쪽 = 마스터(여기선 ESP32), *받는* 쪽 = 슬레이브(PCM1808).
 - **LDO / 벅(buck)**: 둘 다 전압 강하기. LDO(AMS1117)는 조용하지만 열, 벅(MP1584)은 효율 좋고 시원.
-- **op-amp**: 신호 증폭/버퍼 칩(TL072). 통과 톤 안 건드리고 신호만 따오는 데 씀.
+- **op-amp**: 분석 탭을 증폭/버퍼하는 칩. 현재 Step 5는 TL072, 목표 Step 5B는
+  OPA2192를 쓴다. 하드와이어 Thru에는 직렬로 들어가지 않는다.
 - **가상 그라운드(Vref 4.5V)**: 단일전원에서 신호가 ±로 흔들릴 "기준 중심점".
 - **AC 커플링**: 콘덴서로 직류(DC)는 막고 신호(AC)만 통과. 캡 값이 작으면 저역이 깎임.
 - **스타 그라운드**: 모든 GND를 한 점에서 묶기. 잡음·오작동 예방의 핵심.

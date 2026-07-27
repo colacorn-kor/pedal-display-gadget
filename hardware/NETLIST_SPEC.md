@@ -5,7 +5,8 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 
 > **리비전 상태:** 아래 권위 넷은 GG 목표인 **무스위치 자동 듀얼레인지** 회로다. 현재
 > 브레드보드에는 아직 구형 LINE/INST SPDT 회로가 장착돼 있으며, 실제 상태와 개조 전제는
-> `ASSEMBLY.md` Step 5/5B와 `LAB_STATE.md`에 기록한다. 듀얼채널 펌웨어 전에는 개조하지 않는다.
+> `ASSEMBLY.md` Step 5/5A/5B와 `LAB_STATE.md`에 기록한다. Step 5A 기준 측정과 Step 5B
+> 무전원 검사를 건너뛰고 개조하거나 듀얼 펌웨어를 플래시하지 않는다.
 >
 > 참조 부품(레퍼런스 예시): `U1`=ESP32-S3-DevKitC-1, `U2`=ST7796 디스플레이,
 > `U3`=PCM1808 모듈, `U4/U6`=OPA2192 RRIO dual op-amp, `U5`=MP1584, `D1`=1N5819,
@@ -67,7 +68,7 @@ U6_IDLE    : U6.7(OUTB), U6.6(−INB)
 ```
 GTR_IN       : J1.tip(입력잭), J2.tip(출력잭), C1u_in.1
                ← 전원·펌웨어와 무관한 직접 Thru + 분석 탭 분기
-ANALYZER_TAP  : C1u_in.2, R100k_sense.1, R10M_hot.1, C2p2_hot.1
+ANALYZER_TAP  : C1u_in.2, R100k_sense.1, R10M_hot.1, C3p3_hot.1
 SENSE_P       : R100k_sense.2, U4.3(+INA), R22M_sense.1,
                 D2.3(K1/A2)
                (R22M_sense: SENSE_P↔VREF)
@@ -77,9 +78,9 @@ SENSE_N      : U4.2(−INA), R30k_sense.1, R10k_sense.1
 SENSE_OUT    : U4.1(OUTA), R30k_sense.2, C1u_sense.1
                (op-amp gain 4.00×, 입력잭 기준 명목 약 3.98×)
 
-HOT_DIV      : R10M_hot.2, R1M5_hot.1, C2p2_hot.2,
+HOT_DIV      : R10M_hot.2, R1M5_hot.1, C3p3_hot.2,
                C15p_hot.1, U6.3(+INA)
-               (R10M_hot||C2p2_hot: ANALYZER_TAP↔HOT_DIV)
+               (R10M_hot||C3p3_hot: ANALYZER_TAP↔HOT_DIV)
                (R1M5_hot||C15p_hot: HOT_DIV↔VREF)
 HOT_OUT      : U6.1(OUTA), U6.2(−INA), C1u_hot.1
                (HOT gain = 1.5M/(10M+1.5M) ≈ 0.1304×)
@@ -98,9 +99,12 @@ PCM_INL      : R100_hot.2, C10n_hot.1, U3(PCM1808).VINL
 - SENSITIVE op-amp는 강한 입력에서 포화될 수 있다. `R100k_sense`와 저누설 D2가
   입력 전류를 제한해 op-amp·HOT·Thru를 격리한다. 저누설 부품을 쓰고 실제 기생
   커패시턴스를 sweep 교정에 포함한다.
-- HOT은 9V op-amp로 버퍼하기 전에 수동 감쇠한다. `10M×2.2pF≈22us`와
-  `1.5M×15pF≈22.5us`로 divider의 저주파·고주파 비를 맞춘다. 실제 op-amp 입력·PCB
-  기생 커패시턴스를 포함한 값은 20Hz~20kHz sweep에서 조정한다.
+- HOT은 9V op-amp로 버퍼하기 전에 수동 감쇠한다. OPA2192의 전형적 공통모드 입력
+  커패시턴스 6.4pF를 포함한 첫 근사는 `10M×3.3pF≈33us`와
+  `1.5M×(15pF+6.4pF)≈32.1us`다. 실제 저항·PCB 기생 커패시턴스를 포함한 값은
+  C0G 병렬 튜닝 패드와 20Hz~20kHz sweep으로 조정한다.
+- `HOT_DIV`, `SENSE_P`와 고값 저항은 솔더리스 브레드보드에 실장하지 않는다. 세척한
+  만능기판 또는 PCB에서 입력 trace를 짧게 하고 전원·출력 trace와 떨어뜨린다.
 - 분석 탭의 명목 DC 입력 임피던스는 `22.1M || 11.5M ≈ 7.56MΩ`이며 GG 목표 최소
   5MΩ를 넘는다.
 - PCM1808 명목 3.0Vpp 기준 sine 입력 한계는 SENSITIVE 약 0.265Vrms,
@@ -145,7 +149,7 @@ LCD_SCLK   : (+ J3.SCK)          ← 4절 SCLK 네트에 J3.SCK 추가(버스 �
 LCD_MOSI   : (+ J3.MOSI)         ← 4절 MOSI 네트에 J3.MOSI 추가
 SD_MISO    : U1.G11, J3.MISO     ← SD 전용
 SD_CS      : U1.G47, J3.CS       ← SD 전용
-             J3.VCC → +5V 또는 +3V3(모듈 사양),  J3.GND → GND
+             J3.VCC → +3V3(순수 어댑터),  J3.GND → GND
 ```
 
 > 즉 `LCD_SCLK`·`LCD_MOSI`는 U2와 J3가 **함께 매달린 한 네트**. CS만 각자(LCD=G2, SD=G47).
@@ -208,8 +212,12 @@ MUTE_CTL   : U1.G3 → (게이트 드라이브 회로, 설계 예정) → J201.g
 - [ ] 각 네트 끝점이 위 스펙과 일치(핀 번호·부품)
 - [ ] `+5V` ↔ `+3V3` 미연결, 전원 단일 소스
 - [ ] `D1` 방향(anode=RAW / cathode=PROT)
-- [ ] SPDT가 고른 `R15k_line`/`R2k2_inst` 반대끝 = VREF(4.5V)  ← 포화 방지
+- [ ] `SW_GAIN`, `GAIN_LINE`, `GAIN_INST`, 구형 TL072 네트가 없음
 - [ ] `U4.6=U4.7`(버퍼), 분압 4.5V
+- [ ] `U6.2=U6.1`(HOT 버퍼), `U6.6=U6.7` 및 `U6.5=VREF`(미사용 B 종단)
+- [ ] PCM `VINL=HOT`, `VINR=SENSITIVE`, 두 입력 상호 단락 없음
+- [ ] BAV199 `pin1=GND`, `pin2=+9V_OPAMP`, `pin3=SENSE_P`
+- [ ] HOT `10M||3.3pF`, `1.5M||15pF`와 C0G 튜닝 패드
 - [ ] 커플링 캡 ≥1µF(저역 보존)
 - [ ] LCD/SD SCLK·MOSI 버스 공유, CS 분리
 - [ ] GPIO 중복 없음 / 금지핀 없음

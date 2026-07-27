@@ -112,7 +112,19 @@ idf.py build
 
 기본 빌드는 현재 브레드보드의 PCM1808 VINL 단일채널을 사용한다. Step 5B에서 HOT와
 SENSITIVE를 모두 연결한 뒤에만 `-D AUDIO_DUAL_RANGE=1`로 스테레오 자동 범위 변형을
-구성한다. 한 채널만 연결된 현재 장치에는 이 변형을 플래시하지 않는다.
+구성한다. 한 채널만 연결된 현재 장치에는 이 변형을 플래시하지 않는다. 듀얼 변형의
+dB Meter `Range Diagnostics`는 두 ADC의 RMS/peak, 환산 입력 Vrms와 범위 간 mismatch를
+외부 9V 단독 상태의 화면에서 확인하는 교정 도구다.
+
+1kHz 실측 뒤에는 다음 CMake cache 변수로 보정값을 주입할 수 있다.
+
+```text
+-D AUDIO_DUAL_HOT_VOLTAGE_CORRECTION=1.0000
+-D AUDIO_DUAL_SENSITIVE_VOLTAGE_CORRECTION=1.0000
+-D AUDIO_GG_INPUT_FULL_SCALE_VPEAK=11.5000
+```
+
+값과 안전한 측정 순서는 `ASSEMBLY.md` Step 5A/5B를 따른다.
 
 `sdkconfig.defaults`가 바뀌었거나 오래된 환경 캐시가 의심되면 파생 설정을 지우고 다시
 구성한다.

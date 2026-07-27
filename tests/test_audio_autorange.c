@@ -56,8 +56,16 @@ int main(void)
         &state, hot, sensitive, output, BLOCK, &status);
     expect_true("quiet signal selects sensitive",
                 status.active == AUDIO_AUTORANGE_SENSITIVE);
+    expect_near("sensitive ADC RMS", status.sensitive_adc_rms,
+                sensitive[0], 0.000001f);
     expect_near("sensitive path input scale",
                 output[BLOCK - 1], 0.020f, 0.000001f);
+    expect_near(
+        "sensitive diagnostic input Vrms",
+        audio_autorange_adc_rms_to_input_vrms(
+            AUDIO_AUTORANGE_SENSITIVE, status.sensitive_adc_rms),
+        0.020f * AUDIO_GG_INPUT_FULL_SCALE_VPEAK,
+        0.000001f);
 
     fill_equivalent(0.030f, hot, sensitive);
     for (int i = 0; i < BLOCK; i++) {
@@ -69,6 +77,8 @@ int main(void)
     expect_true("high signal switches hot", status.switched);
     expect_true("hot active",
                 status.active == AUDIO_AUTORANGE_HOT);
+    expect_near("hot ADC RMS", status.hot_adc_rms,
+                hot[0], 0.000001f);
     expect_true("mismatched switch starts near sensitive",
                 output[0] > 0.030f && output[0] < 0.0301f);
     expect_near("mismatched switch ends at hot",

@@ -468,6 +468,19 @@ static void audio_task(void *arg)
         s_viz[producer].input_source = input_source;
         s_viz[producer].uses_gg_input_scale = AUDIO_DUAL_RANGE != 0;
         s_viz[producer].input_clipped = input_clipped;
+#if AUDIO_DUAL_RANGE
+        s_viz[producer].hot_adc_rms = range_status.hot_adc_rms;
+        s_viz[producer].hot_adc_peak = range_status.hot_adc_peak;
+        s_viz[producer].sensitive_adc_rms =
+            range_status.sensitive_adc_rms;
+        s_viz[producer].sensitive_adc_peak =
+            range_status.sensitive_adc_peak;
+#else
+        s_viz[producer].hot_adc_rms = 0.0f;
+        s_viz[producer].hot_adc_peak = 0.0f;
+        s_viz[producer].sensitive_adc_rms = 0.0f;
+        s_viz[producer].sensitive_adc_peak = 0.0f;
+#endif
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_release);
 
         if (produced) {

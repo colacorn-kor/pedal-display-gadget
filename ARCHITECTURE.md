@@ -294,11 +294,18 @@ typedef enum {
   SENSITIVE ADC peak 0.82에서 HOT으로 즉시 전환한다. 0.45 아래가 500ms 지속될 때만
   SENSITIVE로 돌아가며, 클리핑 전환이 아니면 한 블록 crossfade를 적용한다.
 - I2S와 범위 선택은 계속 Core1만 소유한다. `audio_viz_snapshot_t`는 선택된 입력
-  소스·GG 스케일 사용 여부·선택 범위 clip 상태를 기존 seqlock으로 함께 발행하며 UI는
-  교정·선택이 끝난 복사본만 읽는다.
+  소스·GG 스케일 사용 여부·선택 범위 clip 상태와 두 ADC의 block RMS/peak 진단값을
+  기존 seqlock으로 함께 발행하며 UI는 교정·선택이 끝난 복사본만 읽는다. 진단값도 UI가
+  PCM/I2S 상태를 직접 읽는 경로를 만들지 않는다.
 - 듀얼레인지 dB Meter는 LINE/INST 수동 선택을 없애고 `AUTO SENSITIVE/HOT`을 표시한다.
   RMS·peak dBFS는 고정 GG Input Full Scale, Vrms·dBV·dBu는 입력잭 기준으로 계산한다.
-  현재 gain/correction은 명목값이므로 Step 5B의 1kHz·sweep 교정 전에는 계측 확정값이 아니다.
+  Mode의 `Range Diagnostics`는 HOT=VINL와 SENSITIVE=VINR의 ADC RMS/peak, 각 범위의
+  입력잭 환산 Vrms, raw S/H 비와 교정 후 mismatch를 동시에 표시한다. 외부 9V 단독
+  측정에서 USB 로그 없이 L/R 순서와 1kHz 교정을 확인하는 작업 화면이다.
+- 현재 gain/correction은 명목값이므로 Step 5B의 1kHz·sweep 교정 전에는 계측 확정값이
+  아니다. 1kHz 교정값은 `AUDIO_DUAL_HOT_VOLTAGE_CORRECTION`과
+  `AUDIO_DUAL_SENSITIVE_VOLTAGE_CORRECTION` 빌드 정의로 주입할 수 있다. sweep 보정은
+  실측표가 생기기 전에는 0dB 기본값을 유지하며, 측정값 없이 역보정 LUT를 추정하지 않는다.
 
 ### 하드웨어 영향
 

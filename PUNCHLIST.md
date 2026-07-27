@@ -8,7 +8,11 @@
 
 ## P1 - 다음 실측
 
-- 없음
+1. **Step 5A 구형 LINE/INST 기준 측정**
+   - USB 분리·외부 9V 단독, 무입력 noise
+   - 100mVrms 1kHz의 LINE/INST 표시와 clip 근접 입력
+   - 전원 ON/OFF 하드와이어 Thru 레벨 비교
+   - 상세 순서와 기록표는 `ASSEMBLY.md` Step 5A
 
 ## P2 - 하드웨어 및 제품 튜닝
 
@@ -22,10 +26,12 @@
 9. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
 10. 외부 9V와 실제 기타 입력에서 Curve/Reference 주파수 응답·피크 감쇠 실기 튜닝
 11. `AUDIO_DUAL_RANGE=1` L/R 자동 선택의 Step 5B 실기 검증
-   - 소프트웨어·호스트 테스트·ESP 컴파일 완료
+   - 자동 선택, Range Diagnostics, 호스트 테스트와 분리 빌드 소프트웨어 완료
    - 두 채널 overlap 일치, 실제 전환 연속성, clip 상태와 I2S overflow는 하드웨어 뒤 확인
 12. Step 5B 자동 듀얼레인지 프론트엔드 조립
    - OPA2192 dual ×2, SENSITIVE 보호 clamp, HOT 보상 divider 적용
+   - 고임피던스/pF 부분은 솔더리스 브레드보드가 아닌 세척한 납땜 기판 사용
+   - HOT 시작값 `10M||3.3pF : 1.5M||15pF`, sweep 뒤 C0G 조정
 13. 범위별 1kHz gain 및 20Hz~20kHz sweep 교정, GG Input Full Scale 확정
 14. GG Analog Meter USB HID 보고서·바늘 ballistics·전력 예산 설계
 
