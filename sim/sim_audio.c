@@ -11,6 +11,10 @@
 #include "audio_config.h"
 #include "tuner.h"
 
+#ifdef _WIN32
+#include "sim_loopback_win.h"
+#endif
+
 #define SIM_BLOCK_SIZE 256
 #define SIM_DFT_BINS (SIM_BLOCK_SIZE / 2 + 1)
 #define SIM_QUEUE_CAP 8192
@@ -23,9 +27,18 @@ static SDL_AudioSpec s_capture_spec;
 static bool s_initialized;
 static bool s_exit_after_args;
 static bool s_capture_active;
+static bool s_loopback_active;
 static bool s_synthetic_fallback;
 static bool s_warned_fallback;
 static bool s_force_synthetic;
+
+typedef enum {
+    SIM_INPUT_AUTO = 0,
+    SIM_INPUT_SYSTEM_AUDIO,
+    SIM_INPUT_CAPTURE_DEVICE,
+} sim_input_choice_t;
+
+static sim_input_choice_t s_input_choice = SIM_INPUT_AUTO;
 
 static float s_queue[SIM_QUEUE_CAP];
 static int s_queue_head;
@@ -63,7 +76,7 @@ static void usage(void)
 {
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
-            " [--synthetic] [--smoke-test]"
+            " [--system-audio|--microphone] [--synthetic] [--smoke-test]"
             " [--preview curve|reference|bars|circular|dbmeter|bounce"
             "|monitor-settings|monitor-color|monitor-mode]\n");
 }
@@ -97,7 +110,18 @@ static bool parse_args(int argc, char **argv, int *device_index)
                 usage();
                 return false;
             }
+            s_input_choice = SIM_INPUT_CAPTURE_DEVICE;
             i++;
+            continue;
+        }
+
+        if (strcmp(arg, "--system-audio") == 0) {
+            s_input_choice = SIM_INPUT_SYSTEM_AUDIO;
+            continue;
+        }
+
+        if (strcmp(arg, "--microphone") == 0) {
+            s_input_choice = SIM_INPUT_CAPTURE_DEVICE;
             continue;
         }
 
@@ -128,6 +152,10 @@ static void list_capture_devices(void)
 {
     int count = SDL_GetNumAudioDevices(1);
 
+#ifdef _WIN32
+    printf("System playback loopback:\n");
+    printf("  default: Windows default output (used by default)\n");
+#endif
     printf("Capture audio devices:\n");
     if (count <= 0) {
         printf("  (none)\n");
@@ -143,13 +171,39 @@ static void list_capture_devices(void)
 static void enter_synthetic_fallback(void)
 {
     s_capture_active = false;
+    s_loopback_active = false;
     s_synthetic_fallback = true;
 
     if (!s_warned_fallback) {
-        fprintf(stderr, "W (sim) no capture device; synthetic audio fallback\n");
+        fprintf(stderr,
+                "W (sim) no usable audio input; synthetic audio fallback\n");
         s_warned_fallback = true;
     }
 }
+
+#ifdef _WIN32
+static bool open_system_loopback(void)
+{
+    char device_name[256];
+    int source_rate = 0;
+    int channels = 0;
+
+    if (!sim_loopback_open(device_name, sizeof(device_name),
+                           &source_rate, &channels)) {
+        fprintf(stderr,
+                "W (sim) Windows system audio loopback unavailable\n");
+        return false;
+    }
+
+    s_capture_active = false;
+    s_loopback_active = true;
+    s_synthetic_fallback = false;
+    printf("I (sim) system audio loopback: %s (%d Hz, %d ch -> 48000 Hz mono)\n",
+           device_name, source_rate, channels);
+    fflush(stdout);
+    return true;
+}
+#endif
 
 static bool open_capture_device(int device_index)
 {
@@ -206,6 +260,7 @@ static bool open_capture_device(int device_index)
     }
 
     s_capture_active = true;
+    s_loopback_active = false;
     s_synthetic_fallback = false;
     SDL_PauseAudioDevice(s_capture_device, 0);
 
@@ -284,6 +339,16 @@ static bool dequeue_block(float *out)
     }
     s_queue_count -= SIM_BLOCK_SIZE;
     return true;
+}
+
+static void process_block(const float *block);
+
+static void process_queued_blocks(void)
+{
+    float block[SIM_BLOCK_SIZE];
+    while (dequeue_block(block)) {
+        process_block(block);
+    }
 }
 
 static float block_rms(const float *block)
@@ -396,7 +461,6 @@ static void pump_capture_audio(void)
     const int channels = (int)s_capture_spec.channels;
     const Uint32 frame_bytes = (Uint32)(channels * (int)sizeof(float));
     float raw[SIM_DEQUEUE_FRAMES * 2];
-    float block[SIM_BLOCK_SIZE];
 
     for (;;) {
         Uint32 available = SDL_GetQueuedAudioSize(s_capture_device);
@@ -422,10 +486,26 @@ static void pump_capture_audio(void)
         }
     }
 
-    while (dequeue_block(block)) {
-        process_block(block);
-    }
+    process_queued_blocks();
 }
+
+#ifdef _WIN32
+static void queue_loopback_sample(float sample, void *context)
+{
+    (void)context;
+    queue_sample(sample);
+}
+
+static void pump_system_loopback(void)
+{
+    if (!sim_loopback_pump(queue_loopback_sample, NULL)) {
+        sim_loopback_close();
+        enter_synthetic_fallback();
+        return;
+    }
+    process_queued_blocks();
+}
+#endif
 
 static float synthetic_onset_decay(uint32_t now)
 {
@@ -577,6 +657,7 @@ static void synthetic_music_get(music_snapshot_t *out)
 bool sim_audio_init(int argc, char **argv)
 {
     int device_index = -1;
+    bool sdl_audio_ready;
 
     if (s_initialized) return true;
     s_initialized = true;
@@ -590,21 +671,34 @@ bool sim_audio_init(int argc, char **argv)
 
     if (s_force_synthetic && !s_exit_after_args) {
         s_capture_active = false;
+        s_loopback_active = false;
         s_synthetic_fallback = true;
         printf("I (sim) deterministic synthetic audio\n");
         return true;
     }
 
-    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
-        enter_synthetic_fallback();
-        return true;
-    }
+    sdl_audio_ready = SDL_InitSubSystem(SDL_INIT_AUDIO) == 0;
 
     if (s_exit_after_args) {
         list_capture_devices();
         return true;
     }
 
+#ifdef _WIN32
+    if (s_input_choice != SIM_INPUT_CAPTURE_DEVICE &&
+        open_system_loopback()) {
+        return true;
+    }
+#else
+    if (s_input_choice == SIM_INPUT_SYSTEM_AUDIO) {
+        fprintf(stderr,
+                "W (sim) --system-audio is only available on Windows\n");
+    }
+#endif
+    if (!sdl_audio_ready) {
+        enter_synthetic_fallback();
+        return true;
+    }
     return open_capture_device(device_index);
 }
 
@@ -615,7 +709,11 @@ bool sim_audio_should_exit_after_args(void)
 
 void sim_audio_pump(void)
 {
-    if (s_capture_active) {
+    if (s_loopback_active) {
+#ifdef _WIN32
+        pump_system_loopback();
+#endif
+    } else if (s_capture_active) {
         pump_capture_audio();
     } else if (s_synthetic_fallback) {
         pump_synthetic_audio();
@@ -640,7 +738,7 @@ void sim_audio_audio_viz_get(audio_viz_snapshot_t *out)
 {
     if (!out) return;
 
-    if (s_capture_active) {
+    if (s_capture_active || s_loopback_active) {
         *out = s_viz;
         return;
     }
@@ -652,7 +750,7 @@ void sim_audio_music_get(music_snapshot_t *out)
 {
     if (!out) return;
 
-    if (s_capture_active) {
+    if (s_capture_active || s_loopback_active) {
         music_snapshot_get(out);
         return;
     }

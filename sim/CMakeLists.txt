@@ -55,6 +55,13 @@ add_executable(pedal_sim
     ${PEDAL_UI_SOURCES}
 )
 
+if(WIN32)
+    target_sources(pedal_sim PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/sim_loopback_win.cpp"
+    )
+    target_link_libraries(pedal_sim PRIVATE ole32)
+endif()
+
 target_include_directories(pedal_sim PRIVATE
     "${PROJECT_ROOT}"
     "${CMAKE_CURRENT_LIST_DIR}/compat"

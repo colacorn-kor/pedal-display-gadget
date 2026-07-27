@@ -30,8 +30,23 @@ On Windows, the command prompt also needs a host C/C++ compiler in `PATH`
 
 ## Audio Input
 
-The simulator opens the default SDL2 capture device and feeds the shared tuner
-and music-event DSP code. To list capture inputs:
+On Windows, the simulator uses WASAPI loopback by default. Audio currently
+playing through the Windows default speakers or headphones is downmixed and
+resampled to the firmware's 48 kHz mono analysis input, then fed to the shared
+visualizer, tuner, dB meter, and music-event DSP code.
+
+```powershell
+.\sim\build\pedal_sim.exe
+```
+
+`--system-audio` selects the same path explicitly. To use the default
+microphone or audio-interface capture input instead:
+
+```powershell
+.\sim\build\pedal_sim.exe --microphone
+```
+
+To list the system-audio path and SDL2 capture inputs:
 
 ```powershell
 .\sim\build\pedal_sim.exe --list-audio
@@ -43,10 +58,10 @@ To select a device by index:
 .\sim\build\pedal_sim.exe --audio-device 1
 ```
 
-On Windows, choose a microphone, audio interface input, or a loopback source
-such as Stereo Mix if your driver exposes it. If no capture device can be
-opened, the simulator prints `W (sim) no capture device; synthetic audio
-fallback` and keeps the synthetic visualizer, mouse pitch, and `O` onset path.
+`--audio-device N` implies capture-device mode. On non-Windows platforms the
+default remains the SDL2 capture device. If neither Windows loopback nor a
+capture device can be opened, the simulator prints a warning and keeps the
+synthetic visualizer, mouse pitch, and `O` onset path.
 
 To preview the visualizer deterministically without opening a capture device:
 

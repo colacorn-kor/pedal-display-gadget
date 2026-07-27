@@ -1,6 +1,6 @@
 # LAB_STATE.md - 현재 장치 및 실기 상태
 
-> 갱신일: 2026-07-27
+> 갱신일: 2026-07-28
 > 이 문서는 마지막 플래시와 현재 실험 상태의 SSOT다.
 
 ## 1. 기준 상태
@@ -191,7 +191,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xcebd0` bytes, 19% 여유) |
 | `AUDIO_DUAL_RANGE=1` 컴파일 | 통과 (`0xd25d0` bytes, 18% 여유), 현재 장치에는 미플래시 |
 | 호스트 검증 5/5 | 통과 (CTest 4개: MIDI, tuner, audio level, autorange + FFT normalization) |
-| PC 시뮬레이터 | 깨끗한 빌드와 전체 결정론적 smoke 통과 |
+| PC 시뮬레이터 | 깨끗한 빌드·전체 결정론적 smoke·Windows 기본 출력 WASAPI 루프백 개방 통과 |
 | COM4 탐지 | 2026-07-27 확인 |
 | USB 플래시 | Curve/Reference 개발본 통과, 외부 9V 분리·USB 단독 전제 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
@@ -208,6 +208,19 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | Curve/Reference 실기 | tilt·단순화·FLAT 표시와 짧은 HOME/FOOTSW 모두 통과 |
 
 ## 6. PC 시뮬레이터 자동 확인
+
+### 2026-07-28 Windows 시스템 재생음 입력
+
+- Windows 기본 입력을 SDL 녹음 장치에서 WASAPI 기본 출력 루프백으로 바꿨다. PC에서
+  기본 스피커나 헤드폰으로 재생 중인 소리를 모노로 다운믹스하고 48kHz로 변환해 기존
+  시각화·튜너·dB Meter·music events 분석 경로에 넣는다.
+- 이 PC의 `LF27T450F (NVIDIA High Definition Audio)` 기본 출력이
+  `48000Hz stereo -> 48000Hz mono`로 실제 개방됐다.
+- `--microphone`은 기존 기본 녹음 입력, `--audio-device N`은 지정 녹음 장치를 사용하며
+  `--list-audio`에서 시스템 루프백과 SDL 녹음 장치를 함께 확인할 수 있다.
+- VS 2026 임시 깨끗한 빌드와 전체 결정론 smoke가 통과했다. smoke 전후 사용자의
+  `sim/build/sim_nvs.bin` SHA-256은
+  `8EAEA2CB7F02537D98FD1EF7C14D58A7070E0926DF01954FFA6527599B2B283E`로 같았다.
 
 - `pedal_sim.exe --smoke-test`는 실제 SDL/LVGL 프레임 루프에 내부 UI 이벤트를 주입한다.
 - 런처 시작, Sound Monitor 합성 시각화, Images 선택, 짧은 FOOTSW 라이브 순환,
