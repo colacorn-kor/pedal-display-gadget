@@ -6,8 +6,8 @@
 ## 1. 기준 상태
 
 - 현재 저장소·마지막 실기 펌웨어: `f2182fea` (`Split app color and mode settings`)
-- 현재 펌웨어 상태: 공통 `Color/Mode`, Nyan 제거 빌드. 소프트웨어 부팅 검증 통과,
-  앱 화면과 Bounce 장애물 구간 입력의 사용자 육안·조작 확인 대기
+- 현재 펌웨어 상태: 공통 `Color/Mode`, Nyan 제거 빌드. 소프트웨어 부팅 검증과
+  앱 화면·Bounce 장애물 구간 입력의 사용자 실기 확인 통과
 - 마지막 확인 포트: COM4
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
@@ -29,7 +29,8 @@
   `app: boot complete`, LVGL task 시작 확인
 - 정상 리셋 후 약 25초 로그에서 ladder `IDLE` 지속
 - WDT, panic, 비정상 reset, I2S 오류, 메모리 오류 0회
-- 화면 외형과 Classic Cat 장애물 구간의 HOME/FOOTSW 짧은 입력은 사용자 확인 대기
+- 사용자 실기 확인: Color/Mode 화면과 Classic Cat 장애물 구간의 짧은
+  HOME/FOOTSW 응답을 포함해 이상 없음
 
 ### 2026-07-26 입력 WDT 핫픽스
 
@@ -143,7 +144,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | 신회로 7상태 ADC 로그 | 통과 |
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 | dB Meter 전압·시간평균 실기 | 사용자 요청으로 보류, 1kHz 1점 교정 대기 |
-| 공통 Color/Mode + Nyan 제거 실기 | 플래시·25초 로그 통과, 화면과 Bounce 입력 확인 대기 |
+| 공통 Color/Mode + Nyan 제거 실기 | 플래시·25초 로그·사용자 화면/입력 확인 통과 |
 
 ## 6. PC 시뮬레이터 자동 확인
 
@@ -309,12 +310,11 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 외부 9V 분리·USB 단독 상태에서 `f2182fea`를 COM4에 플래시했다. 정상 리셋 뒤
   약 25초 동안 rev0.2, 8MB PSRAM 80MHz, 240MHz, ST7796/LVGL, ladder `IDLE`을
   확인했고 WDT·panic·비정상 reset·I2S·메모리 오류는 없었다. 화면 외형과 Classic Cat
-  장애물 구간의 HOME/FOOTSW 짧은 입력은 사용자 확인 대기다.
+  장애물 구간의 HOME/FOOTSW 짧은 입력도 사용자가 실기 확인했고 이상이 없었다.
 
 ## 7. 다음 작업
 
 1. Basic 컨트롤러의 장시간 체감 평가는 실제 사용 중 이상이 있을 때 묶어서 수행한다.
-2. 공통 Color/Mode 화면과 Bounce 장애물 구간의 짧은 HOME/FOOTSW 응답을 확인한다.
-3. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
-4. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
-5. 알려진 1kHz Vrms 신호로 LINE/INST 전압 보정계수를 각각 확정한다.
+2. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+3. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
+4. 알려진 1kHz Vrms 신호로 LINE/INST 전압 보정계수를 각각 확정한다.
