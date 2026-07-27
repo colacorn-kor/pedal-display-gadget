@@ -64,11 +64,16 @@
 1. 깨끗한 ESP-IDF 구성에서 `sdkconfig.defaults`를 사용한 전체 빌드와 `-Werror` 통과
 2. `INPUT_TRS_LADDER=0` 컴파일 통과
 3. `tests/`에 등록된 호스트 테스트 전부 통과
-4. 공유 DSP/UI에 영향이 있으면 PC 시뮬레이터 빌드 통과
-5. `git diff --check`와 최종 diff 리뷰
+4. 앱·UI·공유 DSP 변경 시 PC 시뮬레이터의 깨끗한 빌드와 `--smoke-test` 통과
+5. 앱·UI·공유 DSP 변경 시 추적 중인 `sim/build/pedal_sim.exe`를 같은 커밋에서 갱신
+6. `git diff --check`와 최종 diff 리뷰
 
 `build/`, `managed_components/`, `sdkconfig`, `sdkconfig.old`는 파생 로컬 상태이며 Git에
 추적하지 않는다. 오래된 `build/` 캐시를 신뢰하지 말고 필요하면 깨끗한 임시 빌드를 사용한다.
+
+본체와 PC 시뮬레이터는 앱·UI·renderer·`fft_map`을 같은 소스에서 빌드한다. 시뮬레이터는
+입력 수집과 FFT 실행 같은 플랫폼 백엔드만 별도로 구현하며 스펙트럼 매핑·시간 평활·release·
+peak hold를 재구현하지 않는다.
 
 ## 6. 하드웨어 검증 안전 규칙
 

@@ -35,6 +35,11 @@ playing through the Windows default speakers or headphones is downmixed and
 resampled to the firmware's 48 kHz mono analysis input, then fed to the shared
 visualizer, tuner, dB meter, and music-event DSP code.
 
+The simulator compiles the firmware's `fft_map.c` directly. Its 2048-point
+window, 23.4375 Hz FFT bins, logarithmic mapping, averaging, release, and peak
+hold therefore match the gadget. Only audio capture (WASAPI/SDL versus I2S) and
+the platform FFT executor (portable C versus ESP-DSP) differ.
+
 ```powershell
 .\sim\build\pedal_sim.exe
 ```

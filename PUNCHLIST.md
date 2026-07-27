@@ -76,3 +76,6 @@
 - 사용자 실기에서 Curve tilt·단순화 조작과 Reference `FLAT`, 짧은 HOME/FOOTSW가
   모두 정상 동작했다. USB-only 무입력의 20~70Hz 약 -65dBFS 성분은 TL072 무전원
   부유 입력의 60Hz 주변 험으로 분류하며 외부 9V 실오디오 시험 전에는 성능 판정에서 제외한다.
+- PC 시뮬레이터의 별도 256-point DFT를 제거하고 본체와 같은 `fft_map.c`를 직접 빌드한다.
+  23.4375Hz bin, 로그 매핑, 65ms 평균, 220ms release와 peak hold가 양쪽에서 일치하며
+  46.875Hz 저역·peak 지속 회귀 테스트를 추가했다.

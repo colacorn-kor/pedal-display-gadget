@@ -237,6 +237,9 @@ typedef enum {
   뜻하지 않는다.
 - FFT 파워는 65ms 평균, 즉시 attack, 220ms release를 사용하고 별도 peak envelope를
   유지한다. Curve 렌더러는 선택한 공간 평활 뒤 현재 선·반투명 채움·피크선을 겹쳐 그린다.
+- 본체와 PC 시뮬레이터는 이 매핑·시간 평활·release·peak hold를 구현한 동일한
+  `fft_map.c`를 직접 빌드한다. 입력 수집은 I2S와 WASAPI/SDL로, FFT 실행 백엔드는
+  ESP-DSP와 PC용 portable C로 나뉘지만 분석 정책은 시뮬레이터에서 별도로 재구현하지 않는다.
 - 주/보조 로그 주파수 그리드와 12dB 간격 눈금을 표시하며, 렌더러 갱신은 약 30fps로
   제한한다. 캔버스와 작업 배열은 PSRAM에 둬 디스플레이 DMA용 내부 RAM을 침범하지 않는다.
 - 기존 저장 씬과 NVS 호환을 위해 렌더러 ID `curve`와 기존 Mode 인덱스

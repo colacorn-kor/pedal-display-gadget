@@ -46,7 +46,9 @@
 ### S1. 플랫폼 추상화 (완료)
 - UI·앱 로직(screen_manager/apps/renderers/theme/launcher)과 ESP 하드웨어 코드
   (display_bringup/오디오태스크/GPIO/NVS)를 `platform_*` 인터페이스로 분리.
-- 효과: PC 시뮬레이터(같은 C가 SDL 창에서 실행), 테스트 용이, 코덱/무선 추가 시 UI 무변경.
+- 효과: PC 시뮬레이터에서 같은 앱·UI·renderer·`fft_map`이 SDL 창으로 실행된다.
+  입력 수집과 FFT 실행만 플랫폼 백엔드로 분리돼 테스트가 쉽고, 코덱/무선 추가 시 UI는
+  바뀌지 않는다.
 
 ### S2. 오디오 출력 (3.5mm 스테레오 = 헤드폰/AUX 활성화)
 - 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(ASSEMBLY에 확보됨).

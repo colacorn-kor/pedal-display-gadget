@@ -34,7 +34,7 @@ Core0 input_task
   TRS 래더 + FOOTSW -> ui_event_t -> 활성 앱 우선 디스패치
 
 PC simulator
-  platform_sim + 동일 앱/UI/renderer/tuner/music_events 코드
+  platform_sim + 동일 앱/UI/renderer/fft_map/tuner/music_events 코드
 ```
 
 오디오/DSP 상태는 Core1이 단독 소유한다. UI는
@@ -98,8 +98,8 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
 | `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
-| `sim/` | SDL2 PC 시뮬레이터와 `platform_sim` |
-| `tests/` | MIDI, 튜너, 오디오 레벨 단위, FFT 기준 호스트 테스트 |
+| `sim/` | SDL2 PC 시뮬레이터, `platform_sim`, PC용 FFT 실행 백엔드 |
+| `tests/` | MIDI, 튜너, 오디오 레벨 단위, 공통 FFT 매핑 기준 호스트 테스트 |
 
 ## 펌웨어 빌드
 

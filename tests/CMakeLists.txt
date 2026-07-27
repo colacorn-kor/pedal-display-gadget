@@ -34,6 +34,17 @@ if(NOT MSVC)
 endif()
 add_test(NAME audio_autorange_selection COMMAND test_audio_autorange)
 
+add_executable(test_fft_map
+    test_fft_map.c
+    ../fft_map.c
+    ../sim/sim_fft_backend.c
+)
+target_include_directories(test_fft_map PRIVATE ../sim/compat ..)
+if(NOT MSVC)
+    target_link_libraries(test_fft_map PRIVATE m)
+endif()
+add_test(NAME fft_map_shared_backend COMMAND test_fft_map)
+
 if(MSVC)
     target_compile_options(test_midi PRIVATE /utf-8 /wd4819)
     target_compile_options(test_tuner PRIVATE
@@ -43,6 +54,7 @@ if(MSVC)
     )
     target_compile_options(test_audio_level PRIVATE /utf-8 /wd4819)
     target_compile_options(test_audio_autorange PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_fft_map PRIVATE /utf-8 /wd4819)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

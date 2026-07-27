@@ -49,7 +49,9 @@ include("${CMAKE_CURRENT_LIST_DIR}/UI_SOURCES.cmake")
 add_executable(pedal_sim
     "${CMAKE_CURRENT_LIST_DIR}/platform_sim.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_audio.c"
+    "${CMAKE_CURRENT_LIST_DIR}/sim_fft_backend.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_main.c"
+    "${PROJECT_ROOT}/fft_map.c"
     "${PROJECT_ROOT}/music_events.c"
     "${PROJECT_ROOT}/tuner.c"
     ${PEDAL_UI_SOURCES}

@@ -16,7 +16,6 @@
 #endif
 
 #define SIM_BLOCK_SIZE 256
-#define SIM_DFT_BINS (SIM_BLOCK_SIZE / 2 + 1)
 #define SIM_QUEUE_CAP 8192
 #define SIM_DEQUEUE_FRAMES 512
 #define SIM_SCREEN_W 480.0f
@@ -46,17 +45,16 @@ static int s_queue_tail;
 static int s_queue_count;
 
 static audio_viz_snapshot_t s_viz;
-static int s_band_lo[VIZ_POINTS];
-static int s_band_hi[VIZ_POINTS];
-static bool s_dft_ready;
 static audio_mode_t s_active_mode = AUDIO_SPECTRUM;
 static bool s_active_mode_ready;
+static viz_mode_t s_active_viz_mode = VIZ_MONITOR;
+static int s_active_viz_tilt_tenths;
+static bool s_active_viz_ready;
 
 static float s_mouse_x = SIM_SCREEN_W * 0.5f;
 static uint32_t s_onset_seq;
 static uint32_t s_onset_ms;
 static float s_onset_strength;
-static float s_synthetic_peaks[VIZ_POINTS];
 static float s_synthetic_phase;
 static uint32_t s_synthetic_last_ms;
 static float s_synthetic_sample_credit;
@@ -271,37 +269,10 @@ static bool open_capture_device(int device_index)
     return true;
 }
 
-static void init_dft_bins(void)
-{
-    const float bin_hz = (float)AUDIO_SAMPLE_RATE / (float)SIM_BLOCK_SIZE;
-    const float ratio = powf(VIZ_FREQ_HI_HZ / VIZ_FREQ_LO_HZ,
-                             1.0f / (float)VIZ_POINTS);
-    float frequency = VIZ_FREQ_LO_HZ;
-
-    for (int i = 0; i < VIZ_POINTS; i++) {
-        const float low_frequency = frequency;
-        const float high_frequency = frequency * ratio;
-        int low_bin;
-        int high_bin;
-
-        frequency = high_frequency;
-        low_bin = (int)ceilf(low_frequency / bin_hz);
-        high_bin = (int)ceilf(high_frequency / bin_hz) - 1;
-        if (low_bin < 1) low_bin = 1;
-        if (high_bin < low_bin) high_bin = low_bin;
-        if (high_bin > SIM_BLOCK_SIZE / 2) high_bin = SIM_BLOCK_SIZE / 2;
-        if (low_bin > high_bin) low_bin = high_bin;
-
-        s_band_lo[i] = low_bin;
-        s_band_hi[i] = high_bin;
-    }
-
-    s_dft_ready = true;
-}
-
 static void reset_visualizer(void)
 {
     memset(&s_viz, 0, sizeof(s_viz));
+    fft_map_reset();
 }
 
 static void handle_mode_change(audio_mode_t mode)
@@ -315,6 +286,25 @@ static void handle_mode_change(audio_mode_t mode)
     } else {
         reset_visualizer();
     }
+}
+
+static void sync_visualizer_profile(void)
+{
+    const viz_mode_t requested_mode = audio_get_viz_mode();
+    const int requested_tilt_tenths = audio_get_viz_tilt_tenths();
+    const bool mode_changed =
+        !s_active_viz_ready || requested_mode != s_active_viz_mode;
+
+    if (mode_changed) {
+        s_active_viz_mode = requested_mode;
+        fft_map_set_mode(requested_mode);
+    }
+    if (!s_active_viz_ready || mode_changed ||
+        requested_tilt_tenths != s_active_viz_tilt_tenths) {
+        s_active_viz_tilt_tenths = requested_tilt_tenths;
+        fft_map_set_tilt_db_oct((float)requested_tilt_tenths * 0.1f);
+    }
+    s_active_viz_ready = true;
 }
 
 static void queue_sample(float sample)
@@ -378,60 +368,6 @@ static float level_from_rms(float rms)
     return level;
 }
 
-static void decay_visualizer(float level)
-{
-    for (int i = 0; i < VIZ_POINTS; i++) {
-        s_viz.bars[i] *= 0.92f;
-        s_viz.peaks[i] *= 0.96f;
-        if (s_viz.peaks[i] < s_viz.bars[i]) s_viz.peaks[i] = s_viz.bars[i];
-    }
-    s_viz.level = level;
-}
-
-static void update_visualizer_from_block(const float *block, float level)
-{
-    float magnitude[SIM_DFT_BINS];
-
-    if (!s_dft_ready) init_dft_bins();
-
-    for (int k = 0; k < SIM_DFT_BINS; k++) {
-        float real = 0.0f;
-        float imag = 0.0f;
-        for (int n = 0; n < SIM_BLOCK_SIZE; n++) {
-            const float window = 0.5f - 0.5f *
-                cosf(2.0f * SIM_PI * (float)n / (float)(SIM_BLOCK_SIZE - 1));
-            const float sample = block[n] * window;
-            const float phase = 2.0f * SIM_PI * (float)k * (float)n /
-                                (float)SIM_BLOCK_SIZE;
-            real += sample * cosf(phase);
-            imag -= sample * sinf(phase);
-        }
-        magnitude[k] = sqrtf(real * real + imag * imag) /
-                       ((float)SIM_BLOCK_SIZE * 0.5f);
-    }
-
-    for (int i = 0; i < VIZ_POINTS; i++) {
-        float max_mag = 0.0f;
-        for (int bin = s_band_lo[i]; bin <= s_band_hi[i]; bin++) {
-            if (magnitude[bin] > max_mag) max_mag = magnitude[bin];
-        }
-
-        float db = 20.0f * log10f(max_mag + 1e-7f);
-        float tilt = (float)audio_get_viz_tilt_tenths() * 0.1f *
-                     log2f(sqrtf((float)s_band_lo[i] * s_band_hi[i]) *
-                           ((float)AUDIO_SAMPLE_RATE / SIM_BLOCK_SIZE) /
-                           VIZ_TILT_PIVOT_HZ);
-        float value = (db + tilt - VIZ_DB_FLOOR) /
-                      (VIZ_DB_TOP - VIZ_DB_FLOOR);
-        value = clampf(value, 0.0f, 1.0f);
-
-        s_viz.peaks[i] *= 0.96f;
-        if (value > s_viz.peaks[i]) s_viz.peaks[i] = value;
-        s_viz.bars[i] = value;
-    }
-    s_viz.level = level;
-}
-
 static void process_block(const float *block)
 {
     float rms = block_rms(block);
@@ -440,12 +376,10 @@ static void process_block(const float *block)
     audio_mode_t mode = audio_get_mode();
 
     handle_mode_change(mode);
-    s_viz.rms = rms;
-    s_viz.sample_peak = sample_peak;
+    sync_visualizer_profile();
     if (mode == AUDIO_TUNER) {
         tuner_feed(block, SIM_BLOCK_SIZE);
         music_events_process_block(rms, level);
-        decay_visualizer(level);
         return;
     }
 
@@ -453,7 +387,10 @@ static void process_block(const float *block)
         (double)rms * (double)rms * (double)SIM_BLOCK_SIZE;
     s_viz.meter_sample_total += SIM_BLOCK_SIZE;
     music_events_process_block(rms, level);
-    update_visualizer_from_block(block, level);
+    fft_feed(block, SIM_BLOCK_SIZE, s_viz.bars, s_viz.peaks);
+    s_viz.level = level;
+    s_viz.rms = rms;
+    s_viz.sample_peak = sample_peak;
 }
 
 static void pump_capture_audio(void)
@@ -576,59 +513,6 @@ static void pump_synthetic_audio(void)
     }
 }
 
-static void synthetic_viz_get(audio_viz_snapshot_t *out)
-{
-    const float t = (float)SDL_GetTicks() * 0.001f;
-    const float kick = synthetic_onset_decay(SDL_GetTicks());
-    const float f0 = synthetic_pitch_hz();
-    float level = 0.34f + 0.18f * sinf(t * 2.4f) + 0.42f * kick;
-
-    memset(out, 0, sizeof(*out));
-    level = clampf(level, 0.0f, 1.0f);
-    for (int i = 0; i < VIZ_POINTS; i++) {
-        float x = (float)i / (float)(VIZ_POINTS - 1);
-        float frequency = VIZ_FREQ_LO_HZ *
-                          powf(VIZ_FREQ_HI_HZ / VIZ_FREQ_LO_HZ, x);
-        float db = -67.0f + 2.0f * sinf(t * 0.7f + x * 17.0f);
-
-        /* Guitar-like harmonic peaks make the spectrum preview meaningful. */
-        for (int harmonic = 1; harmonic <= 18; harmonic++) {
-            float center = f0 * harmonic;
-            if (center > VIZ_FREQ_HI_HZ) break;
-
-            float distance_oct = log2f(frequency / center);
-            float width_oct = 0.045f + 0.003f * harmonic;
-            float shape = expf(-0.5f * distance_oct * distance_oct /
-                               (width_oct * width_oct));
-            float harmonic_db = -20.0f -
-                                4.8f * log2f((float)harmonic) +
-                                1.5f * sinf(t * 1.3f + harmonic * 1.7f);
-            float contribution = harmonic_db +
-                                 36.0f * (shape - 1.0f);
-            if (contribution > db) db = contribution;
-        }
-
-        float pick_distance = log2f(frequency / 3200.0f);
-        float pick_shape = expf(-0.5f * pick_distance * pick_distance /
-                                (0.55f * 0.55f));
-        float pick_db = -58.0f + (15.0f + 12.0f * kick) * pick_shape;
-        if (pick_db > db) db = pick_db;
-
-        float value = (db - VIZ_DB_FLOOR) /
-                      (VIZ_DB_TOP - VIZ_DB_FLOOR);
-        value = clampf(value, 0.0f, 1.0f);
-        s_synthetic_peaks[i] *= 0.985f;
-        if (value > s_synthetic_peaks[i]) s_synthetic_peaks[i] = value;
-        out->bars[i] = value;
-        out->peaks[i] = s_synthetic_peaks[i];
-    }
-    out->level = level;
-    out->rms = s_viz.rms;
-    out->sample_peak = s_viz.sample_peak;
-    out->meter_energy_total = s_viz.meter_energy_total;
-    out->meter_sample_total = s_viz.meter_sample_total;
-}
-
 static void synthetic_music_get(music_snapshot_t *out)
 {
     const uint32_t now = SDL_GetTicks();
@@ -664,7 +548,10 @@ bool sim_audio_init(int argc, char **argv)
 
     tuner_init();
     music_events_init();
-    init_dft_bins();
+    if (fft_map_init() != ESP_OK) {
+        fprintf(stderr, "E (sim) shared spectrum analyzer init failed\n");
+        return false;
+    }
 
     if (argc < 0) argc = 0;
     if (!parse_args(argc, argv, &device_index)) return false;
@@ -737,13 +624,7 @@ void sim_audio_trigger_synthetic_onset(void)
 void sim_audio_audio_viz_get(audio_viz_snapshot_t *out)
 {
     if (!out) return;
-
-    if (s_capture_active || s_loopback_active) {
-        *out = s_viz;
-        return;
-    }
-
-    synthetic_viz_get(out);
+    *out = s_viz;
 }
 
 void sim_audio_music_get(music_snapshot_t *out)

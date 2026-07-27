@@ -18,6 +18,7 @@ typedef enum {
 void         audio_set_mode(audio_mode_t mode);
 audio_mode_t audio_get_mode(void);
 void         audio_set_viz_mode(viz_mode_t mode);
+viz_mode_t   audio_get_viz_mode(void);
 void         audio_set_viz_tilt_tenths(int tilt_tenths);
 int          audio_get_viz_tilt_tenths(void);
 

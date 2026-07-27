@@ -50,7 +50,13 @@ static int s_since_hop;
 static int s_filled;
 static float s_window[FFT_SIZE];
 static float s_window_sum;
-static __attribute__((aligned(16))) float s_fft[FFT_SIZE * 2];
+#if defined(_MSC_VER)
+#define FFT_ALIGNED __declspec(align(16))
+#else
+#define FFT_ALIGNED __attribute__((aligned(16)))
+#endif
+static FFT_ALIGNED float s_fft[FFT_SIZE * 2];
+#undef FFT_ALIGNED
 
 static float smoothing_coef(float milliseconds)
 {

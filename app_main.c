@@ -127,6 +127,12 @@ void audio_set_viz_mode(viz_mode_t mode)
     atomic_store_explicit(&s_viz_mode, (int)mode, memory_order_release);
 }
 
+viz_mode_t audio_get_viz_mode(void)
+{
+    return (viz_mode_t)atomic_load_explicit(
+        &s_viz_mode, memory_order_acquire);
+}
+
 void audio_set_viz_tilt_tenths(int tilt_tenths)
 {
     if (tilt_tenths < 0) tilt_tenths = 0;
@@ -306,7 +312,7 @@ static void audio_task(void *arg)
 
     int producer = 1;
     audio_mode_t active_mode = audio_get_mode();
-    viz_mode_t active_viz = (viz_mode_t)atomic_load_explicit(&s_viz_mode, memory_order_acquire);
+    viz_mode_t active_viz = audio_get_viz_mode();
     int active_viz_tilt_tenths = audio_get_viz_tilt_tenths();
     fft_map_set_mode(active_viz);
     fft_map_set_tilt_db_oct((float)active_viz_tilt_tenths * 0.1f);
@@ -428,8 +434,7 @@ static void audio_task(void *arg)
             }
         }
 
-        viz_mode_t requested_viz =
-            (viz_mode_t)atomic_load_explicit(&s_viz_mode, memory_order_acquire);
+        viz_mode_t requested_viz = audio_get_viz_mode();
         int requested_viz_tilt_tenths = audio_get_viz_tilt_tenths();
         bool viz_profile_changed = false;
         if (requested_viz != active_viz) {

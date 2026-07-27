@@ -436,6 +436,22 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 이 항목은 소프트웨어·문서 준비 기록이다. 외부 9V 측정, TL072 해체, OPA2192 실장,
   듀얼 이미지 플래시는 아직 수행하지 않았다.
 
+### 2026-07-28 본체/PC 시뮬레이터 스펙트럼 SSOT 통합
+
+- 시뮬레이터에만 있던 256-point DFT는 48kHz에서 bin 간격이 187.5Hz였고, 별도 peak
+  감쇠를 사용해 본체의 2048-point 분석보다 저역 해상도와 잔상 동작이 달랐다.
+- 별도 매핑을 제거하고 본체와 시뮬레이터가 같은 `fft_map.c`를 직접 빌드하도록 바꿨다.
+  PC에는 ESP-DSP 호출 계약을 구현하는 portable FFT 실행 백엔드만 추가했다. 따라서
+  23.4375Hz bin, 로그 매핑, 65ms 평균, 즉시 attack, 220ms release와 peak hold가 같다.
+- 46.875Hz 입력의 저역 위치와 peak 지속을 검사하는 공통 DSP 호스트 테스트를 추가했다.
+  CTest 5/5와 별도 FFT normalization, 깨끗한 PC 시뮬레이터 빌드와 smoke,
+  Windows 기본 출력 `LF27T450F`의 48kHz 루프백 개방, ESP-IDF 기본 `0xd2190`·래더
+  비활성 `0xceb10` 전체 `-Werror` 빌드가 통과했다. smoke 전후 사용자
+  `sim_nvs.bin` SHA-256은 `A2F43E...BE6`으로 같았다. 이번 작업에서는 실기 플래시를
+  하지 않았다.
+- 앞으로 앱·UI·공유 DSP 변경은 깨끗한 시뮬레이터 빌드·smoke와
+  `sim/build/pedal_sim.exe` 갱신을 같은 작업의 완료 조건으로 삼는다.
+
 ## 7. 다음 작업
 
 1. `ASSEMBLY.md` Step 5A에 따라 USB를 분리하고 외부 9V에서 구형 LINE/INST의
