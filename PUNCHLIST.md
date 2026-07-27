@@ -11,7 +11,7 @@
 1. **Basic 컨트롤러 체감 평가**
    - 6키, UP 연타, RIGHT+OK 데드존, 방향키 반복, HOME/FOOTSW 짧게·길게
    - 결과로 Smart 컨트롤러 착수 여부 결정
-2. 공통 `Color/Mode` 및 Nyan 제거 펌웨어 플래시 후 Bounce 장애물 구간의 짧은 키 응답 확인
+2. 공통 `Color/Mode` 화면과 Bounce 장애물 구간의 짧은 HOME/FOOTSW 응답 확인
 
 ## P2 - 하드웨어 및 제품 튜닝
 
@@ -54,3 +54,5 @@
   3개 Mode, Bounce는 Classic Cat만 제공. NVS v5는 v2~v4 blob을 보존 마이그레이션
 - 사용자 실기: 전역 Theme과 앱 팝업 팔레트 연동은 정상. Nyan은 장애물 등장 시
   프레임·입력 지연이 심해 제거
+- `f2182fea`를 외부 9V 분리·USB 단독 상태에서 COM4에 플래시. 약 25초 부팅 로그에서
+  8MB PSRAM 80MHz, 240MHz, ST7796/LVGL, ladder IDLE과 오류 0회 확인

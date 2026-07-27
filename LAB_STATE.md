@@ -5,9 +5,9 @@
 
 ## 1. 기준 상태
 
-- 저장소 인수 기준: `166141c` (`CLAUDE_HANDOFF.md` 추가)
-- 마지막 실기 펌웨어 기준: 전역 UI/앱 로컬 Theme 분리 + Bounce Nyan Cat 빌드
-  (테마 적용 정상, Nyan 장애물 구간 심한 프레임·입력 지연 확인)
+- 현재 저장소·마지막 실기 펌웨어: `f2182fea` (`Split app color and mode settings`)
+- 현재 펌웨어 상태: 공통 `Color/Mode`, Nyan 제거 빌드. 소프트웨어 부팅 검증 통과,
+  앱 화면과 Bounce 장애물 구간 입력의 사용자 육안·조작 확인 대기
 - 마지막 확인 포트: COM4
 - 등록 앱: Sound Monitor, Images, Tuner, Bounce, dB Meter 총 5개
 - 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
@@ -16,6 +16,22 @@
 - 오디오 입력 프론트엔드: 조립됨, 외부 9V 미연결 상태라 동작 미검증
 
 ## 2. 마지막 실기 결과
+
+### 2026-07-27 공통 Color/Mode + Nyan 제거 펌웨어
+
+외부 9V가 분리되고 USB만 연결된 상태를 사용자에게 재확인한 뒤 COM4에
+`f2182fea`를 일반 플래시했다. 전체 삭제나 파티션 변경은 하지 않았다.
+
+- 빌드·플래시 이미지 `0xd1c40` bytes, 앱 파티션 18% 여유
+- bootloader, factory app, partition table 기록 후 각 영역 SHA 검증 통과
+- ESP32-S3 rev0.2, 16MB flash, 8MB PSRAM 80MHz와 PSRAM 메모리 테스트 통과
+- `App version: f2182fea`, `cpu freq: 240000000 Hz`, ST7796 1.4.0,
+  `app: boot complete`, LVGL task 시작 확인
+- 정상 리셋 후 약 25초 로그에서 ladder `IDLE` 지속
+- WDT, panic, 비정상 reset, I2S 오류, 메모리 오류 0회
+- 화면 외형과 Classic Cat 장애물 구간의 HOME/FOOTSW 짧은 입력은 사용자 확인 대기
+
+### 2026-07-26 입력 WDT 핫픽스
 
 2026-07-26 외부 9V를 분리하고 USB만 연결한 상태에서 핫픽스 펌웨어를 COM4에 플래시했다.
 
@@ -115,8 +131,8 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xce5c0` bytes, 19% 여유) |
 | 호스트 테스트 4/4 | 통과 (MIDI, tuner, audio level, FFT normalization) |
 | PC 시뮬레이터 | 깨끗한 빌드·Color/Mode 시각 검수·결정론적 smoke 통과 |
-| COM4 탐지 | 2026-07-26 확인 |
-| USB 플래시 | 통과, 외부 9V 분리·USB 단독 상태 |
+| COM4 탐지 | 2026-07-27 확인 |
+| USB 플래시 | `f2182fea` 통과, 외부 9V 분리·USB 단독 상태 |
 | 부팅 주파수 / PSRAM | 240MHz / 8MB 80MHz 확인 |
 | WDT 5분 무발생 | 통과 (310초, ladder 310회, WDT/panic/reset 0) |
 | 정상 UI 표시 | 통과 (Tuner, Sound Monitor 육안 확인) |
@@ -127,7 +143,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | 신회로 7상태 ADC 로그 | 통과 |
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 | dB Meter 전압·시간평균 실기 | 사용자 요청으로 보류, 1kHz 1점 교정 대기 |
-| 공통 Color/Mode + Nyan 제거 실기 | 미플래시, Bounce 장애물 구간 짧은 키 응답 확인 대기 |
+| 공통 Color/Mode + Nyan 제거 실기 | 플래시·25초 로그 통과, 화면과 Bounce 입력 확인 대기 |
 
 ## 6. PC 시뮬레이터 자동 확인
 
@@ -290,13 +306,15 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   호스트 테스트 4/4가 통과했다. `sdkconfig.defaults` 전체 빌드는 `0xd1c40` bytes
   (18% 여유), `INPUT_TRS_LADDER=0` 빌드는 `0xce5c0` bytes(19% 여유)로 둘 다
   `-Werror`를 통과했다.
-- 이번 변경은 아직 플래시하지 않았다. 다음 실기는 외부 9V 분리 확인 뒤 새 빌드를
-  플래시하고 Classic Cat 장애물 구간에서 HOME/FOOTSW 짧은 입력 응답을 확인한다.
+- 외부 9V 분리·USB 단독 상태에서 `f2182fea`를 COM4에 플래시했다. 정상 리셋 뒤
+  약 25초 동안 rev0.2, 8MB PSRAM 80MHz, 240MHz, ST7796/LVGL, ladder `IDLE`을
+  확인했고 WDT·panic·비정상 reset·I2S·메모리 오류는 없었다. 화면 외형과 Classic Cat
+  장애물 구간의 HOME/FOOTSW 짧은 입력은 사용자 확인 대기다.
 
 ## 7. 다음 작업
 
 1. Basic 컨트롤러의 장시간 체감 평가는 실제 사용 중 이상이 있을 때 묶어서 수행한다.
-2. 공통 Color/Mode 빌드를 플래시해 Bounce 장애물 구간의 짧은 키 응답을 확인한다.
+2. 공통 Color/Mode 화면과 Bounce 장애물 구간의 짧은 HOME/FOOTSW 응답을 확인한다.
 3. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
 4. 외부 9V 오디오 검증은 USB를 분리한 별도 안전 절차에서 수행한다.
 5. 알려진 1kHz Vrms 신호로 LINE/INST 전압 보정계수를 각각 확정한다.
