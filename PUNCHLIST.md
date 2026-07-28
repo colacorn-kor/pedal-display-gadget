@@ -62,7 +62,7 @@
 - NVS v1 -> v2 최초 부팅 시 1회 기본값 리셋은 정상
 - 3행 런처: 빈 STASH 경유, Settings/Reorder 왕복, 선택 테두리와 대각 커서 실기 통과
 - Sound Monitor: 20Hz~20kHz 로그 축, -72~0dBFS, 1kHz 기준 +4.5dB/oct,
-  평활 현재선·채움·피크선 적용. PC 시각 검수와 COM4 정상 부팅 통과
+  평활 현재선·채움 적용. peak hold는 12-Band에만 표시. PC 시각 검수와 COM4 정상 부팅 통과
 - Sound Monitor 12밴드:
   50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz 적용
 - 얼굴형 렌더러 제거, 고정 중심·PSRAM 기반 72-segment Circular spectrum으로 교체
@@ -90,3 +90,6 @@
 - PC 시뮬레이터의 별도 256-point DFT를 제거하고 본체와 같은 `fft_map.c`를 직접 빌드한다.
   23.4375Hz bin, 로그 매핑, 65ms 평균, 220ms release와 peak hold가 양쪽에서 일치하며
   46.875Hz 저역·peak 지속 회귀 테스트를 추가했다.
+- Windows 루프백이 재생 중단 뒤 무음 패킷을 보내지 않는 구간에는 실시간 48kHz 무음 표본을
+  보충해 release가 멈추지 않도록 했다. Curve/Reference의 peak 선을 제거하고 12-Band
+  마커만 유지했으며, 5초 무음 뒤 현재선·peak 바닥 복귀 회귀 테스트가 통과했다.

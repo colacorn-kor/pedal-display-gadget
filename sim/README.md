@@ -40,6 +40,11 @@ window, 23.4375 Hz FFT bins, logarithmic mapping, averaging, release, and peak
 hold therefore match the gadget. Only audio capture (WASAPI/SDL versus I2S) and
 the platform FFT executor (portable C versus ESP-DSP) differ.
 
+Curve and Reference show only the current trace and fill. Peak hold is displayed
+only by the 12-Band markers. When Windows stops delivering loopback packets
+during complete silence, the simulator supplies wall-clocked zero samples so
+the shared release envelope continues down to the display floor.
+
 ```powershell
 .\sim\build\pedal_sim.exe
 ```

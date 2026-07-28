@@ -20,6 +20,8 @@
 #define SIM_DEQUEUE_FRAMES 512
 #define SIM_SCREEN_W 480.0f
 #define SIM_PI 3.14159265358979323846f
+#define SIM_LOOPBACK_IDLE_GRACE_MS 50u
+#define SIM_LOOPBACK_MAX_CATCHUP_MS 100u
 
 static SDL_AudioDeviceID s_capture_device;
 static SDL_AudioSpec s_capture_spec;
@@ -30,6 +32,12 @@ static bool s_loopback_active;
 static bool s_synthetic_fallback;
 static bool s_warned_fallback;
 static bool s_force_synthetic;
+
+#ifdef _WIN32
+static uint32_t s_loopback_last_pump_ms;
+static uint32_t s_loopback_last_packet_ms;
+static float s_loopback_silence_credit;
+#endif
 
 typedef enum {
     SIM_INPUT_AUTO = 0,
@@ -196,6 +204,9 @@ static bool open_system_loopback(void)
     s_capture_active = false;
     s_loopback_active = true;
     s_synthetic_fallback = false;
+    s_loopback_last_pump_ms = SDL_GetTicks();
+    s_loopback_last_packet_ms = s_loopback_last_pump_ms;
+    s_loopback_silence_credit = 0.0f;
     printf("I (sim) system audio loopback: %s (%d Hz, %d ch -> 48000 Hz mono)\n",
            device_name, source_rate, channels);
     fflush(stdout);
@@ -427,18 +438,50 @@ static void pump_capture_audio(void)
 }
 
 #ifdef _WIN32
+typedef struct {
+    uint32_t sample_count;
+} loopback_batch_t;
+
 static void queue_loopback_sample(float sample, void *context)
 {
-    (void)context;
+    loopback_batch_t *batch = context;
     queue_sample(sample);
+    if (batch) batch->sample_count++;
+}
+
+static void queue_loopback_idle_silence(uint32_t elapsed_ms)
+{
+    if (elapsed_ms > SIM_LOOPBACK_MAX_CATCHUP_MS) {
+        elapsed_ms = SIM_LOOPBACK_MAX_CATCHUP_MS;
+    }
+    s_loopback_silence_credit +=
+        (float)elapsed_ms * ((float)AUDIO_SAMPLE_RATE / 1000.0f);
+
+    while (s_loopback_silence_credit >= (float)SIM_BLOCK_SIZE) {
+        for (int i = 0; i < SIM_BLOCK_SIZE; i++) queue_sample(0.0f);
+        s_loopback_silence_credit -= (float)SIM_BLOCK_SIZE;
+    }
 }
 
 static void pump_system_loopback(void)
 {
-    if (!sim_loopback_pump(queue_loopback_sample, NULL)) {
+    loopback_batch_t batch = { 0 };
+    const uint32_t now = SDL_GetTicks();
+    uint32_t elapsed_ms = now - s_loopback_last_pump_ms;
+    s_loopback_last_pump_ms = now;
+
+    if (!sim_loopback_pump(queue_loopback_sample, &batch)) {
         sim_loopback_close();
         enter_synthetic_fallback();
         return;
+    }
+
+    if (batch.sample_count > 0) {
+        s_loopback_last_packet_ms = now;
+        s_loopback_silence_credit = 0.0f;
+    } else if (now - s_loopback_last_packet_ms >=
+               SIM_LOOPBACK_IDLE_GRACE_MS) {
+        queue_loopback_idle_silence(elapsed_ms);
     }
     process_queued_blocks();
 }

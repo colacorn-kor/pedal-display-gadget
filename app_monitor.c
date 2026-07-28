@@ -218,7 +218,8 @@ static void monitor_render(void)
     plat_audio_viz_get(&s_viz_snapshot);
     const viz_frame_t frame = {
         .bars = s_viz_snapshot.bars,
-        .peaks = s_viz_snapshot.peaks,
+        .peaks = s_mode == MONITOR_MODE_12_BAND
+            ? s_viz_snapshot.peaks : NULL,
         .n = VIZ_POINTS,
         .level = s_viz_snapshot.level,
     };

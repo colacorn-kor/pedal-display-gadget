@@ -485,6 +485,23 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 모듈은 아직 장착하지 않았고 이번 정정에서 빌드·플래시·실기 검증은 수행하지 않았다.
   첫 브링업은 기존 전원 전제대로 외부 9V를 분리한 USB 단독 상태에서 수행한다.
 
+### 2026-07-28 시뮬레이터 Curve peak·무음 release 수정
+
+- Sound Monitor의 공통 FFT peak envelope는 유지하되 렌더러 프레임에는 12-Band에서만
+  전달한다. Curve와 Reference는 현재 스펙트럼 선·채움만 표시하고 주황색 peak 잔상선을
+  표시하지 않는다.
+- Windows WASAPI 루프백은 재생이 완전히 멈추면 무음 패킷도 보내지 않을 수 있었다.
+  패킷이 50ms 이상 비는 동안 경과 시간만큼 48kHz 무음 표본을 시뮬레이터 큐에 보충해
+  `fft_map.c`의 65ms 평균과 220ms release가 끝까지 진행되도록 했다.
+- 새 FFT 회귀 검사는 신호 뒤 1초 동안 peak hold가 현재선보다 오래 남는 것과, 추가 4초
+  무음 뒤 현재선·peak가 모두 표시 바닥으로 복귀하는 것을 함께 확인한다.
+- VS 2026 시뮬레이터 깨끗한 재구성·빌드와 전체 smoke, CTest 6/6, 별도 FFT normalization,
+  ESP-IDF 5.4.4 기본 `0xeed10`·`INPUT_TRS_LADDER=0` `0xeb730` 전체
+  `-Werror=all` 빌드가 통과했다. 추적 `pedal_sim.exe`를 갱신했으며 smoke 전후
+  `sim_nvs.bin` SHA-256은 `A2F43E...BE6`으로 같았다.
+- 이번 작업에서는 본체 플래시를 하지 않았다. 실제 Windows 시스템 오디오의 재생/정지
+  육안 확인은 갱신된 시뮬레이터에서 수행할 항목이다.
+
 ## 7. 다음 작업
 
 1. `SZH-EKBZ-005`를 VCC=`+5V`, GND, G11/G12/G13/G47에 연결하고 FAT32 카드의

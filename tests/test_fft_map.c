@@ -66,6 +66,17 @@ int main(void)
         return fail("monitor peak hold did not outlast release trace");
     }
 
-    printf("PASS: shared 2048-point low-band mapping and peak hold\n");
+    feed_tone(0.0f, 0.0f, AUDIO_SAMPLE_RATE * 4,
+              &sample_cursor, bars, peaks);
+    for (int i = 0; i < VIZ_POINTS; i++) {
+        if (bars[i] > 0.001f) {
+            return fail("monitor spectrum did not release to display floor");
+        }
+        if (peaks[i] > 0.001f) {
+            return fail("monitor peak hold did not decay to display floor");
+        }
+    }
+
+    printf("PASS: shared low-band mapping, peak hold, and silence release\n");
     return 0;
 }
