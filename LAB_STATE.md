@@ -1,6 +1,6 @@
 # LAB_STATE.md - 현재 장치 및 실기 상태
 
-> 갱신일: 2026-07-28
+> 갱신일: 2026-08-03
 > 이 문서는 마지막 플래시와 현재 실험 상태의 SSOT다.
 
 ## 1. 기준 상태
@@ -12,15 +12,15 @@
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
-- 조립 상태: 사용자 확인 기준 `ASSEMBLY.md` 완료
-- 미장착: SD 카드 모듈, 뮤트 회로
+- 조립 상태: 디스플레이·PCM1808·TRS 6키·풋스위치 연결, SD 배선 완료
+- 미장착: 뮤트 회로
 - 보유 SD 모듈: 아두이노 MicroSD 카드 소켓 모듈 `SZH-EKBZ-005`
-  (VCC 4.5~5.5V, 온보드 3.3V LDO·레벨 변환), 아직 미장착
-- Ring 100Ω / Tip 220Ω: `ASSEMBLY.md` 완료 범위에 포함되어 장착됨
-- 오디오 입력 프론트엔드: 조립됨, 외부 9V 미연결 상태라 동작 미검증
-- 목표 자동 듀얼레인지 회로는 문서만 확정했으며 현재 브레드보드는 구형 SPDT 회로 그대로
-- Step 5B용 Range Diagnostics 소프트웨어와 핀 단위 개조·교정 절차는 준비됐지만,
-  Step 5A 구형 회로 기준 측정과 실제 부품 실장은 아직 수행하지 않음
+  (VCC 4.5~5.5V, 온보드 3.3V LDO·레벨 변환), 배선 완료·기능 확인 대기
+- Ring 100Ω / Tip 220Ω: 현재 장착됨
+- 오디오 입력 프론트엔드: 현재 TL072+SPDT 회로로 재배선 필요, 외부 9V 동작 미검증
+- 목표 자동 듀얼레인지 회로는 문서와 소프트웨어만 준비됐으며 OPA2192를 보유하지 않음
+- 현재 작업대 배선은 `ASSEMBLY.md`, 미래 회로와 교정은
+  `hardware/NETLIST_SPEC.md`와 `hardware/AUDIO_FRONTEND_ENGINEERING.md`로 분리
 
 ## 2. 마지막 실기 결과
 
@@ -405,7 +405,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 ### 2026-07-27 자동 듀얼레인지 캡처 소프트웨어
 
 - 기본 `AUDIO_DUAL_RANGE=0`은 현재 구형 브레드보드의 PCM1808 VINL 단일채널을 그대로
-  읽는다. Step 5B 전에는 이 기본값을 유지한다.
+  읽는다. 목표 듀얼레인지 하드웨어 전에는 이 기본값을 유지한다.
 - `AUDIO_DUAL_RANGE=1` 변형은 32-bit stereo I2S의 left=HOT, right=SENSITIVE를
   동시에 읽고 `audio_autorange`가 두 경로를 고정 GG 입력 스케일로 환산한다.
 - SENSITIVE ADC peak 0.82에서 HOT으로 전환하고, 0.45 아래가 500ms 지속돼야
@@ -417,9 +417,9 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - ESP-IDF `-Werror=all` 기본 `0xd2190`, 래더 비활성 `0xceb10`, 듀얼레인지 `0xd2e60`가
   모두 통과했고 PC 시뮬레이터 전체 smoke도 통과했다.
 - 현재 하드웨어는 VINR SENSITIVE가 준비되지 않았으므로 듀얼레인지 이미지는 플래시하지
-  않았다. 실제 두 채널 순서·overlap 일치·전환 연속성·I2S overflow는 Step 5B 뒤 검증한다.
+  않았다. 실제 두 채널 순서·overlap 일치·전환 연속성·I2S overflow는 목표 회로 실장 뒤 검증한다.
 
-### 2026-07-27 Step 5B 조립·교정 준비
+### 2026-07-27 자동 듀얼레인지 조립·교정 준비 (당시 Step 5B)
 
 - 듀얼 빌드의 dB Meter Mode에 `Range Diagnostics`를 추가했다. HOT=VINL와
   SENSITIVE=VINR의 block RMS/peak dBFS, 각 범위의 입력잭 환산 Vrms, raw S/H와 교정 후
@@ -430,8 +430,8 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - OPA2192의 전형적 공통모드 입력 용량 6.4pF를 반영해 HOT 보상 시작값을
   `10M||3.3pF : 1.5M||15pF`로 정정했다. 고임피던스/pF 노드는 솔더리스 브레드보드가
   아니라 세척한 만능기판 또는 PCB에 실장하고, 최종 C값은 sweep으로 정한다.
-- `ASSEMBLY.md` Step 5A/5B를 구형 기준 측정, 해체 범위, U4/U6·BAV199 핀,
-  VINL/VINR 배선, 무전원·레일 검사, 듀얼 플래시, 1kHz 보정식과 sweep 표 순서로 구체화했다.
+- 당시 `ASSEMBLY.md`에 구형 기준 측정과 목표 회로 개조·교정 절차를 구체화했다.
+  2026-08-03 문서 정리에서 이 내용은 `hardware/AUDIO_FRONTEND_ENGINEERING.md`로 옮겼다.
 - 현재 변경분으로 ESP-IDF 기본·`INPUT_TRS_LADDER=0`·`AUDIO_DUAL_RANGE=1`
   `-Werror=all` 전체 빌드, CTest 4개, FFT normalization, PC 시뮬레이터 smoke를 다시
   통과했다. 듀얼 이미지는 `0xd2e60`이고 1MiB 앱 파티션에 18%가 남는다.
@@ -502,17 +502,27 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 이번 작업에서는 본체 플래시를 하지 않았다. 실제 Windows 시스템 오디오의 재생/정지
   육안 확인은 갱신된 시뮬레이터에서 수행할 항목이다.
 
+### 2026-08-03 현재 배선 문서 정리와 물리 상태 갱신
+
+- 사용자 보고로 `SZH-EKBZ-005` SD 어댑터 배선 완료를 기록했다. 카드 마운트, Gallery,
+  LCD 공유 SPI 안정성은 아직 실기 확인하지 않았다.
+- 오디오 입력 구간은 현재 재배선이 필요한 상태다. 사용자가 보유하지 않은 OPA2192 목표
+  회로를 현재 조립 지시에서 제외하고, 보유한 TL072+SPDT 회로를 현재 배선 기준으로 유지했다.
+- `ASSEMBLY.md`를 준비물·단계별 조립·해체 지시·폐기 회로가 없는 작업대용 연결표로
+  재작성했다. 미래 자동 듀얼레인지의 설계·조달 조건·측정·교정 메모는
+  `hardware/AUDIO_FRONTEND_ENGINEERING.md`로 분리했다.
+- 이번 갱신은 사용자 물리 보고와 문서 정리다. SD 기능 시험, 오디오 재배선, 외부 9V
+  레일 측정, 펌웨어 빌드·플래시를 수행하지 않았다.
+
 ## 7. 다음 작업
 
-1. `SZH-EKBZ-005`를 VCC=`+5V`, GND, G11/G12/G13/G47에 연결하고 FAT32 카드의
-   `GG/images`로 Gallery 실기 브링업을 수행한다. 연결 전 `+5V`↔`+3V3` 단락이 없는지
-   무전원 검사하고, USB 단독에서 LCD 공유 SPI 안정성도 함께 확인한다.
-2. 앱 파티션을 확장할지 승인하고 기존 NVS 보존·플래시 마이그레이션 절차를 확정한다.
-3. `ASSEMBLY.md` Step 5A에 따라 USB를 분리하고 외부 9V에서 구형 LINE/INST의
-   noise·100mVrms gain·clip·Thru 기준을 기록한다.
-4. OPA2192×2, BAV199, 고값 저항, C0G pF 세트와 납땜용 소형 기판의 실제 보유 여부를 확인한다.
-5. Step 5B 회로를 무전원 상태에서 조립하고 넷리스트·단락·레일 검사를 통과시킨다.
-6. 외부 9V를 끄고 USB만 연결해 듀얼레인지 변형을 플래시한 뒤, USB를 다시 분리하고
-   외부 9V에서 Range Diagnostics로 1kHz 교정과 범위 전환을 확인한다.
-7. 20Hz~20kHz sweep으로 HOT 보상 C와 남은 correction 후보를 확정한다.
-8. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+1. `ASSEMBLY.md`의 현재 TL072 표에 맞춰 오디오 입력 구간을 재배선한다.
+2. 전원 OFF에서 Thru 연속성·전원 단락을 확인한 뒤, USB를 분리하고 외부 9V만 연결해
+   +5V/+3V3/+9V_OPAMP/VREF와 무입력 상태를 확인한다.
+3. 100mVrms 1kHz의 LINE/INST gain·clip·Thru 기준을
+   `hardware/AUDIO_FRONTEND_ENGINEERING.md`에 기록한다.
+4. 배선 완료된 SD 모듈의 `+5V`↔`+3V3` 미연결을 확인하고, USB 단독에서 FAT32 카드의
+   `GG/images`, Gallery, LCD 공유 SPI 안정성을 검증한다.
+5. 앱 파티션 확장은 별도 승인 뒤 NVS 보존·플래시 마이그레이션 절차와 함께 진행한다.
+6. OPA2192 자동 듀얼레인지는 부품 조달과 현재 회로 기준 측정 뒤 별도 하드웨어 작업으로 진행한다.
+7. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.

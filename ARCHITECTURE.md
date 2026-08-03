@@ -291,7 +291,7 @@ typedef enum {
 - Instrument/Consumer(-10dBV)/Pro(+4dBu)는 레벨 맞춤용 비교선이며 정상/비정상 판정이
   아니다. 이 구조와 하드와이어 Thru의 계약은 `GG_PRODUCT_SPEC.md`가 권위다.
 - `AUDIO_DUAL_RANGE`의 기본값은 `0`이다. 따라서 현재 구형 브레드보드 빌드는 PCM1808
-  VINL만 읽는 기존 동작을 유지하며, Step 5B 두 채널이 모두 연결되기 전에는 `1` 변형을
+  VINL만 읽는 기존 동작을 유지하며, 목표 HOT/SENSITIVE 두 채널이 모두 연결되기 전에는 `1` 변형을
   플래시하지 않는다.
 - `AUDIO_DUAL_RANGE=1`은 32-bit stereo I2S 프레임의 left=HOT, right=SENSITIVE를
   동시에 읽는다. `audio_autorange`가 두 채널을 고정 GG 입력 스케일로 환산하고,
@@ -306,7 +306,7 @@ typedef enum {
   Mode의 `Range Diagnostics`는 HOT=VINL와 SENSITIVE=VINR의 ADC RMS/peak, 각 범위의
   입력잭 환산 Vrms, raw S/H 비와 교정 후 mismatch를 동시에 표시한다. 외부 9V 단독
   측정에서 USB 로그 없이 L/R 순서와 1kHz 교정을 확인하는 작업 화면이다.
-- 현재 gain/correction은 명목값이므로 Step 5B의 1kHz·sweep 교정 전에는 계측 확정값이
+- 현재 gain/correction은 명목값이므로 목표 회로의 1kHz·sweep 교정 전에는 계측 확정값이
   아니다. 1kHz 교정값은 `AUDIO_DUAL_HOT_VOLTAGE_CORRECTION`과
   `AUDIO_DUAL_SENSITIVE_VOLTAGE_CORRECTION` 빌드 정의로 주입할 수 있다. sweep 보정은
   실측표가 생기기 전에는 0dB 기본값을 유지하며, 측정값 없이 역보정 LUT를 추정하지 않는다.

@@ -86,5 +86,5 @@ typedef struct {
    패킹한다. v2~v4 blob 크기를 보존하며 이전 Monitor 프리셋은 대응 조합으로,
    제거된 Nyan 값은 `Default + Classic Cat`으로 마이그레이션한다.
 7. 현재 구형 dB Meter 상단은 `INPUT LINE/INST`와 `WINDOW LIVE/AVG 1s/AVG 3s` 두
-   선택기로 구성한다. Step 5B 자동 듀얼레인지가 활성화되면 INPUT 선택기는 없애고,
+   선택기로 구성한다. 목표 자동 듀얼레인지가 활성화되면 INPUT 선택기는 없애고,
    자동 범위 상태는 기본 화면이 아닌 진단 정보에만 표시한다.

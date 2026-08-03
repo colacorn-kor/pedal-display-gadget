@@ -25,7 +25,8 @@
 | GG 제품 정체성·범위·GG2 경계 | `GG_PRODUCT_SPEC.md` |
 | 펌웨어 구조와 앱 계약 | `ARCHITECTURE.md` |
 | 하드웨어 넷·핀·저항 | `hardware/NETLIST_SPEC.md` |
-| 브레드보드 조립 절차 | `ASSEMBLY.md` |
+| 사용자가 보는 현재 브레드보드 배선표 | `ASSEMBLY.md` |
+| 오디오 목표 회로의 측정·교정 메모 | `hardware/AUDIO_FRONTEND_ENGINEERING.md` |
 | Basic/Smart 컨트롤러 계약 | `CONTROLLER_DESIGN.md` |
 | 런처와 UI | `LAUNCHER_DESIGN.md`, `UI_DESIGN.md` |
 

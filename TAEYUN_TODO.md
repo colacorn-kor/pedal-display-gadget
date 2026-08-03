@@ -1,30 +1,20 @@
-# TAEYUN_TODO.md - 태윤의 현재 물리 작업
+# TAEYUN_TODO.md - 태윤의 물리 작업
 
-> 소프트웨어와 실기 상태는 `LAB_STATE.md`, 전체 우선순위는 `PUNCHLIST.md`를 따른다.
-> 아래 항목이 끝나면 완료 항목을 지우고, 파일이 비면 이 문서를 삭제한다.
+> 이 파일에는 태윤이 직접 손으로 해야 하는 일만 둔다. 설계·검증 계획과 소프트웨어
+> 우선순위는 `PUNCHLIST.md`, 현재 장치 상태는 `LAB_STATE.md`가 맡는다.
 
-## 1. KiCad 풋프린트 배치
+## 지금 할 일
 
-1. `hardware/pedal-display-gadget.pretty/` 폴더를 만든다.
-2. 다음 `.kicad_mod` 4개를 넣는다.
-   - `ESP32-S3-DevKitC-1`
-   - `Jack_6.35mm_Mono_Panel`
-   - `MP1584_Module`
-   - `PWR_ELB040202`
-3. Git 변경 목록에 4개가 잡히는지 확인한다.
-4. KiCad 심볼에서 `TL072_DIP8`와 `PWR_9V_ELB040202`가 보이는지 확인한다.
+- `ASSEMBLY.md` 7절 표에 맞춰 오디오 입력의 TL072+SPDT 구간을 재배선한다.
+- 재배선이 끝나면 전원을 넣지 말고 Codex에 알린다. Codex가 무전원 대조와 다음 측정
+  순서를 이어서 안내한다.
+- SD 카드 기능 시험을 할 때는 FAT32 카드의 `GG/images`에 480x320 이하 테스트 이미지
+  하나를 넣어 준비한다. SD 모듈 배선 자체는 완료됐다.
 
-## 2. 다음 하드웨어 마일스톤
+## 나중에 할 수 있는 일
 
-- `ASSEMBLY.md` Step 5A 기록표부터 채운다. USB를 분리하고 외부 9V만 사용해 현재
-  TL072 LINE/INST의 무입력 noise, 100mVrms 1kHz gain, clip 근접 입력과 Thru를 측정한다.
-- Step 5B 전에 OPA2192×2+SOIC 어댑터, BAV199, 22M/10M/1.5M/100k/30k/10k,
-  3.3pF·15pF와 튜닝용 C0G 세트, 소형 만능기판의 보유 여부를 확인한다.
-- 고값 저항과 pF 보상망은 솔더리스 브레드보드에 만들지 않는다. 사진과 Step 5A 기준을
-  남긴 뒤 `ASSEMBLY.md` 5B-1부터 순서대로 진행한다.
-- 외부 9V 연결 전 모든 GND 본딩과 USB/9V 동시 급전 금지를 다시 확인한다.
-- USB-only 상태의 Tuner 음이름은 TL072 무전원 부유 입력이므로 오디오 기능 판정에서 제외한다.
-- SD 모듈 `SZH-EKBZ-005`와 뮤트 회로는 현재 미장착이며 별도 작업으로 남긴다.
-  SD는 VCC=`+5V`, GND, MISO=G11, MOSI=G13, SCK=G12, CS=G47로 연결한 뒤
-  USB 단독 상태에서 LCD 공유 SPI와 Gallery를 함께 검증한다.
-- 코덱 모듈 선정은 급하지 않으며 S2 착수 전에 PCM5102A와 ES8388 중 결정한다.
+- KiCad 커스텀 풋프린트 4개를 `hardware/pedal-display-gadget.pretty/`에 추가한다:
+  ESP32-S3-DevKitC-1, 6.35mm 모노 잭, MP1584 모듈, ELB040202 전원 커넥터.
+
+OPA2192 자동 듀얼레인지와 뮤트 회로는 현재 물리 작업이 아니다. 필요한 부품과 회로가
+확정되면 별도 작업으로 다시 올린다.

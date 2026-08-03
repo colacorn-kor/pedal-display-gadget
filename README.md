@@ -10,9 +10,10 @@ SD Gallery, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트�
 
 - 하드웨어: ESP32-S3-DevKitC-1 N16R8 브레드보드 프로토타입
 - 디스플레이: ST7796S 3.5인치 480x320 SPI
-- 오디오 입력: PCM1808 I2S와 TL072 프론트엔드 조립 완료, 외부 9V 미연결로 동작 미검증
+- 오디오 입력: PCM1808 I2S 연결, TL072+SPDT 분석 탭 재배선 필요
 - 컨트롤러: TRS 6키 저항 래더 Basic 구현, Smart 컨트롤러는 Phase 2
-- 미장착 하드웨어: SD 카드 모듈, 뮤트 회로
+- SD 카드: `SZH-EKBZ-005` 배선 완료, Gallery 실기 확인 대기
+- 미장착 하드웨어: 뮤트 회로
 - PC 시뮬레이터: SDL2 창, 키보드 입력, 실오디오 캡처 지원
 
 가장 최근 장치 상태와 다음 실기 절차는 [`LAB_STATE.md`](LAB_STATE.md), 미결 작업은
@@ -96,8 +97,8 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 ```
 
 최근접 판정은 동시 입력을 다른 키로 오인할 수 있어 사용하지 않는다. Ring은 +3V3 고정이며
-5V를 연결하면 안 된다. 회로의 최종 권위는 `hardware/NETLIST_SPEC.md`, 조립 절차는
-`ASSEMBLY.md`, Smart 확장 계약은 `CONTROLLER_DESIGN.md`다.
+5V를 연결하면 안 된다. 목표 회로의 최종 권위는 `hardware/NETLIST_SPEC.md`, 현재
+브레드보드 연결표는 `ASSEMBLY.md`, Smart 확장 계약은 `CONTROLLER_DESIGN.md`다.
 
 ## 주요 파일
 
@@ -134,8 +135,8 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
-기본 빌드는 현재 브레드보드의 PCM1808 VINL 단일채널을 사용한다. Step 5B에서 HOT와
-SENSITIVE를 모두 연결한 뒤에만 `-D AUDIO_DUAL_RANGE=1`로 스테레오 자동 범위 변형을
+기본 빌드는 현재 브레드보드의 PCM1808 VINL 단일채널을 사용한다. 목표 HOT와
+SENSITIVE 회로를 모두 연결한 뒤에만 `-D AUDIO_DUAL_RANGE=1`로 스테레오 자동 범위 변형을
 구성한다. 한 채널만 연결된 현재 장치에는 이 변형을 플래시하지 않는다. 듀얼 변형의
 dB Meter `Range Diagnostics`는 두 ADC의 RMS/peak, 환산 입력 Vrms와 범위 간 mismatch를
 외부 9V 단독 상태의 화면에서 확인하는 교정 도구다.
@@ -148,7 +149,7 @@ dB Meter `Range Diagnostics`는 두 ADC의 RMS/peak, 환산 입력 Vrms와 범�
 -D AUDIO_GG_INPUT_FULL_SCALE_VPEAK=11.5000
 ```
 
-값과 안전한 측정 순서는 `ASSEMBLY.md` Step 5A/5B를 따른다.
+값과 안전한 측정 순서는 `hardware/AUDIO_FRONTEND_ENGINEERING.md`를 따른다.
 
 `sdkconfig.defaults`가 바뀌었거나 오래된 환경 캐시가 의심되면 파생 설정을 지우고 다시
 구성한다.

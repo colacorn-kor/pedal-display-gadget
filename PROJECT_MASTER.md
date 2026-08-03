@@ -12,7 +12,8 @@
 | `GG_PRODUCT_SPEC.md` | GG 제품 정체성·범위·GG2 경계·외부 확장 |
 | `ARCHITECTURE.md` | 펌웨어 인앱 구조(코어분리·앱모델·입력규약) |
 | `hardware/NETLIST_SPEC.md` | 회로 넷 연결(KiCad 대조 기준) |
-| `ASSEMBLY.md` | 현재 브레드보드 조립과 자동 듀얼레인지 개조 절차 |
+| `ASSEMBLY.md` | 사용자가 작업대에서 보는 현재 브레드보드 배선표 |
+| `hardware/AUDIO_FRONTEND_ENGINEERING.md` | 오디오 목표 회로의 조달 조건·측정·교정 메모 |
 | `CONTROLLER_DESIGN.md` | Basic 저항 래더·Smart MCU 6키 컨트롤러 계약 |
 | `LAUNCHER_DESIGN.md` | 런처·슬롯·영속성·열린플랫폼 |
 | `UI_DESIGN.md` | 디자인시스템·테마토큰·.ggt 포맷 |
@@ -37,7 +38,7 @@
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
        · Windows 기본 출력 WASAPI 루프백 입력
 [완료] SDSPI/FATFS 기반 · SD Gallery · PC SD 폴더 · music/ROM 공통 카탈로그
-[현재] Range Diagnostics·Step 5B 배선/교정 절차 완료 · Step 5A 기준 측정 대기
+[현재] SD 모듈 배선 완료·기능 확인 대기 · TL072 분석 탭 재배선 대기
 [병행 HW] 자동 듀얼레인지 분석 탭 · 교정 지그 · KiCad 풋프린트/스키매틱
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
        → S6 스마트 컨트롤러 → S7 GG Analog Meter
@@ -63,7 +64,7 @@
   현재는 ROM 파일 판별과 정렬 기반만 있으며 게임 실행을 가장하지 않는다.
 
 ### S2. 오디오 출력 (3.5mm 스테레오 = 헤드폰/AUX 활성화)
-- 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(ASSEMBLY에 확보됨).
+- 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(현재 배선표에서 비움).
 - 소프트웨어: `audio_out` API(앱사운드 믹서, Core1 생산) + 기존 패스스루는 아날로그 그대로.
 - 앱 계약 확장: `needs_codec` 활성화(런처가 이미 비활성표시 지원 설계).
 - **HW(태윤)**: 코덱모듈 선정 필요 — 출력만이면 PCM5102A(무I2C·간단), 입출력 통합이면 ES8388.
@@ -97,13 +98,15 @@
 - 미터는 로컬 DAC/PWM과 바늘 드라이버를 가지며 오디오 신호와 Thru에는 연결하지 않는다.
 
 ## 4. 하드웨어 태윤 TODO (소프트웨어와 비동기)
-- 현재 `ASSEMBLY.md` 조립은 SD 카드 모듈과 뮤트 회로를 제외하고 완료됐다.
+- 현재 `ASSEMBLY.md`는 조립 절차가 아니라 실제 연결 상태를 맞추는 작업대용 배선표다.
+- SD 모듈 배선은 완료됐고 기능 확인이 남았다. 오디오 입력 구간은 TL072 기준 재배선이 필요하다.
 - [ ] 코덱 모듈 선정(PCM5102A vs ES8388) — S2 착수 조건
-- [ ] 현재 TL072 LINE/INST 프로토타입을 외부 9V에서 기준 측정
+- [ ] 현재 TL072 LINE/INST 프로토타입 재배선과 외부 9V 기준 측정
 - [x] PCM1808 두 채널 자동 듀얼레인지·Range Diagnostics·교정값 주입 경로
-- [ ] Step 5B 회로 개조 뒤 자동 범위 전환 실기 검증
+- [ ] OPA2192 부품 조달 뒤 목표 회로의 자동 범위 전환 실기 검증
 - [ ] HOT/SENSITIVE 범위별 1kHz 및 20Hz~20kHz sweep 교정
-- [ ] `SZH-EKBZ-005` 장착·공유 SPI 실기 브링업과 뮤트 회로 확정
+- [x] `SZH-EKBZ-005` 배선
+- [ ] `SZH-EKBZ-005` 공유 SPI 실기 브링업과 뮤트 회로 확정
 - [ ] KiCad Phase1 스키매틱(연습) → .net export → AI 검토 루프
 - [ ] (PCB 리비전 시) MIDI, 코덱, USB Host 전원 스위치·ESD, GG Analog Meter 반영
 - [ ] (S6 착수 시) Smart 컨트롤러 MCU·LED 전력 예산과 Ring 검출 후 급전 회로 확정
