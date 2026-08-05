@@ -248,6 +248,12 @@ static void style_control(lv_obj_t *control, lv_obj_t *label, bool selected)
 
 static void refresh_controls(void)
 {
+    if (!s_input_control || !s_input_control_label ||
+        !s_average_control || !s_average_control_label ||
+        !s_rms_caption) {
+        return;
+    }
+
     char text[32];
 #if AUDIO_DUAL_RANGE
     const char *range_name =
@@ -276,6 +282,93 @@ static void refresh_controls(void)
     style_control(s_average_control, s_average_control_label,
                   s_control == DB_CONTROL_AVERAGE);
 }
+
+static void mark_options_changed(void)
+{
+    s_options_dirty = true;
+    s_options_changed_ms = plat_millis();
+}
+
+#if !AUDIO_DUAL_RANGE
+static void set_input_range(int idx)
+{
+    if (idx < 0 || idx >= AUDIO_INPUT_RANGE_COUNT ||
+        idx == (int)s_input_range) {
+        return;
+    }
+    s_input_range = (audio_input_range_t)idx;
+    mark_options_changed();
+    refresh_controls();
+}
+
+static int input_setting_count(void)
+{
+    return AUDIO_INPUT_RANGE_COUNT;
+}
+
+static const char *input_setting_name(int idx)
+{
+    static char names[AUDIO_INPUT_RANGE_COUNT][20];
+    if (idx < 0 || idx >= AUDIO_INPUT_RANGE_COUNT) return "";
+
+    const audio_input_range_t range = (audio_input_range_t)idx;
+    snprintf(names[idx], sizeof(names[idx]), "%s %.2fx",
+             range == AUDIO_INPUT_INST ? "INST" : "LINE",
+             audio_level_input_gain(range));
+    return names[idx];
+}
+
+static int input_setting_index(void)
+{
+    return (int)s_input_range;
+}
+#endif
+
+static void set_average_mode(int idx)
+{
+    if (idx < 0 || idx >= DB_AVERAGE_COUNT ||
+        idx == (int)s_average_mode) {
+        return;
+    }
+    s_average_mode = (db_average_mode_t)idx;
+    mark_options_changed();
+    refresh_controls();
+}
+
+static int window_setting_count(void)
+{
+    return DB_AVERAGE_COUNT;
+}
+
+static const char *window_setting_name(int idx)
+{
+    return idx >= 0 && idx < DB_AVERAGE_COUNT
+        ? average_mode_name((db_average_mode_t)idx) : "";
+}
+
+static int window_setting_index(void)
+{
+    return (int)s_average_mode;
+}
+
+static const app_choice_setting_t DB_METER_CHOICE_SETTINGS[] = {
+#if !AUDIO_DUAL_RANGE
+    {
+        .name = "Input",
+        .item_count = input_setting_count,
+        .item_name = input_setting_name,
+        .item_index = input_setting_index,
+        .item_set = set_input_range,
+    },
+#endif
+    {
+        .name = "Window",
+        .item_count = window_setting_count,
+        .item_name = window_setting_name,
+        .item_index = window_setting_index,
+        .item_set = set_average_mode,
+    },
+};
 
 static void set_text_if_changed(lv_obj_t *label, char *previous,
                                 size_t previous_size, const char *text)
@@ -889,11 +982,11 @@ static bool db_meter_on_event(ui_event_t event)
 #if AUDIO_DUAL_RANGE
     if (s_mode == DB_MODE_RANGE_DIAGNOSTICS) return false;
 #endif
-    if (event == EV_UP || event == EV_DOWN) {
+    if (event == EV_LEFT || event == EV_RIGHT) {
 #if AUDIO_DUAL_RANGE
         s_control = DB_CONTROL_AVERAGE;
 #else
-        s_control = event == EV_UP
+        s_control = event == EV_LEFT
             ? DB_CONTROL_INPUT : DB_CONTROL_AVERAGE;
 #endif
         refresh_controls();
@@ -901,9 +994,9 @@ static bool db_meter_on_event(ui_event_t event)
     }
 
     int delta;
-    if (event == EV_LEFT) {
+    if (event == EV_UP) {
         delta = -1;
-    } else if (event == EV_RIGHT || event == EV_OK) {
+    } else if (event == EV_DOWN) {
         delta = 1;
     } else {
         return false;
@@ -913,24 +1006,20 @@ static bool db_meter_on_event(ui_event_t event)
     int next = (int)s_average_mode + delta;
     if (next < 0) next = DB_AVERAGE_COUNT - 1;
     if (next >= DB_AVERAGE_COUNT) next = 0;
-    s_average_mode = (db_average_mode_t)next;
+    set_average_mode(next);
 #else
     if (s_control == DB_CONTROL_INPUT) {
         int next = (int)s_input_range + delta;
         if (next < 0) next = AUDIO_INPUT_RANGE_COUNT - 1;
         if (next >= AUDIO_INPUT_RANGE_COUNT) next = 0;
-        s_input_range = (audio_input_range_t)next;
+        set_input_range(next);
     } else {
         int next = (int)s_average_mode + delta;
         if (next < 0) next = DB_AVERAGE_COUNT - 1;
         if (next >= DB_AVERAGE_COUNT) next = 0;
-        s_average_mode = (db_average_mode_t)next;
+        set_average_mode(next);
     }
 #endif
-
-    s_options_dirty = true;
-    s_options_changed_ms = plat_millis();
-    refresh_controls();
     return true;
 }
 
@@ -980,6 +1069,10 @@ const gadget_app_t APP_DB_METER = {
     .mode_name = db_meter_mode_name,
     .mode_index = db_meter_mode_index,
     .mode_set = db_meter_mode_set,
+    .choice_settings = DB_METER_CHOICE_SETTINGS,
+    .choice_setting_count =
+        (int)(sizeof(DB_METER_CHOICE_SETTINGS) /
+              sizeof(DB_METER_CHOICE_SETTINGS[0])),
 };
 
 #ifdef PEDAL_SIM

@@ -136,7 +136,7 @@ struct gadget_app {
 
 `choice_settings`는 앱이 Settings의 `Theme` 뒤에 단일 선택 페이지를 등록하는 공통
 UI 계약이다. 매니저는 이름·항목·현재값·적용 콜백만 디스패치하고 값의 의미와 저장은 앱이
-소유한다. Sound Monitor의 `Weighting`이 첫 사용처다.
+소유한다. Sound Monitor의 `Weighting`과 dB Meter의 `Input/Window`가 이 계약을 사용한다.
 
 `needs_codec`는 물리 코덱 이름을 앱 계약에 노출하는 임시 필드다. PC 오디오 출력과 미래
 GG 코덱을 같은 능력으로 취급하도록 플랫폼의 `AUDIO_PLAYBACK_OUTPUT` 검사로 교체한다.
@@ -326,6 +326,10 @@ typedef enum {
   수동으로 맞춘다. 표시값은 저항 명목값 기준 **입력잭 추정치**이며,
   `audio_config.h`의 모드별 correction factor는 1kHz 기준 1점 교정 연결점이다.
   교정 전에는 정확한 계측값으로 취급하지 않는다.
+- 화면에서는 좌·우가 `INPUT ↔ WINDOW` 포커스를 고르고, 상·하가 선택한 값을 이전·다음으로
+  바꾼다. 같은 상태를 `Settings → Input/Window`에서도 변경하며 두 경로는 같은 setter와
+  지연 NVS 저장을 사용한다. 현재 구형 입력 빌드의 Settings 순서는
+  `Theme/Input/Window`다.
 - `WINDOW LIVE`는 최신 256샘플 블록(48kHz에서 약 5.33ms)의 RMS를 사용한다.
   `AVG 1s/3s`는 Core1의 누적 에너지·샘플 수 차분을 50ms 버킷에 보관해 선택 구간의
   전력을 평균한 뒤 RMS로 환산한다. 화면 갱신은 가독성과 입력 응답을 위해 200ms를 유지한다.
@@ -361,6 +365,7 @@ typedef enum {
   PCM/I2S 상태를 직접 읽는 경로를 만들지 않는다.
 - 듀얼레인지 dB Meter는 LINE/INST 수동 선택을 없애고 `AUTO SENSITIVE/HOT`을 표시한다.
   RMS·peak dBFS는 고정 GG Input Full Scale, Vrms·dBV·dBu는 입력잭 기준으로 계산한다.
+  따라서 Settings에도 수동 `Input`을 노출하지 않고 `Theme/Window`만 둔다.
   Mode의 `Range Diagnostics`는 HOT=VINL와 SENSITIVE=VINR의 ADC RMS/peak, 각 범위의
   입력잭 환산 Vrms, raw S/H 비와 교정 후 mismatch를 동시에 표시한다. 외부 9V 단독
   측정에서 USB 로그 없이 L/R 순서와 1kHz 교정을 확인하는 작업 화면이다.

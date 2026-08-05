@@ -358,12 +358,40 @@ static bool run_smoke_test(void)
         fprintf(stderr, "SMOKE FAIL: dB meter defaults are invalid\n");
         return false;
     }
-    if (!smoke_send(EV_RIGHT, "db meter LINE -> INST") ||
-        !smoke_send(EV_DOWN, "db meter select average window") ||
-        !smoke_send(EV_RIGHT, "db meter LIVE -> AVG 1s") ||
+    if (!smoke_send(EV_DOWN, "db meter LINE -> INST") ||
+        !smoke_send(EV_RIGHT, "db meter select Window") ||
+        !smoke_send(EV_DOWN, "db meter LIVE -> AVG 1s") ||
         db_meter_debug_input_range() != AUDIO_INPUT_INST ||
         db_meter_debug_average_mode() != 1) {
-        fprintf(stderr, "SMOKE FAIL: dB meter controls did not update\n");
+        fprintf(stderr, "SMOKE FAIL: dB meter direct controls did not update\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "db meter -> app menu") ||
+        !smoke_send(EV_OK, "open db meter settings") ||
+        !smoke_send(EV_DOWN, "db meter Theme -> Input") ||
+        !smoke_send(EV_OK, "open db meter Input") ||
+        !smoke_send(EV_UP, "db meter INST -> LINE") ||
+        !smoke_send(EV_OK, "apply db meter LINE") ||
+        !smoke_send(EV_DOWN, "db meter Theme -> Input") ||
+        !smoke_send(EV_DOWN, "db meter Input -> Window") ||
+        !smoke_send(EV_OK, "open db meter Window") ||
+        !smoke_send(EV_DOWN, "db meter AVG 1s -> AVG 3s") ||
+        !smoke_send(EV_OK, "apply db meter AVG 3s") ||
+        db_meter_debug_input_range() != AUDIO_INPUT_LINE ||
+        db_meter_debug_average_mode() != 2) {
+        fprintf(stderr, "SMOKE FAIL: dB meter Settings did not update\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "db meter settings -> app menu") ||
+        !smoke_send(EV_HOME, "close db meter app menu") ||
+        !smoke_send(EV_LEFT, "db meter select Input") ||
+        !smoke_send(EV_DOWN, "db meter LINE -> INST after menu") ||
+        !smoke_send(EV_RIGHT, "db meter select Window after menu") ||
+        !smoke_send(EV_UP, "db meter AVG 3s -> AVG 1s after menu") ||
+        db_meter_debug_input_range() != AUDIO_INPUT_INST ||
+        db_meter_debug_average_mode() != 1) {
+        fprintf(stderr,
+                "SMOKE FAIL: dB meter direct and menu states diverged\n");
         return false;
     }
     audio_viz_snapshot_t meter_before;
@@ -395,7 +423,7 @@ static bool run_smoke_test(void)
            "Mode/Color, four monitor weightings with direct controls, reorder, "
            "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
            "Curve controls, Reference mode, Classic Cat runner, "
-           "input-voltage meter, quick app, cleanup\n",
+           "input-voltage meter controls/settings, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }

@@ -71,6 +71,10 @@ Sound Monitor의 `Settings → Weighting`은 `Flat`, `A-weighted`, `Flat(Loudnes
 `A-weighted(Loudness)`를 제공한다. 앱 화면에서는 상·하로 같은 네 항목을 바로 바꾸며,
 끝 항목에서는 더 진행하지 않는다.
 
+dB Meter 화면에서는 좌·우로 `INPUT`과 `WINDOW`를 선택하고 상·하로 선택한 값을 바꾼다.
+같은 값은 `Settings → Input/Window`에서도 설정할 수 있다. 자동 듀얼레인지 빌드는 입력
+범위를 하드웨어가 고르므로 수동 `Input` 항목을 표시하지 않는다.
+
 ## SD 카드
 
 실기 모듈은 아두이노 MicroSD 카드 소켓 모듈 `SZH-EKBZ-005`다. VCC는 `+5V`,

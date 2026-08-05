@@ -146,6 +146,10 @@ static app_slot_t s_slots[APP_COUNT];
   네 항목은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`다. Sound Monitor
   화면의 상·하는 Weighting을 이전·다음으로 바꾸며, Curve의 좌·우만 단순화 수준을
   조정한다.
+- 현재 구형 dB Meter Settings는 `Theme/Input/Window` 순서다. Input은 `LINE 2.00x`와
+  `INST 7.82x`, Window는 `LIVE/AVG 1s/AVG 3s`를 제공한다. 화면에서는 좌·우로 두
+  선택기 사이를 이동하고 상·하로 값을 바꾼다. 자동 듀얼레인지 빌드에서는 수동 Input을
+  제거해 `Theme/Window`만 표시한다.
 
 ---
 

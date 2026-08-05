@@ -84,7 +84,7 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 | Launcher/Settings | 동작 | 동작 | UI와 세부 설정을 PC에서 먼저 개선 |
 | Sound Monitor | 실오디오·합성 입력 동작 | 동작 | 공통 renderer 유지 |
 | Tuner | 실오디오·합성 입력 동작 | 동작 | 공통 DSP 유지 |
-| dB Meter | 동작 | 동작, 실전압 교정 대기 | PC UI 선행, GG는 교정값만 추가 |
+| dB Meter | 좌우 Input/Window 선택·상하 값 변경과 Settings 동작 | 동작, 실전압 교정 대기 | PC UI 선행, GG는 교정값만 추가 |
 | Gallery | PC 폴더 이미지 표시, 빈 폴더 `GG` 폴백 | SD 소프트웨어 구현, 실기 대기 | 브라우징·오류·메타데이터 개선 |
 | Bounce | 동작 | 동작 | 공통 게임 루프 유지 |
 | Metronome | 미구현 | 미구현 | PC 출력과 UI부터 구현 |
@@ -132,6 +132,8 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 - 런처와 기존 5개 앱의 화면·입력·설정 불일치를 목록화한다.
 - 데스크톱 창에서 모든 설정을 조작하고 NVS 대체 파일에 보존한다.
 - 주요 화면 preview와 smoke test를 앱별 수용 기준으로 확장한다.
+- dB Meter는 화면의 `좌우=Input/Window 선택`, `상하=값 변경`과
+  `Settings → Input/Window`가 같은 상태를 조작하는지 smoke로 검사한다.
 
 ### D1. 플랫폼 능력과 PC 오디오 출력
 

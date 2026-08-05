@@ -99,6 +99,8 @@ NVS 상태와 키 입력 없이 특정 화면을 연다.
 각 앱 Color는 `Default/Blue/Green/Yellow/Red`이며 Default는 전역 조합을 상속한다.
 런처 Settings는 `Theme/About`, 앱 홈 메뉴는 `Settings/Info`다. 앱 Settings의 Theme
 아래에 앱별 `Mode/Color`가 있고 Sound Monitor는 Theme 뒤에 Weighting을 둔다.
+dB Meter 화면은 좌·우로 `INPUT/WINDOW`를 선택하고 상·하로 값을 바꾸며, 같은 설정은
+`Settings → Input/Window`에도 있다.
 런처·테마·슬롯의 지속 상태는 현재 작업 디렉터리의 `sim_nvs.bin`에 저장된다.
 
 ## PC SD 폴더

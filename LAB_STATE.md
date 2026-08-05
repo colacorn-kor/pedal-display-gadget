@@ -16,8 +16,9 @@
   통과했다. 이후 팝업을 앱 `Settings/Info`, 런처 `Theme/About`, 앱
   `Settings → Theme → Mode/Color`로 정리하고 60-phon Loudness 표시 두 종류를 추가했다.
   후속 개발본은 Sound Monitor 상·하 직접 Weighting 전환과 표시 하한의 무음 잔여값
-  확대 방지를 추가했다. PC·호스트·ESP 자동 검증을 통과했으며 본체 화면, Core1 실시간
-  부하, 실제 오디오 입력은 아직 확인하지 않았다.
+  확대 방지를 추가했다. 이어 dB Meter를 좌우 Input/Window 선택·상하 값 변경으로 바꾸고
+  Settings에도 Input/Window를 연결했다. PC·호스트·ESP 자동 검증을 통과했으며 본체 화면,
+  Core1 실시간 부하, 실제 오디오 입력은 아직 확인하지 않았다.
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
@@ -313,6 +314,24 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   `-Werror=all` 전체 빌드를 통과했다. 1MiB 앱 파티션 여유는 각각 6%, 7%다.
 - 이번 수정은 플래시하지 않았다. 실제 무음 화면, 상·하 6키 입력과 실제 오디오의
   저레벨 Weighting 전환은 본체 실기 확인 전이다.
+
+### 2026-08-05 dB Meter 조작축·Settings 정리
+
+- dB Meter 화면 조작을 `LEFT/RIGHT=INPUT/WINDOW 선택`, `UP/DOWN=선택값 변경`으로
+  교체했다. OK로 값을 바꾸던 동작은 제거했다.
+- 현재 구형 단일 입력 빌드의 Settings는 `Theme/Input/Window`다. Input은 실제 환산
+  이득을 사용한 `LINE 2.00x/INST 7.82x`, Window는 `LIVE/AVG 1s/AVG 3s`를 표시한다.
+  화면 직접 조작과 Settings는 같은 setter와 지연 NVS 저장 경로를 사용한다.
+- 자동 듀얼레인지 빌드는 하드웨어가 입력 범위를 선택하므로 수동 Input을 노출하지 않고
+  `Theme/Window`만 표시한다. Diagnostics 화면에서 Settings로 Window를 바꿔도 생성되지
+  않은 일반 컨트롤 객체를 갱신하지 않도록 방어했다.
+- 호스트 CTest 9/9와 깨끗한 PC 시뮬레이터 빌드·dB Meter 직접 조작/Settings 상태 일치
+  smoke가 통과했다. 추적 `pedal_sim.exe`를 갱신했고 smoke 전후 사용자
+  `sim/build/sim_nvs.bin` SHA-256은
+  `0766BA4E680CBEF698728E0834333D8CC802A8820A1D62C08A5C3DE9AF0BE26D`로 같았다.
+- ESP-IDF 5.4.4 `-Werror=all` 전체 빌드는 기본 `0xf0760`,
+  `INPUT_TRS_LADDER=0` `0xed140`, `AUDIO_DUAL_RANGE=1` `0xf1360`으로 모두 통과했다.
+  이 개발본은 플래시하지 않았으며 본체 6키와 팝업 화면은 실기 확인 전이다.
 
 ## 6. PC 시뮬레이터 자동 확인
 
