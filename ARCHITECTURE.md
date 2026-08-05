@@ -35,6 +35,8 @@ Phase 1 하드웨어(디스플레이 + 튜너 + 비주얼라이저 + 기타 탭)
    무변경.** 앱 플랫폼은 현재 `screen_manager`가 있던 자리(Core0/LVGL)에 그대로 앉는다.
 5. **매니저/앱 경계** — 매니저는 **풋스위치(숏/롱) + 홈(숏=공통 팝업 / 롱=즉시 나가기)**
    만 가로채고, 나머지 5키(상·하·좌·우·확인)는 전부 활성 앱에 위임.
+6. **PC 우선 기준 구현** — 앱·UI·설정·미디어·게임은 PC 시뮬레이터에서 먼저 완성하고,
+   ESP에는 같은 공통 코드를 빌드한다. 하드웨어 차이는 플랫폼 백엔드로만 격리한다.
 
 ---
 
@@ -56,6 +58,14 @@ Core 0 (이 문서): LVGL + 앱 플랫폼  ← screen_manager 자리
 `input_task`는 물리 입력을 샘플링해 이벤트를 큐에 넣는 데까지만 책임진다. 앱 전환,
 LVGL 작업, NVS 쓰기는 `display_task`가 큐를 꺼낸 뒤 수행한다. 따라서 화면 생성이나
 플래시 쓰기가 느려져도 그 구간의 짧은 버튼·풋스위치 입력을 놓치지 않는다.
+
+### PC 기준 구현
+
+PC에서는 SDL/LVGL 화면, 키보드 입력, WASAPI loopback 또는 캡처 장치, 로컬 `GG/`
+폴더와 설정 파일이 ST7796, TRS 입력, PCM1808, MicroSD와 NVS를 대신한다. 앱 생명주기와
+상태 기계는 양쪽에서 동일하다. 향후 오디오 출력·MIDI·게임 런타임도 같은 방식으로 공통
+계약과 PC/ESP 백엔드를 나눈다. 제품 역할과 기능 이식 순서는 `PC_SIMULATOR_PRODUCT.md`를
+따른다.
 
 ---
 
@@ -110,9 +120,12 @@ struct gadget_app {
     app_input_source_t input_sources;  /* [Phase 2 예약] 0 = 기본 입력 */
     app_output_route_t output_routes;  /* [Phase 2 예약] 0 = 없음 */
     int                variant_count;  /* 변형 개수 */
-    bool               needs_codec;    /* [Phase 2 예약] 코덱 부재 시 런처 비활성 */
+    bool               needs_codec;    /* 임시: 오디오 재생 출력 부재 시 비활성 */
 };
 ```
+
+`needs_codec`는 물리 코덱 이름을 앱 계약에 노출하는 임시 필드다. PC 오디오 출력과 미래
+GG 코덱을 같은 능력으로 취급하도록 플랫폼의 `AUDIO_PLAYBACK_OUTPUT` 검사로 교체한다.
 
 레지스트리도 렌더러와 동일 패턴으로 구현됨(`gadget_app.c`):
 ```c

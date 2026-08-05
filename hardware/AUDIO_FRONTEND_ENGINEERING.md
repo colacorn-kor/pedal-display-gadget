@@ -1,7 +1,8 @@
 # 오디오 프론트엔드 설계·검증 메모
 
-> **대상:** Codex와 회로 설계 검토용. 작업대에서 현재 브레드보드를 연결할 때는
-> `ASSEMBLY.md`만 본다. 목표 회로의 핀 단위 SSOT는 `hardware/NETLIST_SPEC.md`다.
+> **대상:** Codex와 회로 설계 검토용. 현재 실물은 `hardware/AS_BUILT_WIRING.md`,
+> 다음 권장 연결은 `ASSEMBLY.md`를 본다. 목표 회로의 핀 단위 SSOT는
+> `hardware/NETLIST_SPEC.md`다.
 
 ## 1. 현재와 목표의 분리
 

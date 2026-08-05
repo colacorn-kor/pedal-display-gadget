@@ -1,8 +1,8 @@
 # CONTROLLER_DESIGN.md — 외부 6키 컨트롤러 설계 (2단 전략)
 
 > **위상:** 외부 컨트롤러의 *물리 인터페이스 계약*과 *2단 로드맵*에 대한 SSOT.
-> 넷 연결의 구체값은 `hardware/NETLIST_SPEC.md §7`, 현재 브레드보드 배선표는
-> `ASSEMBLY.md`가 담당한다.
+> 넷 연결의 구체값은 `hardware/NETLIST_SPEC.md §7`, 현재 실물 브레드보드 배선은
+> `hardware/AS_BUILT_WIRING.md`, 다음 권장 연결은 `ASSEMBLY.md`가 담당한다.
 > 이 문서는 "왜 그 값인가"와 "나중에 무엇이 바뀌고 무엇이 안 바뀌는가"를 고정한다.
 
 ---

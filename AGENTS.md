@@ -25,10 +25,12 @@
 | GG 제품 정체성·범위·GG2 경계 | `GG_PRODUCT_SPEC.md` |
 | 펌웨어 구조와 앱 계약 | `ARCHITECTURE.md` |
 | 하드웨어 넷·핀·저항 | `hardware/NETLIST_SPEC.md` |
-| 사용자가 보는 현재 브레드보드 배선표 | `ASSEMBLY.md` |
+| 사용자가 직접 관리하는 실물 배선 | `hardware/AS_BUILT_WIRING.md` |
+| Codex가 제안하는 적용 예정 배선 | `ASSEMBLY.md` |
 | 오디오 목표 회로의 측정·교정 메모 | `hardware/AUDIO_FRONTEND_ENGINEERING.md` |
 | Basic/Smart 컨트롤러 계약 | `CONTROLLER_DESIGN.md` |
 | 런처와 UI | `LAUNCHER_DESIGN.md`, `UI_DESIGN.md` |
+| PC 기준 제품과 ESP 이식 계약 | `PC_SIMULATOR_PRODUCT.md` |
 
 코드 변경이 문서화된 계약이나 실기 상태를 바꾸면 같은 작업에서 관련 SSOT와
 `LAB_STATE.md`를 갱신한다.
@@ -42,6 +44,12 @@
   Git 이력만 남기고 삭제한다. 지속 규칙을 일회용 지시서에만 남기지 않는다.
 - 변경은 목적별로 작게 유지한다. 무관한 리팩터링과 사용자 변경의 복구를 하지 않는다.
 - 커밋은 검증 후 목적별로 만들고, 사용자가 요청하지 않으면 push하지 않는다.
+- 새 앱·UI·설정·미디어·게임 기능은 특별한 하드웨어 의존 이유가 없으면 PC 시뮬레이터에서
+  먼저 완성하고 사용자 흐름을 검증한 뒤 ESP 백엔드에 연결한다.
+- 앱과 상태 기계는 공통 소스에 두고, PC/GG 차이는 `platform_*`, 저장소, 오디오 입출력,
+  MIDI와 게임 런타임 백엔드에만 둔다. 시뮬레이터 전용 앱 복제는 만들지 않는다.
+- `hardware/AS_BUILT_WIRING.md`는 제안 회로로 추측 갱신하지 않는다. 사용자가 직접
+  수정했거나 물리 변경을 명시적으로 보고한 사실만 반영한다.
 
 ## 4. 펌웨어 불변조건
 

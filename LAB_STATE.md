@@ -1,6 +1,6 @@
 # LAB_STATE.md - 현재 장치 및 실기 상태
 
-> 갱신일: 2026-08-03
+> 갱신일: 2026-08-05
 > 이 문서는 마지막 플래시와 현재 실험 상태의 SSOT다.
 
 ## 1. 기준 상태
@@ -19,8 +19,9 @@
 - Ring 100Ω / Tip 220Ω: 현재 장착됨
 - 오디오 입력 프론트엔드: 현재 TL072+SPDT 회로로 재배선 필요, 외부 9V 동작 미검증
 - 목표 자동 듀얼레인지 회로는 문서와 소프트웨어만 준비됐으며 OPA2192를 보유하지 않음
-- 현재 작업대 배선은 `ASSEMBLY.md`, 미래 회로와 교정은
-  `hardware/NETLIST_SPEC.md`와 `hardware/AUDIO_FRONTEND_ENGINEERING.md`로 분리
+- 현재 실물 배선은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 배선은 `ASSEMBLY.md`,
+  미래 회로와 교정은 `hardware/NETLIST_SPEC.md`와
+  `hardware/AUDIO_FRONTEND_ENGINEERING.md`로 분리
 
 ## 2. 마지막 실기 결과
 
@@ -514,15 +515,30 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 이번 갱신은 사용자 물리 보고와 문서 정리다. SD 기능 시험, 오디오 재배선, 외부 9V
   레일 측정, 펌웨어 빌드·플래시를 수행하지 않았다.
 
+### 2026-08-05 As-Built 분리와 PC 우선 개발 결정
+
+- 사용자가 실물 회로는 Markdown으로 직접 관리하고, Fritzing은 실물 위치·점퍼 색을 보는
+  보조 도면, KiCad는 향후 PCB 생산용 목표 회로로 사용하기로 결정했다.
+- `hardware/AS_BUILT_WIRING.md`를 실물 배선 SSOT로 만들었다. 확인된 화면·I2S·TRS·
+  풋스위치·SD 연결만 기록하고 현재 정확한 끝점을 모르는 오디오 구간은 미확인으로 남겼다.
+- `ASSEMBLY.md`는 실물 기록이 아니라 Codex가 제안하는 다음 적용 배선으로 역할을 바꿨다.
+  권장안을 실물에 반영한 사실이 확인되기 전에는 As-Built로 자동 승격하지 않는다.
+- PC 시뮬레이터를 앱·UI·설정의 기준 구현이자 GG 없이도 쓸 수 있는 독립 앱으로 개발한다.
+  PC의 오디오 loopback·로컬 폴더·향후 오디오 출력이 PCM1808·MicroSD·코덱을 대체하고,
+  앱과 상태 기계는 본체와 같은 공통 소스를 사용한다.
+- 현재 PC에서도 Music과 Retro는 카탈로그만 있고 실제 재생·실행은 없다. 다음 소프트웨어
+  순서는 기존 UI/설정 감사, 플랫폼 능력, PC 오디오 출력, Music, Metronome, Gallery UX,
+  공통 게임 순이다. 상세 계약은 `PC_SIMULATOR_PRODUCT.md`에 기록했다.
+- 이번 작업은 문서와 개발 계약 정리이며 코드·추적 EXE·본체 펌웨어를 변경하지 않았다.
+
 ## 7. 다음 작업
 
-1. `ASSEMBLY.md`의 현재 TL072 표에 맞춰 오디오 입력 구간을 재배선한다.
-2. 전원 OFF에서 Thru 연속성·전원 단락을 확인한 뒤, USB를 분리하고 외부 9V만 연결해
-   +5V/+3V3/+9V_OPAMP/VREF와 무입력 상태를 확인한다.
-3. 100mVrms 1kHz의 LINE/INST gain·clip·Thru 기준을
-   `hardware/AUDIO_FRONTEND_ENGINEERING.md`에 기록한다.
-4. 배선 완료된 SD 모듈의 `+5V`↔`+3V3` 미연결을 확인하고, USB 단독에서 FAT32 카드의
-   `GG/images`, Gallery, LCD 공유 SPI 안정성을 검증한다.
-5. 앱 파티션 확장은 별도 승인 뒤 NVS 보존·플래시 마이그레이션 절차와 함께 진행한다.
-6. OPA2192 자동 듀얼레인지는 부품 조달과 현재 회로 기준 측정 뒤 별도 하드웨어 작업으로 진행한다.
-7. 뮤트 회로가 없으므로 물리 출력 뮤트는 별도 회로 장착 전까지 검증하지 않는다.
+1. PC 시뮬레이터에서 기존 런처·5개 앱·설정의 정상·빈 상태·오류 상태를 감사하고 preview/
+   smoke 수용 기준을 확장한다.
+2. 물리 `needs_codec`를 플랫폼 오디오 출력 능력으로 일반화하고 공통 재생 API와 PC 출력
+   백엔드를 구현한다.
+3. PC에서 `GG/music` Music 앱의 WAV 재생 흐름을 완성한 뒤 Metronome·효과음으로 확장한다.
+4. 하드웨어 작업을 재개할 때는 먼저 실물 오디오 연결을 확인해
+   `hardware/AS_BUILT_WIRING.md`의 미확인 행을 갱신한다.
+5. `ASSEMBLY.md` 권장 TL072 배선을 반영한 뒤 무전원·외부 9V 검사와 기준 측정을 수행한다.
+6. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.

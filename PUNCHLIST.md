@@ -6,43 +6,55 @@
 
 - 없음
 
-## P1 - 다음 실측
+## P1 - PC 기준 제품
 
-1. **현재 TL072 오디오 입력 재배선과 기준 측정**
-   - `ASSEMBLY.md`의 현재 연결표대로 TL072+SPDT 분석 탭 재배선
+1. **D0 기존 UI·설정 기준선 감사**
+   - Launcher, Sound Monitor, Gallery, Tuner, Bounce, dB Meter의 모든 화면·빈 상태·오류 상태 목록화
+   - 공통 Color/Mode와 앱별 세부 설정의 실제 값·표시·NVS 대체 파일 복원 일치 확인
+   - 앱별 preview와 smoke 수용 기준 확장
+2. **D1 플랫폼 능력과 PC 오디오 출력 기반**
+   - `needs_codec` 하드코딩을 `AUDIO_PLAYBACK_OUTPUT` 플랫폼 능력 검사로 일반화
+   - 공통 재생 transport·믹서 API와 PC SDL 출력 백엔드 구현
+   - 코덱 없는 ESP는 명시적 unavailable 상태로 같은 공통 앱 소스를 계속 빌드
+3. **D2 Music 앱**
+   - `GG/music` 브라우저, WAV 재생/일시정지, 이전/다음, 진행률, 볼륨, 오류 상태
+   - MP3/FLAC/OGG는 메모리·라이선스·ESP 이식성 확인 뒤 공통 디코더 경계에 추가
+4. **D3 Metronome과 앱 효과음**
+   - BPM·박자·subdivision·accent UI와 click 출력
+   - Bounce 등 공통 앱 효과음을 같은 믹서에 연결
+5. **D4 Gallery 미디어 UX**
+   - 빈 폴더·손상 파일·긴 파일명·로딩·정렬·새로고침 상태 완성
+6. **D5 게임 실행**
+   - 공통 게임 루프와 입력/오디오 출력 API 정리
+   - GG에서 가능한 Retro-Go급 코어만 PC와 동일 어댑터로 실제 실행
+   - GBA/NDS는 GG2 범위로 유지
+7. **Setlist와 MIDI Monitor**
+   - PC MIDI 입출력 백엔드와 앱 UI를 먼저 구현하고 ESP UART/BLE에 이식
+
+## P2 - PC 앱 완성도와 지속 검증
+
+8. 시스템 오디오·마이크·미디어 폴더·출력 장치 선택을 앱 UI에서도 제공
+9. 창 배율·전체화면·게임패드 입력과 배포 가능한 실행 패키지 정리
+10. 모든 새 공통 기능에 preview/smoke/호스트 테스트와 ESP 기본·래더 비활성 빌드 유지
+
+## P3 - 병행 하드웨어
+
+11. **실물 As-Built 오디오 기록과 TL072 재배선**
+   - 현재 오디오 끝점을 직접 확인해 `hardware/AS_BUILT_WIRING.md`의 미확인 행 갱신
+   - `ASSEMBLY.md` 권장안 반영 뒤 As-Built를 다시 현재 상태로 갱신
    - 전원 OFF에서 Thru 연속성·레일 단락 확인
    - USB 분리·외부 9V 단독으로 +5V/+3V3/+9V_OPAMP/VREF와 무입력 noise 확인
-   - 100mVrms 1kHz의 LINE/INST 표시, clip 근접 입력, 전원 ON/OFF Thru 비교
-   - 기록표와 교정 메모는 `hardware/AUDIO_FRONTEND_ENGINEERING.md`
-2. **SD 실기 브링업**
-   - 완료된 `SZH-EKBZ-005` 배선과 `+5V`↔`+3V3` 미연결을 무전원 상태에서 검사
-   - FAT32 카드의 `GG/images`에 JPG/PNG/BMP/GIF를 넣고 mount·좌우 탐색 확인
-   - USB 단독으로 무카드/카드 부팅, Gallery 전후 LCD 안정성, 입력 응답과 전원 OFF
-     카드 교체 동작 기록
-
-## P2 - 하드웨어 및 제품 튜닝
-
-3. KiCad `.pretty` 파일 4개 배치와 추적 확인(`TAEYUN_TODO.md` 참조)
-4. 커스텀 풋프린트 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
-5. 튜너 5분 무리셋 및 I2S overflow 로그 실기 검증
-6. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
-7. 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
-8. 실오디오 연결 후 온셋 임계 1.8배·불응 80ms 튜닝
-9. 외부 9V와 실제 기타 입력에서 Curve/Reference 주파수 응답·피크 감쇠 실기 튜닝
-10. `AUDIO_DUAL_RANGE=1` L/R 자동 선택의 목표 회로 실기 검증
-   - 자동 선택, Range Diagnostics, 호스트 테스트와 분리 빌드 소프트웨어 완료
-   - 두 채널 overlap 일치, 실제 전환 연속성, clip 상태와 I2S overflow는 하드웨어 뒤 확인
-11. 자동 듀얼레인지 프론트엔드 부품 조달과 별도 실장
-   - OPA2192를 현재 보유하지 않으므로 현 프로토타입 재배선과 기준 측정 뒤 별도 착수
-   - OPA2192 dual ×2, SENSITIVE 보호 clamp, HOT 보상 divider 적용
-   - 고임피던스/pF 부분은 솔더리스 브레드보드가 아닌 세척한 납땜 기판 사용
-   - HOT 시작값 `10M||3.3pF : 1.5M||15pF`, sweep 뒤 C0G 조정
-12. 범위별 1kHz gain 및 20Hz~20kHz sweep 교정, GG Input Full Scale 확정
-13. GG Analog Meter USB HID 보고서·바늘 ballistics·전력 예산 설계
-14. 16MB 플래시의 앱 파티션 확장 승인·마이그레이션 계획
-   - 이미지 디코더 포함 기본 이미지가 1MiB 파티션의 7%만 남김
-   - 파티션 변경·기존 NVS 보존·일반 플래시 호환을 별도 승인 후 진행
-15. Retro-Go 포팅 범위와 GPLv2 배포 라이선스 결정
+   - 100mVrms 1kHz LINE/INST, clip, 전원 ON/OFF Thru 기준 기록
+12. **SD 실기 브링업**
+   - 완료된 `SZH-EKBZ-005` 배선과 `+5V`↔`+3V3` 미연결을 무전원 검사
+   - FAT32 `GG/images` mount·탐색, LCD 공유 SPI, 입력 응답과 전원 OFF 카드 교체 확인
+13. KiCad 커스텀 풋프린트 배치와 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
+14. 튜너 5분 무리셋·I2S overflow와 실제 오디오 onset/Curve/Reference 실기 튜닝
+15. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
+16. 미래 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
+17. OPA2192 자동 듀얼레인지 부품 조달·별도 실장·1kHz/sweep 교정
+18. GG Analog Meter USB HID·바늘 ballistics·전력 예산 설계
+19. 16MB 앱 파티션 확장과 NVS 보존·플래시 마이그레이션 계획
 
 ## 해결 및 관찰
 

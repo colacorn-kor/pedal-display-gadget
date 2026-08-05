@@ -14,11 +14,13 @@ SD Gallery, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트�
 - 컨트롤러: TRS 6키 저항 래더 Basic 구현, Smart 컨트롤러는 Phase 2
 - SD 카드: `SZH-EKBZ-005` 배선 완료, Gallery 실기 확인 대기
 - 미장착 하드웨어: 뮤트 회로
-- PC 시뮬레이터: SDL2 창, 키보드 입력, 실오디오 캡처 지원
+- PC 시뮬레이터: SDL2 창, 키보드 입력, Windows 시스템 오디오·캡처 입력, PC 폴더 저장소
+- 개발 방향: 공통 앱·UI·설정을 PC에서 먼저 완성한 뒤 ESP 플랫폼 백엔드에 이식
 
 가장 최근 장치 상태와 다음 실기 절차는 [`LAB_STATE.md`](LAB_STATE.md), 미결 작업은
-[`PUNCHLIST.md`](PUNCHLIST.md)를 확인한다. 에이전트 작업 규칙은 [`AGENTS.md`](AGENTS.md)에
-있다.
+[`PUNCHLIST.md`](PUNCHLIST.md), PC 기준 제품 계약은
+[`PC_SIMULATOR_PRODUCT.md`](PC_SIMULATOR_PRODUCT.md)를 확인한다. 에이전트 작업 규칙은
+[`AGENTS.md`](AGENTS.md)에 있다.
 
 ## 아키텍처
 
@@ -97,8 +99,9 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 ```
 
 최근접 판정은 동시 입력을 다른 키로 오인할 수 있어 사용하지 않는다. Ring은 +3V3 고정이며
-5V를 연결하면 안 된다. 목표 회로의 최종 권위는 `hardware/NETLIST_SPEC.md`, 현재
-브레드보드 연결표는 `ASSEMBLY.md`, Smart 확장 계약은 `CONTROLLER_DESIGN.md`다.
+5V를 연결하면 안 된다. 현재 실물은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 배선은
+`ASSEMBLY.md`, 목표 회로는 `hardware/NETLIST_SPEC.md`, Smart 확장 계약은
+`CONTROLLER_DESIGN.md`가 권위다.
 
 ## 주요 파일
 
@@ -124,6 +127,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
 | `sim/` | SDL2 PC 시뮬레이터, `platform_sim`, PC용 FFT 실행 백엔드 |
+| `PC_SIMULATOR_PRODUCT.md` | PC 기준 제품과 ESP 이식 계약 |
 | `tests/` | MIDI, 튜너, 오디오 레벨 단위, 공통 FFT 매핑 기준 호스트 테스트 |
 
 ## 펌웨어 빌드

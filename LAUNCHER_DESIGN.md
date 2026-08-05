@@ -41,7 +41,7 @@ typedef struct {
     app_input_source_t input_sources;
     app_output_route_t output_routes;
     int variant_count;
-    bool needs_codec;               /* true면 코덱 부재 시 런처에서 비활성 표시 */
+    bool needs_codec;               /* 임시: 오디오 재생 출력 부재 시 비활성 */
 } gadget_app_t;
 ```
 
@@ -106,7 +106,8 @@ static app_slot_t s_slots[APP_COUNT];
   겹친다. 메뉴 항목은 강조색 글자와 좌상단 대각 화살표를 사용한다.
 - **확인(OK)**: 앱 타일 = 실행 / `Reorder` = 순서변경 / `Settings` = 설정 팝업.
 - **홈**: 뒤로(런처가 최상위면 무동작). **풋스위치**: 라이브(직전 앱)로 복귀.
-- `needs_codec=true`인데 코덱 없음 → 타일 흐리게(비활성), 진입 시 안내.
+- 오디오 재생이 필요한 앱인데 플랫폼에 `AUDIO_PLAYBACK_OUTPUT` 능력이 없음 → 타일을
+  흐리게 하고 진입 시 안내한다. 현재 `needs_codec` 필드는 이 능력 검사로 교체할 임시 이름이다.
 
 ### 진입/복귀 규칙
 - 부팅 시: 마지막 활성 앱 or 런처(설정에 따름).

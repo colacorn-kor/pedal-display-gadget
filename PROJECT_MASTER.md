@@ -12,18 +12,20 @@
 | `GG_PRODUCT_SPEC.md` | GG 제품 정체성·범위·GG2 경계·외부 확장 |
 | `ARCHITECTURE.md` | 펌웨어 인앱 구조(코어분리·앱모델·입력규약) |
 | `hardware/NETLIST_SPEC.md` | 회로 넷 연결(KiCad 대조 기준) |
-| `ASSEMBLY.md` | 사용자가 작업대에서 보는 현재 브레드보드 배선표 |
+| `hardware/AS_BUILT_WIRING.md` | 태윤이 관리하는 현재 실물 브레드보드 배선 |
+| `ASSEMBLY.md` | Codex가 제안하는 다음 적용 배선 |
 | `hardware/AUDIO_FRONTEND_ENGINEERING.md` | 오디오 목표 회로의 조달 조건·측정·교정 메모 |
 | `CONTROLLER_DESIGN.md` | Basic 저항 래더·Smart MCU 6키 컨트롤러 계약 |
 | `LAUNCHER_DESIGN.md` | 런처·슬롯·영속성·열린플랫폼 |
 | `UI_DESIGN.md` | 디자인시스템·테마토큰·.ggt 포맷 |
+| `PC_SIMULATOR_PRODUCT.md` | PC 기준 제품·플랫폼 치환·ESP 이식 순서 |
 | `CLAUDE_HANDOFF.md` | 2026-07-26 인수인계 스냅샷(현재 상태의 SSOT 아님) |
 | **본 문서** | 로드맵·워크플로우·확장 트랙 |
 
 ## 1. 통합 작업 흐름
-1) 태윤과 Codex가 요구사항·실기 조건 확정 → 2) Codex가 실제 코드·문서를 감사하고 계획 →
-3) 구현·빌드·테스트·diff 리뷰 → 4) 목적별 커밋 → 5) USB 플래시·로그 수집 →
-6) 태윤의 화면·버튼·소리 관찰과 로그를 함께 판정 → 7) `LAB_STATE.md`와 SSOT 갱신.
+1) 태윤과 Codex가 요구사항 확정 → 2) 공통 앱/UI를 PC 시뮬레이터에서 구현·검증 →
+3) ESP 플랫폼 백엔드를 연결하고 전체 빌드 → 4) 목적별 커밋 → 5) 필요한 경우에만 USB
+플래시·로그 수집 → 6) 태윤의 화면·버튼·소리 관찰과 로그를 판정 → 7) SSOT 갱신.
 - 복잡하거나 위험한 변경만 `CODEX_INSTRUCTION_*.md`로 실행 계약을 남긴다.
 - 일회용 지시서는 적용·검증 후 삭제하고 지속 규칙은 `AGENTS.md`에 반영한다.
 - 하드웨어 없이 끝낼 수 없는 항목은 자동 검증 통과와 실기 검증 대기를 구분해서 보고한다.
@@ -38,8 +40,9 @@
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
        · Windows 기본 출력 WASAPI 루프백 입력
 [완료] SDSPI/FATFS 기반 · SD Gallery · PC SD 폴더 · music/ROM 공통 카탈로그
-[현재] SD 모듈 배선 완료·기능 확인 대기 · TL072 분석 탭 재배선 대기
-[병행 HW] 자동 듀얼레인지 분석 탭 · 교정 지그 · KiCad 풋프린트/스키매틱
+[현재 SW] PC 기준 제품 D0/D1: 기존 UI·설정 감사 → 플랫폼 능력·PC 오디오 출력
+[다음 SW] Music → Metronome/효과음 → Gallery UX → 공통 게임/Retro-Go급 실행
+[병행 HW] SD 기능 확인 · TL072 분석 탭 재배선 · 자동 듀얼레인지 · KiCad 목표 회로
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
        → S6 스마트 컨트롤러 → S7 GG Analog Meter
 ```
@@ -58,15 +61,25 @@
 - 실제 모듈은 `SZH-EKBZ-005`이며 VCC는 `+5V`(4.5~5.5V), SPI 신호는 온보드
   레벨 변환을 거치는 3.3V 로직이다.
 - `/GG/images`, `/GG/music`, `/GG/roms`를 공통 카탈로그로 읽는다. Gallery의
-  JPG/PNG/BMP/GIF/BIN 표시는 구현됐고 Music 재생은 S2 코덱 뒤에 연결한다.
+  JPG/PNG/BMP/GIF/BIN 표시는 구현됐다. Music 재생은 PC 출력에서 먼저 구현하고 GG에서는
+  S2 코덱 백엔드에 연결한다.
 - Retro는 공식 [Retro-Go](https://github.com/ducalex/retro-go) 코어의 포팅·GPLv2
   라이선스 결정·확장 파티션 승인 뒤 진행한다.
   현재는 ROM 파일 판별과 정렬 기반만 있으며 게임 실행을 가장하지 않는다.
 
+### S1.6. PC 기준 제품 (현재)
+- PC 시뮬레이터는 테스트 창이 아니라 앱·런처·설정을 먼저 완성하는 기준 구현이며,
+  GG 없이도 사용할 수 있는 독립 데스크톱 앱으로 개발한다.
+- 공통 앱은 PC에서 먼저 완성하고, ESP에서는 화면·입력·오디오·저장소 백엔드만 바꾼다.
+- PC의 WASAPI loopback/캡처 장치는 PCM1808 분석 입력을, 로컬 `GG/` 폴더는 MicroSD를
+  대신한다. 다음 기반은 PC 오디오 출력이며 미래 GG 코덱과 같은 재생 API를 사용한다.
+- 상세 기능 격차와 D0~D6 순서는 `PC_SIMULATOR_PRODUCT.md`가 권위다.
+
 ### S2. 오디오 출력 (3.5mm 스테레오 = 헤드폰/AUX 활성화)
-- 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(현재 배선표에서 비움).
+- 공통 재생 transport·믹서와 Music/Metronome UI는 PC 오디오 출력에서 먼저 완성한다.
+- 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(권장 배선표에서 비움).
 - 소프트웨어: `audio_out` API(앱사운드 믹서, Core1 생산) + 기존 패스스루는 아날로그 그대로.
-- 앱 계약 확장: `needs_codec` 활성화(런처가 이미 비활성표시 지원 설계).
+- 앱 계약 확장: `needs_codec` 임시 판정을 플랫폼 오디오 출력 능력으로 일반화한다.
 - **HW(태윤)**: 코덱모듈 선정 필요 — 출력만이면 PCM5102A(무I2C·간단), 입출력 통합이면 ES8388.
   선정되면 NETLIST_SPEC 확장 → 브레드보드.
 - 앱 소리·음악·메트로놈은 헤드폰 경로에만 섞고, 하드와이어 기타 Thru에는 섞지 않는다.
@@ -98,7 +111,8 @@
 - 미터는 로컬 DAC/PWM과 바늘 드라이버를 가지며 오디오 신호와 Thru에는 연결하지 않는다.
 
 ## 4. 하드웨어 태윤 TODO (소프트웨어와 비동기)
-- 현재 `ASSEMBLY.md`는 조립 절차가 아니라 실제 연결 상태를 맞추는 작업대용 배선표다.
+- 현재 실물은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 연결은 `ASSEMBLY.md`가 맡는다.
+- Fritzing 보조 도면은 `hardware/as-built/GG_PROTOTYPE.fzz`에 둔다.
 - SD 모듈 배선은 완료됐고 기능 확인이 남았다. 오디오 입력 구간은 TL072 기준 재배선이 필요하다.
 - [ ] 코덱 모듈 선정(PCM5102A vs ES8388) — S2 착수 조건
 - [ ] 현재 TL072 LINE/INST 프로토타입 재배선과 외부 9V 기준 측정

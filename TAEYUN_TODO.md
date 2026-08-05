@@ -5,11 +5,14 @@
 
 ## 지금 할 일
 
-- `ASSEMBLY.md` 7절 표에 맞춰 오디오 입력의 TL072+SPDT 구간을 재배선한다.
+- 먼저 `hardware/AS_BUILT_WIRING.md` 7절의 미확인 오디오 연결을 실물대로 채운다.
+- 그다음 `ASSEMBLY.md` 7절 권장안에 맞춰 오디오 입력의 TL072+SPDT 구간을 재배선하고,
+  완료된 상태를 다시 As-Built 표에 반영한다.
 - 재배선이 끝나면 전원을 넣지 말고 Codex에 알린다. Codex가 무전원 대조와 다음 측정
   순서를 이어서 안내한다.
 - SD 카드 기능 시험을 할 때는 FAT32 카드의 `GG/images`에 480x320 이하 테스트 이미지
   하나를 넣어 준비한다. SD 모듈 배선 자체는 완료됐다.
+- Fritzing 보조 도면은 `hardware/as-built/GG_PROTOTYPE.fzz`로 저장한다.
 
 ## 나중에 할 수 있는 일
 

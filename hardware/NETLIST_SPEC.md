@@ -4,7 +4,8 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 이 문서와 대조(diff)한다. 형식: `NET_NAME: 끝점1, 끝점2, …` (부품.핀 표기).
 
 > **리비전 상태:** 아래 권위 넷은 GG 목표인 **무스위치 자동 듀얼레인지** 회로다. 현재
-> 브레드보드의 연결 기준은 `ASSEMBLY.md`, 실제 상태는 `LAB_STATE.md`에 기록한다.
+> 실물 브레드보드의 연결은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 연결은
+> `ASSEMBLY.md`, 장치 상태는 `LAB_STATE.md`에 기록한다.
 > 2026-08-03 현재 오디오 구간은 TL072+SPDT로 재배선해야 하며 사용자는 OPA2192를
 > 보유하지 않는다. 목표 회로의 조달 조건·측정·교정은
 > `hardware/AUDIO_FRONTEND_ENGINEERING.md`에 분리했으며, 그 착수 조건을 충족하기 전에는
