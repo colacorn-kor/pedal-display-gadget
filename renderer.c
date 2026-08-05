@@ -2,6 +2,7 @@
  *  renderer.c  —  렌더러 레지스트리 + 내장 테마
  * ========================================================================== */
 #include "renderer.h"
+#include "esp_timer.h"
 #include <string.h>
 
 #define MAX_R 8
@@ -9,6 +10,8 @@ static const renderer_t *s_list[MAX_R];
 static int               s_n = 0;
 static const renderer_t *s_active = 0;
 static int               s_initialized = 0;
+static renderer_perf_stats_t s_perf;
+static int s_redraw_noted;
 
 void renderer_register(const renderer_t *r){
     if(!r||!r->name||s_n>=MAX_R) return;
@@ -26,10 +29,37 @@ void renderer_select(int idx, lv_obj_t *parent, const viz_theme_t *theme){
     if(!next||!parent||!theme) return;
     if(s_active && s_active->destroy) s_active->destroy();
     s_active = next;
+    renderer_perf_reset();
     if(s_active && s_active->create) s_active->create(parent, theme);
 }
-void renderer_render(const viz_frame_t *f){ if(s_active && s_active->update) s_active->update(f); }
+void renderer_render(const viz_frame_t *f){
+    if(!s_active || !s_active->update) return;
+    int64_t started = esp_timer_get_time();
+    s_redraw_noted = 0;
+    s_active->update(f);
+    int64_t elapsed = esp_timer_get_time() - started;
+    uint32_t elapsed_us = elapsed > 0 ? (uint32_t)elapsed : 0;
+    s_perf.update_calls++;
+    s_perf.update_us_total += elapsed_us;
+    if(elapsed_us > s_perf.update_us_max) s_perf.update_us_max = elapsed_us;
+    if(s_redraw_noted){
+        s_perf.redraws++;
+        s_perf.redraw_us_total += elapsed_us;
+    }
+}
 void renderer_teardown(void){ if(s_active && s_active->destroy) s_active->destroy(); s_active=0; }
+
+void renderer_perf_reset(void){
+    memset(&s_perf, 0, sizeof(s_perf));
+    s_perf.name = s_active ? s_active->name : 0;
+    s_redraw_noted = 0;
+}
+
+void renderer_perf_get(renderer_perf_stats_t *out){
+    if(out) *out = s_perf;
+}
+
+void renderer_perf_note_redraw(void){ s_redraw_noted = 1; }
 
 /* ── 내장 테마 (로봇/귀여움 = 팔레트일 뿐) ───────────────────────────────── */
 static const viz_theme_t THEMES[] = {

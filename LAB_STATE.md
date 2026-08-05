@@ -673,16 +673,37 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   다음 일상 빌드·플래시 전에 공식 환경을 복구해야 한다.
 - 이번 작업에서는 본체 플래시와 실기 검증을 수행하지 않았다.
 
+### 2026-08-06 12-Band/Circular 최적화 개발본
+
+- renderer 공통 디스패치에 호출·redraw 횟수와 평균·최대 실행 시간을 누적하는 계측을
+  추가하고, 시뮬레이터에 합성 sweep과 HOME 팝업 응답을 함께 재는
+  `--renderer-benchmark`를 추가했다.
+- 12-Band는 프레임마다 반복하던 밴드 경계 로그 계산과 색 혼합을 캐시하고, 막대 opacity를
+  32단계로 양자화해 LVGL 스타일 갱신 비용을 줄였다.
+- Circular는 72방향 값을 37개 좌우 공유점으로 줄이고 sample 보간 위치를 캐시했다.
+  굵은 선을 픽셀 원 stamp로 그리던 경로는 평행 Bresenham 선으로 교체했으며, 직전·현재
+  반경의 합집합만 지우고 무효화한다. 오른쪽 픽셀을 왼쪽에 복제해 색과 형상을 완전히
+  대칭으로 만들었고 위쪽은 20kHz, 아래쪽은 20Hz다.
+- 최적화 전 PC 기준 12-Band/Circular renderer 평균은 약 166/195us였고, 깨끗한 최종
+  빌드 계측은 약 164/111us였다. 12-Band redraw는 23.3Hz로 유지됐고 Circular는
+  15.5Hz였다. HOME 열기·닫기는 3~7ms, Circular 좌우 픽셀 불일치는 0이었다.
+  자동 수용선은 10/8Hz, 최대 50ms, HOME 120ms다.
+- 깨끗한 PC Debug 빌드의 benchmark와 smoke, 호스트 CTest 9/9가 통과했다. smoke 전후
+  추적 `sim_nvs.bin` SHA-256은 `0766BA...E26D`로 같았다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 `-Werror=all` 빌드가 통과했다.
+  이미지는 각각 `0xf0ac0`(1MiB 앱 파티션 6% 여유), `0xed4c0`(7% 여유)다. 임시 Python
+  3.12 환경을 사용했고 `ESP_ROM_ELF_DIR` 부재로 gdbinit 생성 경고만 남았다.
+- 추적 `pedal_sim.exe`를 같은 소스로 갱신했다. 본체 플래시와 실기 화면 확인은 수행하지
+  않았다.
+
 ## 7. 다음 작업
 
-1. Sound Monitor의 12-Band·Circular 프레임 시간과 입력 응답을 같은 방식으로 계측하고,
-   renderer 공통 경로에서 남은 병목을 줄인다.
-2. 물리 `needs_codec`를 플랫폼 오디오 출력 능력으로 일반화하고 공통 재생 API와 PC 출력
+1. 물리 `needs_codec`를 플랫폼 오디오 출력 능력으로 일반화하고 공통 재생 API와 PC 출력
    백엔드를 구현한다.
-3. PC에서 Music의 내장 로비 음악과 `GG/music` WAV 재생, Game의 `No Game` 내장 점프 게임
+2. PC에서 Music의 내장 로비 음악과 `GG/music` WAV 재생, Game의 `No Game` 내장 점프 게임
    진입 흐름을 순서대로 구현한다.
-4. ESP-IDF v5.4.4 공식 Python 환경을 복구해 일반 `idf.py` 빌드·플래시 경로를 정상화한다.
-5. 하드웨어 작업을 재개할 때는 먼저 실물 오디오 연결을 확인해
+3. ESP-IDF v5.4.4 공식 Python 환경을 복구해 일반 `idf.py` 빌드·플래시 경로를 정상화한다.
+4. 하드웨어 작업을 재개할 때는 먼저 실물 오디오 연결을 확인해
    `hardware/AS_BUILT_WIRING.md`의 미확인 행을 갱신한다.
-6. `ASSEMBLY.md` 권장 TL072 배선을 반영한 뒤 무전원·외부 9V 검사와 기준 측정을 수행한다.
-7. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.
+5. `ASSEMBLY.md` 권장 TL072 배선을 반영한 뒤 무전원·외부 9V 검사와 기준 측정을 수행한다.
+6. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.

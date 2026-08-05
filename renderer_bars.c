@@ -19,6 +19,7 @@
 #define PW (SCR_W - LEFT - RIGHT)
 #define PH (SCR_H - TOP - BOT)
 #define BAND_COUNT 12
+#define COLOR_STEP_COUNT 32
 
 typedef struct {
     float center_hz;
@@ -56,6 +57,10 @@ static lv_obj_t *s_bar[BAND_COUNT];
 static lv_obj_t *s_peak[BAND_COUNT];
 static viz_theme_t s_theme;
 static float s_band_edges[BAND_COUNT + 1];
+static int s_band_begin[BAND_COUNT];
+static int s_band_end[BAND_COUNT];
+static int s_band_index_count;
+static uint32_t s_band_colors[BAND_COUNT][COLOR_STEP_COUNT];
 static int s_previous_height[BAND_COUNT];
 static int s_previous_peak_y[BAND_COUNT];
 static uint32_t s_previous_color[BAND_COUNT];
@@ -126,17 +131,26 @@ static void calculate_band_edges(void)
     s_band_edges[BAND_COUNT] = VIZ_FREQ_HI_HZ;
 }
 
+static void calculate_band_colors(void)
+{
+    for (int band = 0; band < BAND_COUNT; band++) {
+        const uint32_t base = s_theme.accent == 0x22D3EE
+            ? s_theme.accent : MULTI_COLORS[band];
+        for (int step = 0; step < COLOR_STEP_COUNT; step++) {
+            const uint8_t opacity = (uint8_t)(120U +
+                (unsigned)step * 135U / (COLOR_STEP_COUNT - 1U));
+            s_band_colors[band][step] =
+                mix_hex(s_theme.bg, base, opacity);
+        }
+    }
+}
+
 static uint32_t band_color(int band, float value)
 {
-    uint32_t base;
-    if (s_theme.accent == 0x22D3EE) {
-        base = s_theme.accent;
-    } else {
-        base = MULTI_COLORS[band];
-    }
-
-    uint8_t opacity = (uint8_t)(120.0f + value * 135.0f);
-    return mix_hex(s_theme.bg, base, opacity);
+    int step = (int)(value * (COLOR_STEP_COUNT - 1) + 0.5f);
+    if (step < 0) step = 0;
+    if (step >= COLOR_STEP_COUNT) step = COLOR_STEP_COUNT - 1;
+    return s_band_colors[band][step];
 }
 
 static void create_grid_and_axes(void)
@@ -183,6 +197,8 @@ static void bars_create(lv_obj_t *parent, const viz_theme_t *theme)
     s_slot = (float)PW / BAND_COUNT;
     s_bar_width = (int)(s_slot * 0.70f + 0.5f);
     calculate_band_edges();
+    calculate_band_colors();
+    s_band_index_count = 0;
 
     s_root = lv_obj_create(parent);
     lv_obj_set_size(s_root, SCR_W, SCR_H);
@@ -211,13 +227,25 @@ static void bars_create(lv_obj_t *parent, const viz_theme_t *theme)
     }
 }
 
+static void prepare_band_indices(int count)
+{
+    if (count == s_band_index_count) return;
+    for (int band = 0; band < BAND_COUNT; band++) {
+        int begin = frequency_to_index(s_band_edges[band], count);
+        int end = frequency_to_index(s_band_edges[band + 1], count);
+        if (end <= begin) end = begin + 1;
+        if (end > count) end = count;
+        s_band_begin[band] = begin;
+        s_band_end[band] = end;
+    }
+    s_band_index_count = count;
+}
+
 static void aggregate_band(const viz_frame_t *frame, int band,
                            float *value, float *peak)
 {
-    int begin = frequency_to_index(s_band_edges[band], frame->n);
-    int end = frequency_to_index(s_band_edges[band + 1], frame->n);
-    if (end <= begin) end = begin + 1;
-    if (end > frame->n) end = frame->n;
+    const int begin = s_band_begin[band];
+    const int end = s_band_end[band];
 
     *value = 0.0f;
     *peak = 0.0f;
@@ -238,6 +266,9 @@ static void bars_update(const viz_frame_t *frame)
 {
     if (!s_root || !frame || !frame->bars || frame->n <= 0) return;
 
+    prepare_band_indices(frame->n);
+    bool redrawn = false;
+
     for (int band = 0; band < BAND_COUNT; band++) {
         float value;
         float peak;
@@ -249,12 +280,14 @@ static void bars_update(const viz_frame_t *frame)
             lv_obj_set_size(s_bar[band], s_bar_width, height);
             lv_obj_set_y(s_bar[band], PY + PH - height);
             s_previous_height[band] = height;
+            redrawn = true;
         }
 
         uint32_t color = band_color(band, value);
         if (color != s_previous_color[band]) {
             lv_obj_set_style_bg_color(s_bar[band], lv_color_hex(color), 0);
             s_previous_color[band] = color;
+            redrawn = true;
         }
 
         if (peak > 0.001f) {
@@ -262,16 +295,20 @@ static void bars_update(const viz_frame_t *frame)
             if (peak_y != s_previous_peak_y[band]) {
                 lv_obj_set_y(s_peak[band], peak_y);
                 s_previous_peak_y[band] = peak_y;
+                redrawn = true;
             }
             if (s_previous_peak_hidden[band]) {
                 lv_obj_remove_flag(s_peak[band], LV_OBJ_FLAG_HIDDEN);
                 s_previous_peak_hidden[band] = false;
+                redrawn = true;
             }
         } else if (!s_previous_peak_hidden[band]) {
             lv_obj_add_flag(s_peak[band], LV_OBJ_FLAG_HIDDEN);
             s_previous_peak_hidden[band] = true;
+            redrawn = true;
         }
     }
+    if (redrawn) renderer_perf_note_redraw();
 }
 
 static void bars_destroy(void)
@@ -288,6 +325,7 @@ static void bars_destroy(void)
         s_previous_color[band] = UINT32_MAX;
         s_previous_peak_hidden[band] = true;
     }
+    s_band_index_count = 0;
 }
 
 const renderer_t RENDERER_BARS = {

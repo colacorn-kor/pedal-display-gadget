@@ -12,30 +12,167 @@
 #include "gadget_app.h"
 #include "platform.h"
 #include "platform_sim.h"
+#include "renderer.h"
+#include "sim_audio.h"
 #include "theme.h"
 #include "tuner.h"
 
 #define SMOKE_APP_SCREEN_BASE 1
+#define RENDER_BENCH_WARMUP_MS 350U
+#define RENDER_BENCH_DURATION_MS 1800U
+#define RENDER_BENCH_RESPONSE_LIMIT_MS 120.0
+
+static bool smoke_expect_app(const char *id);
+
+static bool run_one_frame(void)
+{
+    ui_event_t ev;
+    while (plat_input_poll(&ev)) {
+        sm_on_event(ev);
+    }
+    sm_render();
+
+    uint32_t wait_ms = lv_timer_handler();
+    if (wait_ms == LV_NO_TIMER_READY || wait_ms > 8) wait_ms = 8;
+    if (wait_ms == 0) wait_ms = 1;
+    SDL_Delay(wait_ms);
+    return !plat_sim_should_quit();
+}
 
 static bool run_frames_for(uint32_t duration_ms)
 {
     const uint32_t start = SDL_GetTicks();
 
     do {
-        ui_event_t ev;
-        while (plat_input_poll(&ev)) {
-            sm_on_event(ev);
-        }
-        sm_render();
-
-        uint32_t wait_ms = lv_timer_handler();
-        if (wait_ms == LV_NO_TIMER_READY || wait_ms > 8) wait_ms = 8;
-        if (wait_ms == 0) wait_ms = 1;
-        SDL_Delay(wait_ms);
+        if (!run_one_frame()) return false;
     } while (!plat_sim_should_quit() &&
              SDL_GetTicks() - start < duration_ms);
 
     return !plat_sim_should_quit();
+}
+
+static bool run_renderer_benchmark_frames(uint32_t duration_ms)
+{
+    const uint32_t start = SDL_GetTicks();
+    do {
+        const uint32_t phase_ms = (SDL_GetTicks() - start) % 800U;
+        const float phase = (float)phase_ms / 800.0f;
+        const float triangle = phase < 0.5f
+            ? phase * 2.0f : (1.0f - phase) * 2.0f;
+        sim_audio_set_mouse_x(triangle * 479.0f);
+        if (!run_one_frame()) return false;
+    } while (SDL_GetTicks() - start < duration_ms);
+    return true;
+}
+
+static double performance_elapsed_ms(uint64_t start)
+{
+    return (double)(SDL_GetPerformanceCounter() - start) * 1000.0 /
+           (double)SDL_GetPerformanceFrequency();
+}
+
+static bool wait_for_popup_state(bool expected, double *elapsed_ms)
+{
+    const uint64_t start = SDL_GetPerformanceCounter();
+    while (sm_debug_popup_open() != expected &&
+           performance_elapsed_ms(start) <
+               RENDER_BENCH_RESPONSE_LIMIT_MS) {
+        if (!run_one_frame()) return false;
+    }
+    if (elapsed_ms) *elapsed_ms = performance_elapsed_ms(start);
+    return sm_debug_popup_open() == expected;
+}
+
+static bool benchmark_renderer_mode(const gadget_app_t *monitor,
+                                    int mode, const char *name,
+                                    double minimum_redraw_hz)
+{
+    monitor->mode_set(mode);
+    app_slots_set_mode_runtime(monitor, (uint8_t)mode);
+    if (!run_renderer_benchmark_frames(RENDER_BENCH_WARMUP_MS)) return false;
+
+    renderer_perf_reset();
+    const uint64_t wall_start = SDL_GetPerformanceCounter();
+    if (!run_renderer_benchmark_frames(RENDER_BENCH_DURATION_MS)) return false;
+    const double wall_ms = performance_elapsed_ms(wall_start);
+    renderer_perf_stats_t stats;
+    renderer_perf_get(&stats);
+
+    double open_ms = 0.0;
+    double close_ms = 0.0;
+    if (!plat_sim_post_event(EV_HOME) ||
+        !wait_for_popup_state(true, &open_ms) ||
+        !plat_sim_post_event(EV_HOME) ||
+        !wait_for_popup_state(false, &close_ms)) {
+        fprintf(stderr,
+                "RENDER BENCH FAIL: %s HOME response exceeded %.0fms\n",
+                name, RENDER_BENCH_RESPONSE_LIMIT_MS);
+        return false;
+    }
+
+    const double redraw_hz = wall_ms > 0.0
+        ? (double)stats.redraws * 1000.0 / wall_ms : 0.0;
+    const double redraw_avg_us = stats.redraws > 0
+        ? (double)stats.redraw_us_total / (double)stats.redraws : 0.0;
+    printf("RENDER BENCH %s: wall=%.0fms calls=%u "
+           "redraws=%u rate=%.1fHz redraw_avg=%.1fus max=%uus "
+           "HOME=%.1f/%.1fms\n",
+           name, wall_ms, (unsigned)stats.update_calls,
+           (unsigned)stats.redraws, redraw_hz, redraw_avg_us,
+           (unsigned)stats.update_us_max, open_ms, close_ms);
+
+    if (!stats.name || strcmp(stats.name, name) != 0 ||
+        redraw_hz < minimum_redraw_hz ||
+        stats.update_us_max > 50000U ||
+        open_ms > RENDER_BENCH_RESPONSE_LIMIT_MS ||
+        close_ms > RENDER_BENCH_RESPONSE_LIMIT_MS) {
+        fprintf(stderr, "RENDER BENCH FAIL: %s acceptance limits\n", name);
+        return false;
+    }
+    return true;
+}
+
+static bool run_renderer_benchmark(void)
+{
+    if (fabsf(renderer_circular_debug_position(0) - 1.0f) > 0.0001f ||
+        fabsf(renderer_circular_debug_position(36)) > 0.0001f) {
+        fprintf(stderr,
+                "RENDER BENCH FAIL: circular top/bottom frequency mapping\n");
+        return false;
+    }
+    for (int segment = 1; segment < 36; segment++) {
+        if (fabsf(renderer_circular_debug_position(segment) -
+                  renderer_circular_debug_position(72 - segment)) >
+            0.0001f) {
+            fprintf(stderr,
+                    "RENDER BENCH FAIL: circular mirror at segment %d\n",
+                    segment);
+            return false;
+        }
+    }
+
+    sm_on_event(EV_OK);
+    const gadget_app_t *monitor =
+        app_registry_at(app_registry_find("monitor"));
+    if (!monitor || !monitor->mode_set || !smoke_expect_app("monitor")) {
+        fprintf(stderr, "RENDER BENCH FAIL: monitor unavailable\n");
+        return false;
+    }
+    if (!benchmark_renderer_mode(monitor, 1, "bars", 10.0) ||
+        !benchmark_renderer_mode(monitor, 2, "circular", 8.0)) {
+        return false;
+    }
+    const uint32_t mirror_mismatches =
+        renderer_circular_debug_mirror_mismatches();
+    if (mirror_mismatches != 0) {
+        fprintf(stderr,
+                "RENDER BENCH FAIL: circular has %u mirrored pixel "
+                "mismatches\n",
+                (unsigned)mirror_mismatches);
+        return false;
+    }
+    printf("RENDER BENCH PASS: 12-Band/Circular redraw and HOME response\n");
+    return true;
 }
 
 static bool smoke_expect_app(const char *id)
@@ -519,6 +656,9 @@ int main(int argc, char **argv)
     const char *preview = plat_sim_preview();
     if (preview && !open_preview(preview)) return 1;
 
+    if (plat_sim_is_renderer_benchmark() && !preview) {
+        return run_renderer_benchmark() ? 0 : 1;
+    }
     if (plat_sim_is_smoke_test() && !preview) {
         return run_smoke_test() ? 0 : 1;
     }

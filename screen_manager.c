@@ -1291,3 +1291,10 @@ int sm_current(void)
 {
     return s_active_app < 0 ? SM_HOME : SM_APP_BASE + s_active_app;
 }
+
+#ifdef PEDAL_SIM
+bool sm_debug_popup_open(void)
+{
+    return s_popup != NULL;
+}
+#endif

@@ -34,6 +34,15 @@ typedef struct {
     void (*destroy)(void);
 } renderer_t;
 
+typedef struct {
+    const char *name;
+    uint32_t update_calls;
+    uint32_t redraws;
+    uint64_t update_us_total;
+    uint64_t redraw_us_total;
+    uint32_t update_us_max;
+} renderer_perf_stats_t;
+
 typedef enum {
     CURVE_DISPLAY_VISUAL = 0,
     CURVE_DISPLAY_REFERENCE,
@@ -47,6 +56,9 @@ int               renderer_find(const char *name);   /* 이름→인덱스, 없�
 void              renderer_select(int idx, lv_obj_t *parent, const viz_theme_t *theme);
 void              renderer_render(const viz_frame_t *frame);
 void              renderer_teardown(void);
+void              renderer_perf_reset(void);
+void              renderer_perf_get(renderer_perf_stats_t *out);
+void              renderer_perf_note_redraw(void);
 void              renderer_curve_configure(curve_display_mode_t mode,
                                            int smoothing_level,
                                            spectrum_weighting_t weighting);
@@ -61,3 +73,8 @@ const char*         viz_theme_name(int idx);
 extern const renderer_t RENDERER_CURVE;
 extern const renderer_t RENDERER_BARS;
 extern const renderer_t RENDERER_CIRCULAR;
+
+#ifdef PEDAL_SIM
+float renderer_circular_debug_position(int segment);
+uint32_t renderer_circular_debug_mirror_mismatches(void);
+#endif

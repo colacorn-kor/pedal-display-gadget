@@ -82,8 +82,10 @@ static void usage(void)
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
             " [--system-audio|--microphone] [--synthetic] [--smoke-test]"
+            " [--renderer-benchmark]"
             " [--preview curve|reference|bars|circular|gallery|dbmeter|bounce"
-            "|monitor-settings|monitor-color|monitor-mode]\n");
+            "|monitor-menu|monitor-settings|monitor-color|monitor-mode"
+            "|monitor-weighting]\n");
 }
 
 static bool parse_device_index(const char *text, int *out)
@@ -131,7 +133,8 @@ static bool parse_args(int argc, char **argv, int *device_index)
         }
 
         if (strcmp(arg, "--synthetic") == 0 ||
-            strcmp(arg, "--smoke-test") == 0) {
+            strcmp(arg, "--smoke-test") == 0 ||
+            strcmp(arg, "--renderer-benchmark") == 0) {
             s_force_synthetic = true;
             continue;
         }

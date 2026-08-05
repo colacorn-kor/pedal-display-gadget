@@ -18,11 +18,15 @@
 #define CANVAS_Y ((SCR_H - CANVAS_H) / 2)
 #define CENTER_X (CANVAS_W / 2)
 #define CENTER_Y (CANVAS_H / 2)
+#define MIRROR_RADIUS_MAX (CANVAS_W / 2 - 1)
 #define SEGMENT_COUNT 72
 #define HALF_SEGMENTS (SEGMENT_COUNT / 2)
+#define MIRROR_POINT_COUNT (HALF_SEGMENTS + 1)
 #define INNER_RADIUS 57.0f
 #define MIN_BAR_LENGTH 7.0f
 #define MAX_BAR_LENGTH 45.0f
+#define BAR_START_RADIUS (INNER_RADIUS + 5.0f)
+#define DRAW_PADDING 4
 #define CIRCULAR_FRAME_US 60000
 #define REDRAW_EPSILON 0.002f
 #define PI_F 3.14159265358979323846f
@@ -34,7 +38,11 @@
 typedef struct {
     float sine[SEGMENT_COUNT];
     float cosine[SEGMENT_COUNT];
-    float smooth[SEGMENT_COUNT];
+    float smooth[MIRROR_POINT_COUNT];
+    float target[MIRROR_POINT_COUNT];
+    int sample_first[MIRROR_POINT_COUNT];
+    float sample_fraction[MIRROR_POINT_COUNT];
+    int sample_count;
 } circular_work_t;
 
 static const char *TAG = "circular";
@@ -49,6 +57,12 @@ static viz_theme_t s_theme;
 static int64_t s_last_draw_us;
 static int64_t s_fps_start_us;
 static int s_fps_frames;
+static int s_previous_radius;
+static uint16_t s_background_color;
+static uint16_t s_grid_color;
+static uint16_t s_core_color;
+static uint16_t s_glow_color;
+static uint16_t s_line_color;
 
 static float clamp_unit(float value)
 {
@@ -74,30 +88,23 @@ static inline uint16_t *pixel_at(int x, int y)
     return (uint16_t *)((uint8_t *)s_buffer + y * s_stride) + x;
 }
 
-static void put_pixel(int x, int y, uint16_t color)
+static inline void put_pixel(int x, int y, uint16_t color)
 {
     if (x < 0 || x >= CANVAS_W || y < 0 || y >= CANVAS_H) return;
     *pixel_at(x, y) = color;
 }
 
-static void draw_line(int x0, int y0, int x1, int y1,
-                      uint16_t color, int thickness)
+static void draw_line_thin(int x0, int y0, int x1, int y1,
+                           uint16_t color)
 {
     int dx = x1 > x0 ? x1 - x0 : x0 - x1;
     int sx = x0 < x1 ? 1 : -1;
     int dy = y1 > y0 ? y0 - y1 : y1 - y0;
     int sy = y0 < y1 ? 1 : -1;
     int error = dx + dy;
-    int radius = thickness / 2;
 
     for (;;) {
-        for (int oy = -radius; oy <= radius; oy++) {
-            for (int ox = -radius; ox <= radius; ox++) {
-                if (ox * ox + oy * oy <= radius * radius + 1) {
-                    put_pixel(x0 + ox, y0 + oy, color);
-                }
-            }
-        }
+        put_pixel(x0, y0, color);
         if (x0 == x1 && y0 == y1) break;
         int twice = 2 * error;
         if (twice >= dy) {
@@ -108,6 +115,23 @@ static void draw_line(int x0, int y0, int x1, int y1,
             error += dx;
             y0 += sy;
         }
+    }
+}
+
+static void draw_line(int x0, int y0, int x1, int y1,
+                      uint16_t color, int thickness)
+{
+    const int dx = x1 > x0 ? x1 - x0 : x0 - x1;
+    const int dy = y1 > y0 ? y1 - y0 : y0 - y1;
+    const int offset_x = dx < dy ? 1 : 0;
+    const int offset_y = dx < dy ? 0 : 1;
+    const int radius = thickness / 2;
+
+    for (int offset = -radius; offset <= radius; offset++) {
+        draw_line_thin(x0 + offset * offset_x,
+                       y0 + offset * offset_y,
+                       x1 + offset * offset_x,
+                       y1 + offset * offset_y, color);
     }
 }
 
@@ -127,72 +151,150 @@ static void draw_ring(float radius, uint16_t color, int thickness)
     }
 }
 
-static void clear_canvas(void)
+static void clear_canvas_radius(int radius)
 {
-    uint16_t background = C565(s_theme.bg);
-    for (int y = 0; y < CANVAS_H; y++) {
-        uint16_t *row = pixel_at(0, y);
-        for (int x = 0; x < CANVAS_W; x++) row[x] = background;
+    if (radius < 0 || radius > CENTER_X) radius = CENTER_X;
+    int x0 = CENTER_X - radius;
+    int x1 = CENTER_X + radius;
+    int y0 = CENTER_Y - radius;
+    int y1 = CENTER_Y + radius;
+    if (x0 < 0) x0 = 0;
+    if (x1 >= CANVAS_W) x1 = CANVAS_W - 1;
+    if (y0 < 0) y0 = 0;
+    if (y1 >= CANVAS_H) y1 = CANVAS_H - 1;
+
+    const uint32_t pair = (uint32_t)s_background_color |
+                          ((uint32_t)s_background_color << 16);
+    for (int y = y0; y <= y1; y++) {
+        uint16_t *row = pixel_at(x0, y);
+        int count = x1 - x0 + 1;
+        if (((uintptr_t)row & 0x3U) != 0 && count > 0) {
+            *row++ = s_background_color;
+            count--;
+        }
+        uint32_t *pairs = (uint32_t *)row;
+        while (count >= 2) {
+            *pairs++ = pair;
+            count -= 2;
+        }
+        if (count > 0) *(uint16_t *)pairs = s_background_color;
     }
 }
 
-static float sample_spectrum(const viz_frame_t *frame, int segment)
+static void mirror_canvas_radius(int radius)
 {
-    int mirrored = segment < HALF_SEGMENTS
-        ? segment : SEGMENT_COUNT - 1 - segment;
-    float normalized = (float)mirrored / (float)(HALF_SEGMENTS - 1);
-    float position = normalized * (frame->n - 1);
-    int first = (int)position;
-    int second = first + 1 < frame->n ? first + 1 : first;
-    float fraction = position - first;
-    return clamp_unit(frame->bars[first] * (1.0f - fraction) +
-                      frame->bars[second] * fraction);
-}
+    if (radius < 0 || radius > MIRROR_RADIUS_MAX) {
+        radius = MIRROR_RADIUS_MAX;
+    }
+    int y0 = CENTER_Y - radius;
+    int y1 = CENTER_Y + radius;
+    if (y0 < 0) y0 = 0;
+    if (y1 >= CANVAS_H) y1 = CANVAS_H - 1;
 
-static bool circular_needs_redraw(const viz_frame_t *frame)
-{
-    if (s_last_draw_us == 0) return true;
-    for (int i = 0; i < SEGMENT_COUNT; i++) {
-        if (fabsf(sample_spectrum(frame, i) - s_work->smooth[i]) >
-            REDRAW_EPSILON) {
-            return true;
+    for (int y = y0; y <= y1; y++) {
+        for (int source_x = CENTER_X;
+             source_x <= CENTER_X + radius;
+             source_x++) {
+            const int mirror_x = CANVAS_W - 1 - source_x;
+            *pixel_at(mirror_x, y) = *pixel_at(source_x, y);
         }
     }
-    return false;
 }
 
-static void draw_frame(const viz_frame_t *frame)
+static int mirror_point_for_segment(int segment)
 {
-    uint16_t grid = C565(mix_hex(s_theme.bg, s_theme.grid, 148));
-    uint16_t core = C565(mix_hex(s_theme.bg, s_theme.accent, 150));
-    uint16_t glow = C565(mix_hex(s_theme.bg, s_theme.accent, 90));
-    uint16_t line = C565(s_theme.line);
-    float inner = INNER_RADIUS;
+    return segment <= HALF_SEGMENTS
+        ? segment : SEGMENT_COUNT - segment;
+}
 
-    clear_canvas();
-    draw_ring(inner - 12.0f, grid, 1);
-    draw_ring(inner - 3.0f, core, 2);
-    draw_ring(inner + 2.0f, grid, 1);
+static float spectrum_position_for_point(int point)
+{
+    return 1.0f - (float)point / (float)HALF_SEGMENTS;
+}
+
+static void prepare_sample_map(int count)
+{
+    if (s_work->sample_count == count) return;
+    for (int point = 0; point < MIRROR_POINT_COUNT; point++) {
+        const float position =
+            spectrum_position_for_point(point) * (float)(count - 1);
+        const int first = (int)position;
+        s_work->sample_first[point] = first;
+        s_work->sample_fraction[point] = position - (float)first;
+    }
+    s_work->sample_count = count;
+}
+
+static bool prepare_targets(const viz_frame_t *frame)
+{
+    prepare_sample_map(frame->n);
+    bool changed = s_last_draw_us == 0;
+    for (int point = 0; point < MIRROR_POINT_COUNT; point++) {
+        const int first = s_work->sample_first[point];
+        const int second = first + 1 < frame->n ? first + 1 : first;
+        const float fraction = s_work->sample_fraction[point];
+        const float target = clamp_unit(
+            frame->bars[first] * (1.0f - fraction) +
+            frame->bars[second] * fraction);
+        s_work->target[point] = target;
+        if (fabsf(target - s_work->smooth[point]) > REDRAW_EPSILON) {
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+static int draw_frame(void)
+{
+    const int minimum_radius = (int)(INNER_RADIUS + DRAW_PADDING + 0.5f);
+    clear_canvas_radius(s_previous_radius > minimum_radius
+        ? s_previous_radius : minimum_radius);
+    draw_ring(INNER_RADIUS - 12.0f, s_grid_color, 1);
+    draw_ring(INNER_RADIUS - 3.0f, s_core_color, 3);
+    draw_ring(INNER_RADIUS + 2.0f, s_grid_color, 1);
+
+    int maximum_length = (int)MIN_BAR_LENGTH;
+    for (int point = 0; point < MIRROR_POINT_COUNT; point++) {
+        const float target = s_work->target[point];
+        const float alpha = target > s_work->smooth[point] ? 0.58f : 0.16f;
+        s_work->smooth[point] +=
+            (target - s_work->smooth[point]) * alpha;
+    }
 
     for (int i = 0; i < SEGMENT_COUNT; i++) {
-        float target = sample_spectrum(frame, i);
-        float alpha = target > s_work->smooth[i] ? 0.58f : 0.16f;
-        s_work->smooth[i] += (target - s_work->smooth[i]) * alpha;
-        float length = MIN_BAR_LENGTH +
-                       s_work->smooth[i] * (MAX_BAR_LENGTH - MIN_BAR_LENGTH);
-        float r0 = inner + 5.0f;
-        float r1 = r0 + length;
+        const int point = mirror_point_for_segment(i);
+        const float length = MIN_BAR_LENGTH + s_work->smooth[point] *
+                             (MAX_BAR_LENGTH - MIN_BAR_LENGTH);
+        const int integer_length = (int)(length + 0.5f);
+        if (integer_length > maximum_length) maximum_length = integer_length;
+        const float r0 = BAR_START_RADIUS;
+        const float r1 = r0 + (float)integer_length;
         int x0 = CENTER_X + (int)(s_work->cosine[i] * r0 + 0.5f);
         int y0 = CENTER_Y + (int)(s_work->sine[i] * r0 + 0.5f);
         int x1 = CENTER_X + (int)(s_work->cosine[i] * r1 + 0.5f);
         int y1 = CENTER_Y + (int)(s_work->sine[i] * r1 + 0.5f);
 
-        draw_line(x0, y0, x1, y1, glow, 5);
-        draw_line(x0, y0, x1, y1, line, 2);
+        draw_line(x0, y0, x1, y1, s_glow_color, 5);
+        draw_line(x0, y0, x1, y1, s_line_color, 3);
     }
+    return (int)(BAR_START_RADIUS + (float)maximum_length +
+                 DRAW_PADDING + 0.5f);
 }
 
-static void log_fps(void)
+static void invalidate_canvas_radius(int radius)
+{
+    lv_area_t canvas_area;
+    lv_obj_get_coords(s_canvas, &canvas_area);
+    lv_area_t dirty = {
+        .x1 = canvas_area.x1 + CENTER_X - radius - 1,
+        .y1 = canvas_area.y1 + CENTER_Y - radius,
+        .x2 = canvas_area.x1 + CENTER_X + radius,
+        .y2 = canvas_area.y1 + CENTER_Y + radius,
+    };
+    lv_obj_invalidate_area(s_canvas, &dirty);
+}
+
+static void log_fps(int dirty_radius)
 {
     int64_t now = esp_timer_get_time();
     if (s_fps_start_us == 0) {
@@ -203,7 +305,8 @@ static void log_fps(void)
     int64_t elapsed = now - s_fps_start_us;
     if (elapsed >= 1000000) {
         int fps = (int)((int64_t)s_fps_frames * 1000000 / elapsed);
-        ESP_LOGI(TAG, "fps=%d dirty=%dx%d", fps, CANVAS_W, CANVAS_H);
+        ESP_LOGI(TAG, "fps=%d dirty=%dx%d", fps,
+                 dirty_radius * 2 + 1, dirty_radius * 2 + 1);
         s_fps_start_us = now;
         s_fps_frames = 0;
     }
@@ -240,6 +343,12 @@ static void circular_create(lv_obj_t *parent, const viz_theme_t *theme)
     s_last_draw_us = 0;
     s_fps_start_us = 0;
     s_fps_frames = 0;
+    s_previous_radius = 0;
+    s_background_color = C565(s_theme.bg);
+    s_grid_color = C565(mix_hex(s_theme.bg, s_theme.grid, 148));
+    s_core_color = C565(mix_hex(s_theme.bg, s_theme.accent, 150));
+    s_glow_color = C565(mix_hex(s_theme.bg, s_theme.accent, 90));
+    s_line_color = C565(s_theme.line);
 
     s_work = heap_caps_calloc(1, sizeof(*s_work),
                               MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
@@ -296,8 +405,9 @@ static void circular_create(lv_obj_t *parent, const viz_theme_t *theme)
         return;
     }
     s_stride = draw_buffer->header.stride;
-    clear_canvas();
+    clear_canvas_radius(CENTER_X);
     draw_ring(INNER_RADIUS - 3.0f, C565(s_theme.grid), 1);
+    mirror_canvas_radius(MIRROR_RADIUS_MAX);
 
     s_title = make_center_label(s_root, "SOUND",
                                 &lv_font_montserrat_14,
@@ -320,15 +430,20 @@ static void circular_update(const viz_frame_t *frame)
         now - s_last_draw_us < CIRCULAR_FRAME_US) {
         return;
     }
-    if (!circular_needs_redraw(frame)) {
+    if (!prepare_targets(frame)) {
         s_last_draw_us = now;
         return;
     }
     s_last_draw_us = now;
 
-    draw_frame(frame);
-    lv_obj_invalidate(s_canvas);
-    log_fps();
+    const int current_radius = draw_frame();
+    const int dirty_radius = current_radius > s_previous_radius
+        ? current_radius : s_previous_radius;
+    mirror_canvas_radius(dirty_radius);
+    s_previous_radius = current_radius;
+    invalidate_canvas_radius(dirty_radius);
+    renderer_perf_note_redraw();
+    log_fps(dirty_radius);
 }
 
 static void circular_destroy(void)
@@ -349,7 +464,30 @@ static void circular_destroy(void)
         s_work = NULL;
     }
     s_stride = 0;
+    s_previous_radius = 0;
 }
+
+#ifdef PEDAL_SIM
+float renderer_circular_debug_position(int segment)
+{
+    if (segment < 0 || segment >= SEGMENT_COUNT) return -1.0f;
+    return spectrum_position_for_point(mirror_point_for_segment(segment));
+}
+
+uint32_t renderer_circular_debug_mirror_mismatches(void)
+{
+    if (!s_buffer || s_stride == 0) return UINT32_MAX;
+    uint32_t mismatches = 0;
+    for (int y = 0; y < CANVAS_H; y++) {
+        for (int x = 0; x < CANVAS_W / 2; x++) {
+            if (*pixel_at(x, y) != *pixel_at(CANVAS_W - 1 - x, y)) {
+                mismatches++;
+            }
+        }
+    }
+    return mismatches;
+}
+#endif
 
 const renderer_t RENDERER_CIRCULAR = {
     "circular", circular_create, circular_update, circular_destroy

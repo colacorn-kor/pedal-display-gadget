@@ -133,3 +133,16 @@ sim/sdcard/GG/games
 
 이 모드는 합성 오디오와 기본 런처 상태를 사용하고 `sim_nvs.bin`을 읽거나 쓰지 않는다.
 모든 검사를 통과하면 종료 코드 0과 `SMOKE PASS`를 출력한다.
+
+## Renderer Benchmark
+
+합성 sweep으로 12-Band와 Circular를 실제 프레임 루프에서 구동하고 redraw rate,
+renderer 실행 시간, HOME 팝업 열기·닫기 응답을 검사한다. Circular는 위쪽 20kHz,
+아래쪽 20Hz와 좌우 픽셀 대칭도 함께 검증한다.
+
+```powershell
+.\sim\build\pedal_sim.exe --renderer-benchmark
+```
+
+12-Band 10Hz, Circular 8Hz, renderer 최대 50ms, HOME 120ms가 최소 수용선이다.
+이 모드도 합성 오디오와 격리된 기본 상태를 사용해 `sim_nvs.bin`을 바꾸지 않는다.

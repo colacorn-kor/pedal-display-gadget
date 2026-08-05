@@ -59,6 +59,9 @@ void sm_init(void);
 void sm_on_event(ui_event_t ev);
 void sm_render(void);
 int  sm_current(void);
+#ifdef PEDAL_SIM
+bool sm_debug_popup_open(void);
+#endif
 
 /* 씬/템포 훅: UI 태스크 안에서만 호출 */
 void  sm_load_scene(int content_idx, int theme_idx, int renderer_idx);

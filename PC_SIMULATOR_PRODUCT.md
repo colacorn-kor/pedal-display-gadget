@@ -126,6 +126,10 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
   또는 절대 loudness 측정으로 표기하지 않는다. 상·하는 앱 화면에서 Weighting을 직접
   바꾸고, 표시 하한 6dB 안의 양의 보정은 무음 release 잔여값을 확대하지 않도록
   점진 적용한다.
+- `--renderer-benchmark`는 12-Band와 Circular를 합성 sweep으로 구동해 redraw rate,
+  평균·최대 renderer 시간, HOME 팝업 왕복 응답을 계측한다. 12-Band 10Hz, Circular 8Hz,
+  최대 update 50ms, HOME 120ms를 최소 수용선으로 삼고 Circular의 20kHz→20Hz 방향과
+  좌우 픽셀 대칭도 함께 검사한다.
 
 ### D0. 공통 UI 기준선
 
