@@ -254,6 +254,15 @@ static bool run_smoke_test(void)
         return false;
     }
 
+    if (!smoke_send(EV_DOWN, "direct Flat -> A-weighted") ||
+        monitor_app_debug_weighting_index() != 1 ||
+        !smoke_send(EV_UP, "direct A-weighted -> Flat") ||
+        monitor_app_debug_weighting_index() != 0) {
+        fprintf(stderr,
+                "SMOKE FAIL: direct monitor Weighting controls failed\n");
+        return false;
+    }
+
     if (!run_frames_for(250) || !smoke_visualizer_has_signal()) return false;
 
     if (!smoke_send(EV_HOME_HOLD, "monitor -> launcher") ||
@@ -383,7 +392,7 @@ static bool run_smoke_test(void)
     }
 
     printf("SMOKE PASS: three-row launcher, Theme/About, app Theme "
-           "Mode/Color, four monitor weightings, reorder, "
+           "Mode/Color, four monitor weightings with direct controls, reorder, "
            "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
            "Curve controls, Reference mode, Classic Cat runner, "
            "input-voltage meter, quick app, cleanup\n",

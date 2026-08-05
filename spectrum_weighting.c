@@ -4,6 +4,9 @@
 
 #include "audio_config.h"
 
+#define WEIGHTING_FLOOR_EPSILON       0.001f
+#define WEIGHTING_POSITIVE_KNEE_DB    6.0f
+
 typedef struct {
     float frequency_hz;
     float correction_db;
@@ -120,6 +123,23 @@ float spectrum_weighting_apply_db(float normalized, float correction_db)
     if (!isfinite(normalized) || normalized <= 0.0f) return 0.0f;
     if (normalized > 1.0f) normalized = 1.0f;
     if (!isfinite(correction_db)) return 0.0f;
+
+    /* Positive weighting must not expose the analyzer's sub-pixel release
+     * residue as a visible copy of the weighting curve. Fade it in only over
+     * the bottom 6dB, where the floor-clipped source level is ambiguous. */
+    if (correction_db > 0.0f) {
+        if (normalized <= WEIGHTING_FLOOR_EPSILON) return 0.0f;
+        const float range_db = VIZ_DB_TOP - VIZ_DB_FLOOR;
+        const float knee = WEIGHTING_POSITIVE_KNEE_DB / range_db;
+        if (normalized < knee) {
+            float position = (normalized - WEIGHTING_FLOOR_EPSILON) /
+                (knee - WEIGHTING_FLOOR_EPSILON);
+            if (position < 0.0f) position = 0.0f;
+            else if (position > 1.0f) position = 1.0f;
+            position = position * position * (3.0f - 2.0f * position);
+            correction_db *= position;
+        }
+    }
 
     const float db = VIZ_DB_FLOOR +
         normalized * (VIZ_DB_TOP - VIZ_DB_FLOOR);

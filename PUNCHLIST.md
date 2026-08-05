@@ -10,7 +10,8 @@
 
 1. **D0A Sound Monitor 우선 최적화**
    - 완료: Curve/Reference Slope 0, 중심 정렬 3단계 FFT, DC 차단, Reference 무잔상,
-     30/300/3000Hz·경계 sweep 회귀 검사, Flat/A-weighted와 60-phon Loudness 표시
+     30/300/3000Hz·경계 sweep 회귀 검사, Flat/A-weighted와 60-phon Loudness 표시,
+     상하 직접 전환과 Weighting 무음 바닥 보존
    - 남음: 12-Band·Circular의 프레임 시간과 입력 응답 계측
 2. **D0 기존 UI·설정 기준선 감사**
    - Launcher, Sound Monitor, Gallery, Tuner, Bounce, dB Meter의 모든 화면·빈 상태·오류 상태 목록화

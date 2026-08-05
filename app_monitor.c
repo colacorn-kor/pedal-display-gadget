@@ -285,6 +285,19 @@ static void monitor_render(void)
 
 static bool monitor_on_event(ui_event_t event)
 {
+    if (event == EV_UP || event == EV_DOWN) {
+        int next_weighting = (int)s_weighting +
+            (event == EV_DOWN ? 1 : -1);
+        if (next_weighting < 0) next_weighting = 0;
+        if (next_weighting >= SPECTRUM_WEIGHT_COUNT) {
+            next_weighting = SPECTRUM_WEIGHT_COUNT - 1;
+        }
+        if (next_weighting != (int)s_weighting) {
+            monitor_weighting_set(next_weighting);
+        }
+        return true;
+    }
+
     if (s_mode != MONITOR_MODE_CURVE) return false;
 
     int next_smoothing = s_curve_smoothing;

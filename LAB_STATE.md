@@ -15,8 +15,9 @@
   `Dark/Light × 4 Color`, 앱 5 Color 체계도 반영했다. PC·호스트·ESP 자동 검증은
   통과했다. 이후 팝업을 앱 `Settings/Info`, 런처 `Theme/About`, 앱
   `Settings → Theme → Mode/Color`로 정리하고 60-phon Loudness 표시 두 종류를 추가했다.
-  이 최신 UI/Weighting 개발본은 PC·호스트·ESP 자동 검증을 통과했으며 본체 화면,
-  Core1 실시간 부하, 실제 오디오 입력은 아직 확인하지 않았다.
+  후속 개발본은 Sound Monitor 상·하 직접 Weighting 전환과 표시 하한의 무음 잔여값
+  확대 방지를 추가했다. PC·호스트·ESP 자동 검증을 통과했으며 본체 화면, Core1 실시간
+  부하, 실제 오디오 입력은 아직 확인하지 않았다.
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
@@ -294,6 +295,24 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   7%다. 손상된 공식 Python 환경 대신 작업공간 임시 Python 3.12 환경을 사용했다.
 - 이 개발본은 플래시하지 않았다. 본체 팝업 글자 배치, 네 Weighting의 실제 오디오 표시와
   Core1 실시간 부하는 실기 확인 전이다.
+
+### 2026-08-05 Weighting 직접 조작·무음 바닥 수정
+
+- 사용자 관찰에서 Flat 외 세 Weighting을 고르면 무음 상태에서도 2~5kHz가 솟아 보였다.
+  FFT release가 표시 하한에 한 픽셀 미만으로 남긴 양수가 해당 대역의 양의 보정으로
+  확대된 것이 원인이었다.
+- Sound Monitor의 모든 Mode에서 `DOWN=다음`, `UP=이전` Weighting을 바로 적용한다.
+  양 끝에서는 멈춰 방향키 오토리피트가 NVS를 계속 순환 저장하지 않는다.
+- 원 스냅샷과 Core1 분석은 바꾸지 않았다. 렌더링 복사본에서만 양의 보정을 표시 하한
+  6dB 구간에 smoothstep으로 점진 적용하고, 정규화값 0.001 이하는 바닥으로 유지한다.
+  `-66dBFS`보다 큰 신호에는 기존 보정 전량을 적용한다.
+- 호스트 CTest 9/9와 깨끗한 PC 시뮬레이터 빌드·직접 상하 조작 smoke가 통과했다.
+  추적 `pedal_sim.exe`를 갱신했고 smoke 전후 사용자 `sim_nvs.bin` SHA-256은
+  `CDA42B43DCDC2C81DC65B48B5B85D1F26F9072564FB10CD784CB393989DA10AC`로 같았다.
+- ESP-IDF 5.4.4 기본 `0xf0620`과 `INPUT_TRS_LADDER=0` `0xed000`이
+  `-Werror=all` 전체 빌드를 통과했다. 1MiB 앱 파티션 여유는 각각 6%, 7%다.
+- 이번 수정은 플래시하지 않았다. 실제 무음 화면, 상·하 6키 입력과 실제 오디오의
+  저레벨 Weighting 전환은 본체 실기 확인 전이다.
 
 ## 6. PC 시뮬레이터 자동 확인
 

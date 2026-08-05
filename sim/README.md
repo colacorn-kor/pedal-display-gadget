@@ -64,6 +64,8 @@ Windows가 완전한 무음에서 loopback 패킷을 보내지 않으면 시뮬�
 I2S·ESP-DSP로 나뉜다. 분석값에는 `dB/oct` 기울기를 적용하지 않으며 Curve의 평활과
 선택형 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)` 응답은 렌더러에 전달되는
 복사본만 바꾼다. Loudness는 1kHz 기준 60-phon 비교 표시이며 절대 청취 loudness가 아니다.
+Sound Monitor 화면에서는 상·하로 Weighting을 바로 변경한다. 표시 하한 부근의 양의
+보정은 부드럽게 줄어 무음 release 잔여값을 신호처럼 끌어올리지 않는다.
 Curve와 Reference 배경은 Sub Bass/Bass/Low-Mid/Mid/High-Mid/High 여섯 구간을 옅은
 색으로 나누고 `Bass/Mid/High`만 글자로 표시한다.
 

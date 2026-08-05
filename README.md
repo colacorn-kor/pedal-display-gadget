@@ -68,7 +68,8 @@ PC simulator
 `Default`는 런처의 Mode와 Color를 모두 상속한다. 고정 앱 색도 전역 Dark/Light는
 따른다. `Settings → Theme → Mode`는 색과 독립적으로 앱의 화면 형식을 선택한다.
 Sound Monitor의 `Settings → Weighting`은 `Flat`, `A-weighted`, `Flat(Loudness)`,
-`A-weighted(Loudness)`를 제공한다.
+`A-weighted(Loudness)`를 제공한다. 앱 화면에서는 상·하로 같은 네 항목을 바로 바꾸며,
+끝 항목에서는 더 진행하지 않는다.
 
 ## SD 카드
 

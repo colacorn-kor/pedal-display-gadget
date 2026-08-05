@@ -143,8 +143,9 @@ static app_slot_t s_slots[APP_COUNT];
 - Sound Monitor의 Mode는 `Curve`, `12-Band`, `Circular`, `Reference`이고 Bounce의 Mode는
   `Classic Cat`이다. 나머지 현재 앱도 확장 위치를 일관되게 유지하기 위해 한 개의
   명명된 Mode를 제공한다. Sound Monitor Settings에는 Theme 뒤에 `Weighting`을 두며,
-  네 항목은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`다. Curve만 앱 화면의
-  방향키로 단순화 수준을 조정한다.
+  네 항목은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`다. Sound Monitor
+  화면의 상·하는 Weighting을 이전·다음으로 바꾸며, Curve의 좌·우만 단순화 수준을
+  조정한다.
 
 ---
 

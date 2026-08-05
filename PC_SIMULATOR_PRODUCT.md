@@ -123,7 +123,9 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 - `Weighting`은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)` 네 항목이다.
   Loudness는 1kHz 기준 60-phon 참조 곡선의 역감도 표시이고, A-weighted와 독립적으로
   합산할 수 있다. 원 분석값은 바꾸지 않으며 SPL 교정이 없는 PC loopback을 `dBA`, phon
-  또는 절대 loudness 측정으로 표기하지 않는다.
+  또는 절대 loudness 측정으로 표기하지 않는다. 상·하는 앱 화면에서 Weighting을 직접
+  바꾸고, 표시 하한 6dB 안의 양의 보정은 무음 release 잔여값을 확대하지 않도록
+  점진 적용한다.
 
 ### D0. 공통 UI 기준선
 

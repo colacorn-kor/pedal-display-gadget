@@ -86,6 +86,31 @@ int main(void)
                     (VIZ_DB_TOP - VIZ_DB_FLOOR),
                 -49.74f, 0.3f);
 
+    const spectrum_weighting_t positive_weightings[] = {
+        SPECTRUM_WEIGHT_A,
+        SPECTRUM_WEIGHT_FLAT_LOUDNESS,
+        SPECTRUM_WEIGHT_A_LOUDNESS,
+    };
+    for (int i = 0; i < 3; i++) {
+        expect_near("weighted display floor stays silent",
+                    spectrum_weighting_apply(
+                        0.001f, 3150.0f, positive_weightings[i]),
+                    0.0f, 0.000001f);
+        expect_near("weighted near-floor transition stays quiet",
+                    spectrum_weighting_apply(
+                        0.002f, 3150.0f, positive_weightings[i]),
+                    0.002f, 0.0002f);
+    }
+
+    const float minus_sixty =
+        (-60.0f - VIZ_DB_FLOOR) / (VIZ_DB_TOP - VIZ_DB_FLOOR);
+    expect_near("weighting is full above floor knee",
+                VIZ_DB_FLOOR + spectrum_weighting_apply(
+                    minus_sixty, 3150.0f,
+                    SPECTRUM_WEIGHT_FLAT_LOUDNESS) *
+                    (VIZ_DB_TOP - VIZ_DB_FLOOR),
+                -56.41f, 0.1f);
+
     if (failures != 0) {
         fprintf(stderr, "spectrum weighting tests failed: %d\n", failures);
         return 1;
