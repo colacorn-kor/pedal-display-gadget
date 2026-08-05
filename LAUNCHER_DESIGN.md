@@ -72,7 +72,7 @@ typedef struct {
     chain_t chain;            /* 라이브(순환) / 보관함(비활성) */
     uint8_t order;            /* 체인 내 위치 */
     uint8_t variant;          /* 선택된 변형 */
-    uint8_t color;            /* Default/Blue/White/Green */
+    uint8_t color;            /* Default/Blue/Green/Yellow/Red */
     uint8_t mode;             /* 앱별 화면 형식 */
     uint8_t options;          /* 앱별 소형 설정 비트 */
 } app_slot_t;
@@ -130,14 +130,15 @@ static app_slot_t s_slots[APP_COUNT];
 
 ### 설정 팝업
 - 런처 `Settings` → `Theme`, `Info`.
-- `Theme`은 제목과 좌우 화살표 사이에 `BLUE`, `WHITE`, `GREEN` 이름을 표시한다.
-  좌·우 입력 즉시 전역 UI 테마를 바꾸고 NVS에 저장한다. 이 팔레트는 런처뿐 아니라
-  모든 앱의 공통 팝업 배경·패널·글자·강조색에도 적용된다.
+- `Theme` 아래에는 `Mode`, `Color`가 있다. Mode는 `Dark/Light`, Color는
+  `Blue/Green/Yellow/Red`이며 확인으로 적용해 NVS에 저장한다. 조합된 팔레트는
+  런처뿐 아니라 모든 앱의 공통 팝업 배경·패널·글자·강조색에도 적용된다.
 - 앱 화면 홈 → `Exit`, `Settings`. 세로 메뉴는 상·하로만 이동하며 좌·우는 항목 이동에
   쓰지 않는다.
 - 모든 앱의 `Settings`는 `Color`, `Mode`, `Info`를 표시한다. Color는
-  `Default/Blue/White/Green`이며, `Default`는 현재 런처 Theme을 상속한다. 고정 Color도
-  앱 콘텐츠만 바꾸고 런처나 공통 팝업 팔레트에는 영향을 주지 않는다.
+  `Default/Blue/Green/Yellow/Red`이며, `Default`는 현재 런처 Theme을 상속한다.
+  고정 Color는 앱 콘텐츠의 색만 바꾸되 전역 Dark/Light는 따르고, 런처나 공통 팝업
+  팔레트에는 영향을 주지 않는다.
 - Sound Monitor의 Mode는 `Curve`, `12-Band`, `Circular`, `Reference`이고 Bounce의 Mode는
   `Classic Cat`이다. 나머지 현재 앱도 확장 위치를 일관되게 유지하기 위해 한 개의
   명명된 Mode를 제공한다. Curve만 앱 화면의 방향키로 기울기와 단순화를 조정한다.
@@ -163,10 +164,11 @@ typedef struct {
   순서/변형 저장됨. SD 매니페스트는 Phase 2.)
 - **저장 트리거**: 순서변경 drop, 변형·앱 Color/Mode 변경, 퀵앱 변경 시.
 - **id 없는 슬롯**(앱 제거됨) = 무시. **새 앱**(설정에 없음) = 기본값으로 보관함 추가.
-- 현재 `platform_config`는 **version 5**다. 기존 `local_theme` 1바이트를
-  `appearance`로 재사용해 하위 2비트에 Color, 상위 6비트에 Mode를 저장하므로 v2~v4와
+- 현재 `platform_config`는 **version 6**다. 기존 `local_theme` 1바이트를
+  `appearance`로 재사용해 하위 3비트에 Color, 상위 5비트에 Mode를 저장하므로 v2~v5와
   blob 크기가 같다. v4의 Monitor 6개 프리셋은 같은 Color/Mode 조합으로 변환하고,
-  제거된 Bounce Nyan 값은 `Default + Classic Cat`으로 변환한다. 현재 구형 dB Meter의
+  v5 앱 White는 Blue로, 전역 White는 Light+Blue로 변환한다. 제거된 Bounce Nyan 값은
+  `Default + Classic Cat`으로 변환한다. 현재 구형 dB Meter의
   `options` 바이트는 LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 그대로 저장한다.
   자동 듀얼레인지 전환 시 INPUT 비트는 마이그레이션용으로만 읽고 UI에서는 제거한다.
 

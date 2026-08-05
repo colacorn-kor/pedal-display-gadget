@@ -6,14 +6,17 @@
 #include "platform.h"
 
 #define APP_CFG_MAGIC 0x6741u
-#define APP_CFG_VERSION 5u
+#define APP_CFG_VERSION 6u
+#define APP_CFG_VERSION_APPEARANCE 5u
 #define APP_CFG_VERSION_OPTIONS 4u
 #define APP_CFG_VERSION_THEME 3u
 #define APP_CFG_VERSION_BASE 2u
 #define APP_ID_LEN 16
 #define APP_QUICK_DEFAULT "tuner"
-#define APP_APPEARANCE_COLOR_MASK 0x03u
-#define APP_APPEARANCE_MODE_SHIFT 2u
+#define APP_APPEARANCE_COLOR_MASK 0x07u
+#define APP_APPEARANCE_MODE_SHIFT 3u
+#define APP_APPEARANCE_V5_COLOR_MASK 0x03u
+#define APP_APPEARANCE_V5_MODE_SHIFT 2u
 
 typedef struct {
     chain_t chain;
@@ -24,7 +27,7 @@ typedef struct {
 } app_setting_t;
 
 _Static_assert(sizeof(app_setting_t) == 8,
-               "app config v2-v5 blob layout must stay compatible");
+               "app config v2-v6 blob layout must stay compatible");
 
 typedef struct {
     char id[APP_ID_LEN];
@@ -97,7 +100,7 @@ static uint8_t max_mode_for_app(const gadget_app_t *app)
     if (!app || !app->mode_count) return 0;
     const int count = app->mode_count();
     if (count <= 1) return 0;
-    if (count > 64) return 63;
+    if (count > 32) return 31;
     return (uint8_t)(count - 1);
 }
 
@@ -163,6 +166,37 @@ static void migrate_legacy_appearance(app_cfg_entry_t *entry,
      * Classic Cat with the launcher color after that expensive mode's removal. */
     entry->s.appearance = pack_appearance(color, mode);
     if (version < APP_CFG_VERSION_OPTIONS) entry->s.options = 0;
+}
+
+static void migrate_v5_appearance(app_cfg_entry_t *entry)
+{
+    const uint8_t legacy = entry->s.appearance;
+    const uint8_t legacy_color = legacy & APP_APPEARANCE_V5_COLOR_MASK;
+    const uint8_t mode = legacy >> APP_APPEARANCE_V5_MODE_SHIFT;
+    app_color_t color = APP_COLOR_DEFAULT;
+
+    switch (legacy_color) {
+    case 1: color = APP_COLOR_BLUE; break;
+    case 2: color = APP_COLOR_BLUE; break; /* White becomes Light/Dark + Blue. */
+    case 3: color = APP_COLOR_GREEN; break;
+    default: break;
+    }
+    entry->s.appearance = pack_appearance(color, mode);
+}
+
+static uint8_t migrate_legacy_global_theme(uint8_t legacy_theme)
+{
+    switch (legacy_theme) {
+    case 1:
+        return (uint8_t)theme_index_for(
+            UI_THEME_MODE_LIGHT, UI_THEME_COLOR_BLUE);
+    case 2:
+        return (uint8_t)theme_index_for(
+            UI_THEME_MODE_DARK, UI_THEME_COLOR_GREEN);
+    default:
+        return (uint8_t)theme_index_for(
+            UI_THEME_MODE_DARK, UI_THEME_COLOR_BLUE);
+    }
 }
 
 static void terminate_config_strings(platform_config_t *cfg)
@@ -357,15 +391,22 @@ void app_slots_init(void)
     bool needs_save = !found;
     if (found && loaded.magic == APP_CFG_MAGIC &&
         (loaded.version == APP_CFG_VERSION ||
+         loaded.version == APP_CFG_VERSION_APPEARANCE ||
          loaded.version == APP_CFG_VERSION_OPTIONS ||
          loaded.version == APP_CFG_VERSION_THEME ||
          loaded.version == APP_CFG_VERSION_BASE)) {
         s_cfg = loaded;
         terminate_config_strings(&s_cfg);
         if (loaded.version != APP_CFG_VERSION) {
+            s_cfg.theme_idx = migrate_legacy_global_theme(
+                s_cfg.theme_idx);
             for (int i = 0; i < APP_SLOT_MAX; i++) {
-                migrate_legacy_appearance(
-                    &s_cfg.apps[i], loaded.version);
+                if (loaded.version == APP_CFG_VERSION_APPEARANCE) {
+                    migrate_v5_appearance(&s_cfg.apps[i]);
+                } else {
+                    migrate_legacy_appearance(
+                        &s_cfg.apps[i], loaded.version);
+                }
             }
             s_cfg.version = APP_CFG_VERSION;
             ESP_LOGI(TAG, "Migrated config v%u -> v%u",

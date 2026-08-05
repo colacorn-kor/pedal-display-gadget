@@ -24,6 +24,16 @@ if(NOT MSVC)
 endif()
 add_test(NAME audio_level_units COMMAND test_audio_level)
 
+add_executable(test_spectrum_weighting
+    test_spectrum_weighting.c
+    ../spectrum_weighting.c
+)
+target_include_directories(test_spectrum_weighting PRIVATE ..)
+if(NOT MSVC)
+    target_link_libraries(test_spectrum_weighting PRIVATE m)
+endif()
+add_test(NAME spectrum_weighting_response COMMAND test_spectrum_weighting)
+
 add_executable(test_audio_autorange
     test_audio_autorange.c
     ../audio_autorange.c
@@ -49,6 +59,17 @@ add_executable(test_storage test_storage.c ../storage.c)
 target_include_directories(test_storage PRIVATE ..)
 add_test(NAME storage_media_catalog COMMAND test_storage)
 
+add_executable(test_app_slots_migration
+    test_app_slots_migration.c
+    ../app_slots.c
+)
+target_include_directories(test_app_slots_migration PRIVATE
+    compat
+    ../sim/compat
+    ..
+)
+add_test(NAME app_slots_v5_migration COMMAND test_app_slots_migration)
+
 if(MSVC)
     target_compile_options(test_midi PRIVATE /utf-8 /wd4819)
     target_compile_options(test_tuner PRIVATE
@@ -57,9 +78,15 @@ if(MSVC)
         /experimental:c11atomics
     )
     target_compile_options(test_audio_level PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_spectrum_weighting PRIVATE /utf-8 /wd4819)
     target_compile_options(test_audio_autorange PRIVATE /utf-8 /wd4819)
     target_compile_options(test_fft_map PRIVATE /utf-8 /wd4819)
     target_compile_options(test_storage PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_app_slots_migration PRIVATE
+        /utf-8
+        /wd4819
+        /experimental:c11atomics
+    )
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

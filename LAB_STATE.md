@@ -9,9 +9,11 @@
 - 마지막 실기 펌웨어: 위 커밋의 dirty 작업 트리에서 빌드한 Curve/Reference 개발본
 - 현재 펌웨어 상태: 자동 빌드·플래시·25초 부팅 로그 통과, Curve/Reference 사용자
   화면·버튼 실기 확인 통과
-- 현재 미플래시 개발본: Curve/Reference의 `dB/oct` 표시 기울기를 제거하고
-  12kHz/2048-point 저역 FFT를 추가했다. PC·호스트·ESP 자동 검증은 통과했으나
-  본체 화면과 실제 오디오 입력은 아직 확인하지 않았다.
+- 현재 미플래시 개발본: `dB/oct`를 제거한 분석을 3k/12k/48kHz 3단계 FFT와 중심 시각
+  정렬로 확장하고 Reference의 시간 잔상을 제거했다. 2Hz DC blocker와 선택형
+  Flat/A-weighted 표시도 추가했다. Curve/Reference의 6개 주파수 구간 배경과 전역
+  `Dark/Light × 4 Color`, 앱 5 Color 체계도 반영했다. PC·호스트·ESP 자동 검증은
+  통과했으나 본체 화면, Core1 실시간 부하와 실제 오디오 입력은 아직 확인하지 않았다.
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
@@ -193,10 +195,10 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 
 | 항목 | 상태 |
 |---|---|
-| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xeed00 bytes, 7% 여유) |
-| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xe3300` bytes, 11% 여유) |
+| 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xefe30 bytes, 6% 여유) |
+| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xec820` bytes, 8% 여유) |
 | `AUDIO_DUAL_RANGE=1` 컴파일 | 통과 (`0xef9d0` bytes, 6% 여유), 현재 장치에는 미플래시 |
-| 호스트 검증 7/7 | 통과 (CTest 6개 + FFT normalization) |
+| 호스트 검증 8/8 | 통과 (CTest 7개 + FFT normalization) |
 | PC 시뮬레이터 | 깨끗한 빌드·Gallery 포함 전체 결정론적 smoke·Windows 기본 출력 WASAPI 루프백 개방 통과 |
 | COM4 탐지 | 2026-07-27 확인 |
 | USB 플래시 | Curve/Reference 개발본 통과, 외부 9V 분리·USB 단독 전제 |
@@ -211,7 +213,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 | dB Meter 전압·시간평균 실기 | 사용자 요청으로 보류, 1kHz 1점 교정 대기 |
 | 공통 Color/Mode + Nyan 제거 실기 | 플래시·25초 로그·사용자 화면/입력 확인 통과 |
-| Curve/Reference 실기 | 이전 tilt 개발본의 단순화·FLAT 표시와 짧은 HOME/FOOTSW 통과. 무가중 저역 FFT 개발본은 미확인 |
+| Curve/Reference 실기 | 이전 tilt 개발본의 단순화·FLAT 표시와 짧은 HOME/FOOTSW 통과. 현재 3단계 FFT·Weighting 개발본은 미확인 |
 
 ### 2026-08-05 Sound Monitor 저역 다중 해상도 개발본
 
@@ -232,6 +234,42 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   I2S 수집과 seqlock 발행 구조는 바꾸지 않았다.
 - 이 개발본은 아직 COM4에 플래시하지 않았다. 본체에서 41/108/1037Hz 또는 sweep 형상,
   Curve 좌·우와 HOME/FOOTSW 응답, Core1 부하·I2S overflow를 확인해야 한다.
+
+### 2026-08-05 Reference 3단계 FFT·중심 정렬·Weighting
+
+- 후속 20Hz~20kHz sweep 캡처에서 저역 피크가 로그 축에서 상대적으로 넓고 오른쪽 경사가
+  급하며, 약 500Hz에서 두 해상도의 피크가 분리되는 현상을 확인했다. 고정 길이 FFT의
+  절대 bin 폭 때문에 같은 비율 간격이라도 저역 누설이 더 큰 부분은 자연스럽지만,
+  170.7ms 저역 창과 42.7ms 고역 창의 서로 다른 중심 시각을 이동 sweep에서 섞은 것은
+  실제 구현 결함이었다.
+- Reference에 3kHz/2048-point(1.46484375Hz bin) 초저역 분석을 추가했다.
+  90~140Hz는 3k→12kHz, 380~520Hz는 12k→48kHz power를 로그 주파수 smoothstep으로
+  혼합하며, 48kHz 과거 16개와 12kHz 과거 7개 스펙트럼으로 세 FFT 창 중심을 같은 시각에
+  맞춘다. 일반 Monitor도 12k/48kHz 두 창 중심을 맞춘다. 초저역 FFT는 Reference에서만
+  실행한다.
+- Reference의 65ms 평균과 220ms release를 제거해 sweep 뒤쪽의 과거 저역이 남지 않게
+  했다. 2Hz 1차 DC blocker는 0Hz 바이어스를 제거하면서 20Hz 감쇠를 0.05dB 미만으로
+  유지한다. 무신호/DC는 `0dBFS`가 아니라 `-72dBFS` 표시 하한으로 내려간다.
+- Sound Monitor Settings에 `Weighting=Flat/A-weighted`를 추가했다. Flat이 기본이며,
+  A-weighted는 렌더링 복사본에만 적용돼 공통 스냅샷과 dB Meter는 변하지 않는다.
+  마이크 SPL 교정이 없으므로 화면에 `dBA`나 ISO 등청감 측정이라고 표기하지 않는다.
+- 결정론적 고정 진폭 0.5 시험에서 30/300/3000Hz peak는
+  `29.6/301.1/2984.4Hz`, `-7.39/-6.26/-6.02dBFS`였다. 각 +16.7% 지점은
+  `-43.22/-72/-72dBFS`였고 -12dB 폭은 `4.0/16.3/81.6Hz`였다. 250~700Hz 이동 sweep
+  76개 유효 프레임에서 -6dB 이상의 분리된 두 피크는 없었으며 DC 입력도 바닥으로 복귀했다.
+- Curve/Reference의 로그 축에 Sub Bass/Bass/Low-Mid/Mid/High-Mid/High 여섯 구간을
+  옅은 색 배경으로 추가하고 `Bass/Mid/High`만 글자로 표시했다. 480×320 PC preview에서
+  경계, 그리드, 곡선과 라벨이 겹치지 않는 것을 확인했다.
+- 런처 Theme을 `Mode=Dark/Light`, `Color=Blue/Green/Yellow/Red` 두 단계로 분리했다.
+  앱 Color는 `Default/Blue/Green/Yellow/Red`이며 고정색도 전역 명암 모드를 따른다.
+  NVS schema v6는 같은 blob 크기에서 Color 3비트+Mode 5비트를 사용하고, v5 White와
+  Reference 저장값의 색 이전·모드 보존을 호스트 blob 회귀 검사로 확인했다.
+- CTest 9/9, FFT normalization, PC 깨끗한 빌드와 추적 EXE 전체 smoke가 통과했다.
+  smoke 전후 사용자 `sim/build/sim_nvs.bin` SHA-256은
+  `1D30B7C1B6EDA6F27F74C5ECCEC21F54CAEDBE7D5570810F418A6EC7774452B3`으로 같았다.
+  ESP-IDF 5.4.4 `-Werror=all` 깨끗한 기본 빌드는 `0xf03b0`(6% 여유),
+  `INPUT_TRS_LADDER=0`은 `0xecd70`(7% 여유)로 통과했고 기본 빌드의 정적 D/IRAM은
+  87,897 bytes가 남았다. 이 개발본은 플래시하지 않았다.
 
 ## 6. PC 시뮬레이터 자동 확인
 

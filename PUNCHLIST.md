@@ -9,11 +9,12 @@
 ## P1 - PC 기준 제품
 
 1. **D0A Sound Monitor 우선 최적화**
-   - 완료: Curve/Reference 무가중화, 5.859375Hz 저역 FFT, 41/108/1037Hz 폭 회귀 검사
+   - 완료: Curve/Reference Slope 0, 중심 정렬 3단계 FFT, DC 차단, Reference 무잔상,
+     30/300/3000Hz·경계 sweep 회귀 검사, Flat/A-weighted 표시
    - 남음: 12-Band·Circular의 프레임 시간과 입력 응답 계측
 2. **D0 기존 UI·설정 기준선 감사**
    - Launcher, Sound Monitor, Gallery, Tuner, Bounce, dB Meter의 모든 화면·빈 상태·오류 상태 목록화
-   - 공통 Color/Mode와 앱별 세부 설정의 실제 값·표시·NVS 대체 파일 복원 일치 확인
+   - 전역 Dark/Light·Color와 앱 Color/Mode·세부 설정의 실제 값·표시·NVS 복원 일치 확인
    - 앱별 preview와 smoke 수용 기준 확장
 3. **D1 플랫폼 능력과 PC 오디오 출력 기반**
    - `needs_codec` 하드코딩을 `AUDIO_PLAYBACK_OUTPUT` 플랫폼 능력 검사로 일반화
@@ -80,7 +81,8 @@
 - NVS v1 -> v2 최초 부팅 시 1회 기본값 리셋은 정상
 - 3행 런처: 빈 STASH 경유, Settings/Reorder 왕복, 선택 테두리와 대각 커서 실기 통과
 - Sound Monitor: 20Hz~20kHz 로그 축, -72~0dBFS 무가중 분석,
-  평활 현재선·채움 적용. peak hold는 12-Band에만 표시. PC 시각 검수와 COM4 정상 부팅 통과
+  선택형 A-weighted 표시. Curve는 평활 현재선·채움, Reference는 무평활·무잔상이며 peak
+  hold는 12-Band에만 표시. PC 시각 검수와 COM4 정상 부팅 통과
 - Sound Monitor 12밴드:
   50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz 적용
 - 얼굴형 렌더러 제거, 고정 중심·PSRAM 기반 72-segment Circular spectrum으로 교체
@@ -88,8 +90,9 @@
   sample peak dBFS와 1초 hold, 수동 LINE/INST 이득 기반 입력 잭 명목 Vrms·dBV·dBu 구현
 - Bounce 앱: SPECTRUM 온셋 기반 고양이·종이컵 러너, 점수·충돌·온셋 재시작 구현
 - 앱 외형 소유권 분리: 전역 UI Theme은 런처·모든 공통 팝업, 앱 Color는 해당 앱만 변경.
-  모든 앱에 `Default/Blue/White/Green` Color와 Mode 메뉴를 제공하며 Sound Monitor는
-  3개 Mode, Bounce는 Classic Cat만 제공. NVS v5는 v2~v4 blob을 보존 마이그레이션
+  전역 Theme은 `Dark/Light × Blue/Green/Yellow/Red`, 모든 앱은
+  `Default/Blue/Green/Yellow/Red` Color와 Mode 메뉴를 제공하며 Sound Monitor는
+  4개 Mode, Bounce는 Classic Cat만 제공. NVS v6는 v2~v5 blob을 보존 마이그레이션
 - 사용자 실기: 전역 Theme과 앱 팝업 팔레트 연동은 정상. Nyan은 장애물 등장 시
   프레임·입력 지연이 심해 제거
 - `f2182fea`를 외부 9V 분리·USB 단독 상태에서 COM4에 플래시. 약 25초 부팅 로그에서
@@ -118,3 +121,7 @@
 - 사용자 sweep 캡처에서 41Hz가 20~50Hz의 넓은 평면으로 복제되는 현상을 확인했다.
   `dB/oct` 경로를 제거하고 12kHz 저역 FFT를 추가한 뒤 41Hz peak=40.9Hz/-12dB 폭=19.5Hz,
   108Hz=105.1Hz/14.4Hz, 1037Hz=1041.9Hz/83.2Hz 회귀 검사가 통과했다.
+- 후속 sweep 캡처의 저역 폭·오른쪽 급경사와 500Hz 이중 피크를 분석해 Reference 전용
+  3kHz/2048 FFT, 2Hz DC blocker와 3개 창 중심 정렬을 추가했다. 고정 진폭 30/300/3000Hz는
+  peak `-7.39/-6.26/-6.02dBFS`, +16.7% 지점 `-43.22/-72/-72dBFS`였고,
+  250~700Hz sweep 76프레임에서 주요 이중 피크가 없었다.

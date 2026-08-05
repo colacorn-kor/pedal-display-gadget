@@ -291,7 +291,8 @@ audio_mode_t audio_get_mode(void)
 
 void audio_set_viz_mode(viz_mode_t mode)
 {
-    if (mode == VIZ_MONITOR || mode == VIZ_DECOR) s_viz_mode = mode;
+    if (mode == VIZ_MONITOR || mode == VIZ_DECOR ||
+        mode == VIZ_REFERENCE) s_viz_mode = mode;
 }
 
 viz_mode_t audio_get_viz_mode(void)

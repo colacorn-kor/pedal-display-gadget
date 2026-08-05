@@ -33,6 +33,13 @@ typedef struct {
 } frequency_mark_t;
 
 typedef struct {
+    float low_hz;
+    float high_hz;
+    uint32_t color;
+    const char *label;
+} frequency_zone_t;
+
+typedef struct {
     float smooth[VIZ_POINTS];
     int y_curve[PW];
     int y_prev[PW];
@@ -62,6 +69,18 @@ static const frequency_mark_t FREQUENCY_MARKS[] = {
 static const int DB_MARKS[] = { 0, -12, -24, -36, -48, -60, -72 };
 #define DB_MARK_COUNT ((int)(sizeof(DB_MARKS) / sizeof(DB_MARKS[0])))
 
+static const frequency_zone_t FREQUENCY_ZONES[] = {
+    {    20.0f,    60.0f, 0xD94A64, NULL   },
+    {    60.0f,   250.0f, 0xFF8C42, "Bass" },
+    {   250.0f,   500.0f, 0xF6C945, NULL   },
+    {   500.0f,  2000.0f, 0x5BCB77, "Mid"  },
+    {  2000.0f,  8000.0f, 0x43BCCD, NULL   },
+    {  8000.0f, 20000.0f, 0x8E6CEF, "High" },
+};
+#define FREQUENCY_ZONE_COUNT \
+    ((int)(sizeof(FREQUENCY_ZONES) / sizeof(FREQUENCY_ZONES[0])))
+#define FREQUENCY_ZONE_OPACITY 24
+
 static const char *TAG = "curve";
 static lv_obj_t *s_root;
 static lv_obj_t *s_canvas;
@@ -78,6 +97,7 @@ static int64_t s_fps_start_us;
 static int s_fps_frames;
 static curve_display_mode_t s_display_mode = CURVE_DISPLAY_VISUAL;
 static int s_smoothing_level = 1;
+static bool s_a_weighted;
 
 static float clamp_unit(float value)
 {
@@ -160,7 +180,10 @@ static void update_header_labels(void)
 
     if (s_display_mode == CURVE_DISPLAY_REFERENCE) {
         lv_label_set_text(s_title_label, "REFERENCE");
-        lv_label_set_text(s_profile_label, "-72..0 dBFS   FLAT");
+        lv_label_set_text(
+            s_profile_label,
+            s_a_weighted ? "-72..0 dBFS   A-WEIGHTED"
+                         : "-72..0 dBFS   FLAT");
         return;
     }
 
@@ -168,11 +191,19 @@ static void update_header_labels(void)
         "DETAIL", "BALANCED", "SIMPLE",
     };
     lv_label_set_text(s_title_label, "CURVE");
-    lv_label_set_text(s_profile_label, smoothing_names[s_smoothing_level]);
+    if (s_a_weighted) {
+        char text[28];
+        lv_snprintf(text, sizeof(text), "%s / A-WEIGHTED",
+                    smoothing_names[s_smoothing_level]);
+        lv_label_set_text(s_profile_label, text);
+    } else {
+        lv_label_set_text(s_profile_label, smoothing_names[s_smoothing_level]);
+    }
 }
 
 void renderer_curve_configure(curve_display_mode_t mode,
-                              int smoothing_level)
+                              int smoothing_level,
+                              bool a_weighted)
 {
     s_display_mode = mode == CURVE_DISPLAY_REFERENCE
         ? CURVE_DISPLAY_REFERENCE : CURVE_DISPLAY_VISUAL;
@@ -181,6 +212,7 @@ void renderer_curve_configure(curve_display_mode_t mode,
         smoothing_level = CURVE_SMOOTHING_LEVELS - 1;
     }
     s_smoothing_level = smoothing_level;
+    s_a_weighted = a_weighted;
     s_frame_valid = 0;
     update_header_labels();
 }
@@ -230,6 +262,24 @@ static void create_axes(void)
     }
 }
 
+static void create_zone_labels(void)
+{
+    for (int i = 0; i < FREQUENCY_ZONE_COUNT; i++) {
+        const frequency_zone_t *zone = &FREQUENCY_ZONES[i];
+        if (!zone->label) continue;
+
+        const int x0 = frequency_to_x(zone->low_hz);
+        const int x1 = i == FREQUENCY_ZONE_COUNT - 1
+            ? PW : frequency_to_x(zone->high_hz);
+        lv_obj_t *label = create_label(
+            s_root, zone->label,
+            mix_hex(s_theme.bg, zone->color, 176));
+        lv_obj_set_width(label, x1 - x0);
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_pos(label, PX + x0, PY + 5);
+    }
+}
+
 static void draw_static_canvas(void)
 {
     uint16_t background = C565(s_theme.bg);
@@ -242,6 +292,23 @@ static void draw_static_canvas(void)
         for (int x = 0; x < PW; x++) {
             canvas_row[x] = background;
             static_row[x] = background;
+        }
+    }
+
+    for (int i = 0; i < FREQUENCY_ZONE_COUNT; i++) {
+        const frequency_zone_t *zone = &FREQUENCY_ZONES[i];
+        const int x0 = i == 0 ? 0 : frequency_to_x(zone->low_hz);
+        const int x1 = i == FREQUENCY_ZONE_COUNT - 1
+            ? PW : frequency_to_x(zone->high_hz);
+        const uint16_t zone_color = mix_565(
+            background, C565(zone->color), FREQUENCY_ZONE_OPACITY);
+        for (int y = 0; y < PH; y++) {
+            uint16_t *canvas_row = pixel_at(s_buf, s_stride, 0, y);
+            uint16_t *static_row = pixel_at(s_static_buf, s_stride, 0, y);
+            for (int x = x0; x < x1; x++) {
+                canvas_row[x] = zone_color;
+                static_row[x] = zone_color;
+            }
         }
     }
 
@@ -467,6 +534,7 @@ static void curve_create(lv_obj_t *parent, const viz_theme_t *theme)
     }
     s_stride = draw_buf->header.stride;
     draw_static_canvas();
+    create_zone_labels();
     lv_obj_invalidate(s_canvas);
 }
 

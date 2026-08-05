@@ -20,7 +20,7 @@ PC 시뮬레이터는 화면을 잠깐 확인하는 모형이 아니라 다음 �
 ### 반드시 공통으로 사용하는 코드
 
 - `gadget_app_t` 앱 구현과 레지스트리
-- 런처, 슬롯, 공통 팝업, Color/Mode/세부 설정
+- 런처, 슬롯, 공통 팝업, 전역 Dark/Light·Color와 앱 Color/Mode/세부 설정
 - LVGL 화면과 렌더러
 - FFT 매핑, 튜너, 레벨 계산, music event 검출
 - 미디어 카탈로그, 재생 상태 기계, 게임 상태와 입력 규칙
@@ -117,6 +117,11 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 - [Voxengo SPAN](https://www.voxengo.com/product/span/)처럼 FFT block size, 시간 평균과
   spectrum smoothing을 서로 다른 개념으로 다룬다. 다만 GG는 정밀 분석 기본값이므로
   SPAN의 선택형 visual slope에 해당하는 `dB/oct` 보정은 두지 않고 Slope 0으로 고정한다.
+- Reference는 3k/12k/48kHz의 2048-point FFT 창 중심 시각을 맞춰 혼합하고 시간 평균이나
+  release를 적용하지 않는다. 고정 진폭 30/300/3000Hz와 250~700Hz 이동 sweep으로 위치,
+  폭, 레벨 편차와 경계 이중 피크를 자동 검사한다.
+- `Weighting`은 `Flat`이 기본이다. `A-weighted`는 원 분석값을 바꾸지 않는 선택형 표시
+  응답이며, SPL 교정이 없는 PC loopback을 `dBA`나 ISO 등청감 측정으로 표기하지 않는다.
 
 ### D0. 공통 UI 기준선
 

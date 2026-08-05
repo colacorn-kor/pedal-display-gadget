@@ -4,7 +4,7 @@
 > 이 문서를 근거로 작성될 Codex 지시서(단계별)에서 다룬다. 코드 블록은 *설계 의도*를
 > 보여주는 예시이며 최종 구현 디테일은 지시서/Codex가 확정한다.
 >
-> **구현 진척(2026-07-27 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
+> **구현 진척(2026-08-05 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
 > 이벤트와 홈·풋스위치 정책, ③-A 슬롯/NVS, ③-B/C 런처·순서변경·테마를 구현했다.
 > 런처는 `LIVE`·`STASH`·`Reorder/Settings`의 3행 내비게이션이며, 앱 홈 메뉴와
 > `Settings → Color/Mode/Info` 계층도 동작한다. 전역 UI 테마는 런처와 모든 공통 팝업의
@@ -100,6 +100,14 @@ typedef const char *(*app_mode_name_fn)(int idx);
 typedef int (*app_mode_index_fn)(void);
 typedef void (*app_mode_set_fn)(int idx);
 
+typedef struct {
+    const char *name;
+    app_mode_count_fn item_count;
+    app_mode_name_fn item_name;
+    app_mode_index_fn item_index;
+    app_mode_set_fn item_set;
+} app_choice_setting_t;
+
 struct gadget_app {
     const char  *id;            /* "tuner" — 안정적 식별자(설정 키) */
     const char  *name;          /* "Tuner" — 표시명 */
@@ -116,6 +124,8 @@ struct gadget_app {
     app_mode_name_fn  mode_name;
     app_mode_index_fn mode_index;
     app_mode_set_fn   mode_set;
+    const app_choice_setting_t *choice_settings; /* Settings 추가 선택기 */
+    int choice_setting_count;
 
     app_input_source_t input_sources;  /* [Phase 2 예약] 0 = 기본 입력 */
     app_output_route_t output_routes;  /* [Phase 2 예약] 0 = 없음 */
@@ -123,6 +133,10 @@ struct gadget_app {
     bool               needs_codec;    /* 임시: 오디오 재생 출력 부재 시 비활성 */
 };
 ```
+
+`choice_settings`는 앱이 `Color/Mode` 뒤와 `Info` 앞에 단일 선택 페이지를 등록하는 공통
+UI 계약이다. 매니저는 이름·항목·현재값·적용 콜백만 디스패치하고 값의 의미와 저장은 앱이
+소유한다. Sound Monitor의 `Weighting`이 첫 사용처다.
 
 `needs_codec`는 물리 코덱 이름을 앱 계약에 노출하는 임시 필드다. PC 오디오 출력과 미래
 GG 코덱을 같은 능력으로 취급하도록 플랫폼의 `AUDIO_PLAYBACK_OUTPUT` 검사로 교체한다.
@@ -214,7 +228,7 @@ typedef enum {
 - **매니저 전담**: `EV_FOOTSW`, `EV_FOOTSW_HOLD`, `EV_HOME`(팝업 열기), `EV_HOME_HOLD`(즉시 나가기).
 - **활성 앱 위임**(라이브): `EV_UP/DOWN/LEFT/RIGHT/OK` → `app->on_event()`. **홈 키는 앱에
   가지 않는다** — 나가기·공통 메뉴는 매니저 표준 팝업이 담당하므로 앱은 메인 화면만 신경 쓴다.
-- **팝업 열림 중**: 상·하 = 세로 항목 이동, 좌·우 = 값 선택 페이지에서만 값 변경,
+- **팝업 열림 중**: 상·하 = 세로 항목 이동, 좌·우 = 무동작,
   확인 = 실행, 홈 숏 = 한 단계 뒤로, 홈 롱 = 즉시 나가기,
   풋스위치 숏/롱 = 팝업 닫고 앱 순환/튜너 점프.
 - 런처/순서변경 모드에서는 활성 앱이 없으므로 5키를 매니저(런처 UI)가 사용.
@@ -229,33 +243,53 @@ typedef enum {
 집 → 앱 메인 화면을 깨끗하게 유지하고, 나가기 동작을 모든 앱에서 동일하게(홈 숏→확인, 또는
 홈 롱) 만든다.
 
-- **Launcher Settings**: `Theme · Info`. Theme은 전역 UI 테마
-  `BLUE/WHITE/GREEN`을 좌우로 즉시 바꾸고, 런처와 모든 공통 팝업에 함께 적용한다.
-- **App Settings**: 모든 앱이 `Color · Mode · Info`를 보인다. Color의 `Default`는
-  현재 전역 UI 테마를 상속하고 `Blue/White/Green`은 앱 콘텐츠만 고정한다. 어느 선택도
-  런처나 공통 팝업 팔레트에는 영향을 주지 않는다.
+- **Launcher Settings**: `Theme · Info`. Theme 아래의 `Mode=Dark/Light`와
+  `Color=Blue/Green/Yellow/Red`를 독립적으로 저장하고, 조합된 팔레트를 런처와 모든
+  공통 팝업에 함께 적용한다.
+- **App Settings**: 모든 앱이 `Color · Mode · Info`를 보며, 앱은 그 사이에 자체 선택
+  설정을 등록할 수 있다. Color의 `Default`는
+  현재 전역 UI 테마를 상속하고 `Blue/Green/Yellow/Red`는 앱 콘텐츠의 강조색만
+  고정한다. 고정색도 전역 `Dark/Light`를 따르며, 어느 앱 선택도 런처나 공통 팝업
+  팔레트에는 영향을 주지 않는다.
 - **Sound Monitor**의 Mode는 `Curve/12-Band/Circular/Reference`, **Bounce**의 Mode는
-  `Classic Cat`이다. 색과 화면 형식을 서로 독립적으로 저장한다.
+  `Classic Cat`이다. Sound Monitor는 자체 `Weighting=Flat/A-weighted`를 추가한다.
+  색, 화면 형식과 weighting을 서로 독립적으로 저장한다.
 
 ### Sound Monitor 스펙트럼 표시 계약
 
 - 분석 범위는 20Hz~20kHz 로그 주파수 축, 세로축은 `-72..0dBFS`다.
-- 분석 데이터는 모든 모드에서 **Slope 0인 무가중 dBFS**다. 청감상 평평하게 보이게 하는
-  `dB/oct` 시각 기울기는 정확한 주파수 비교를 왜곡하므로 제공하지 않는다.
+- Curve와 Reference의 그래프 배경은
+  `Sub Bass 20~60 / Bass 60~250 / Low-Mid 250~500 / Mid 500~2k /
+  High-Mid 2k~8k / High 8k~20kHz`를 여섯 개의 옅은 색 구간으로 표시한다.
+  좁은 화면의 밀도를 낮추기 위해 텍스트는 `Bass/Mid/High`만 표시한다.
+- 공통 분석 데이터는 모든 모드에서 **Slope 0인 무가중 dBFS**다. 청감상 평평하게 보이게
+  하는 `dB/oct` 시각 기울기는 정확한 주파수 비교를 왜곡하므로 제공하지 않는다.
+  앱의 `Weighting` 기본값 `Flat`은 이 값을 그대로 표시한다. 선택형 `A-weighted`는 렌더링
+  복사본에만 표준 A-weighting 응답을 더하며 원 스냅샷, dB Meter와 다른 앱의 값은 바꾸지
+  않는다. 마이크 SPL 교정이 없으므로 이 표시는 `dBA` 측정이나 특정 ISO 226 등청감곡선이
+  아니다.
 - `Curve`는 공간 단순화를 `DETAIL/BALANCED/SIMPLE` 중에서 좌·우로 조정한다. 이 평활은
   로그 축에서 이웃 점을 섞는 렌더링 옵션이며 FFT 레벨과 다른 앱의 데이터는 바꾸지 않는다.
 - `Reference`는 별도 모드다. 공간 평활도 끄고 입력의 상대 주파수 분포를 보여 준다.
-  현재 65ms 시간 평균·220ms release와
+  시간 평균·attack/release·peak hold도 적용하지 않는다. 단, FFT 창 자체의 시간 폭과
   PCM1808/프론트엔드의 실제 주파수 응답은 남으므로 교정 전에는 실험실급 분석기를
   뜻하지 않는다.
+- 2Hz 1차 DC blocker로 0Hz 성분과 바이어스 이동을 제거한다. 첫 표시점 20Hz의 감쇠는
+  0.05dB 미만이다. 0dBFS는 full scale이지 무신호가 아니므로 DC와 무신호는 표시 하한으로
+  내려간다.
 - 48kHz/2048-point 분석의 23.4375Hz bin을 로그 축 저역에 반복 복제하지 않는다.
-  20~300Hz는 7-tap anti-alias FIR로 12kHz까지 낮춘 별도 2048-point FFT를 사용해
-  5.859375Hz 해상도를 확보하고, 300~500Hz에서 원 48kHz FFT와 교차 혼합한다.
+  7-tap triangular anti-alias FIR와 4:1 감산을 두 번 사용해 12kHz/2048-point
+  5.859375Hz 분석과 3kHz/2048-point 1.46484375Hz 분석을 함께 만든다. Reference는
+  90~140Hz에서 3kHz→12kHz, 380~520Hz에서 12kHz→48kHz power를 로그 주파수 기준
+  smoothstep으로 교차 혼합한다. 세 FFT의 창 길이는 다르지만 과거 스펙트럼을 보관해
+  **창 중심 시각을 동일하게 맞춘 뒤** 혼합하므로 이동 sweep의 경계 이중 피크를 만들지
+  않는다. 일반 Monitor는 12kHz와 48kHz 창 중심만 같은 방식으로 맞춘다.
   표시 band가 FFT bin보다 좁으면 중심 주파수의 power를 보간하고, 넓을 때만 band 안의
   최대 power를 사용한다.
-- FFT 파워는 65ms 평균, 즉시 attack, 220ms release를 사용하고 별도 peak envelope를
-  유지한다. Curve/Reference는 선택한 공간 평활 뒤 현재 선과 반투명 채움만 그리며,
-  peak hold는 12-Band의 밴드별 마커로만 표시한다.
+- Curve와 12-Band의 FFT 파워는 65ms 평균, 즉시 attack, 220ms release를 사용하고 별도
+  peak envelope를 유지한다. Curve/Reference는 현재 선과 반투명 채움만 그리며,
+  peak hold는 12-Band의 밴드별 마커로만 표시한다. 초저역 FFT는 Reference에서만 실행해
+  일반 모드의 Core1 부하를 늘리지 않는다.
 - 본체와 PC 시뮬레이터는 이 매핑·시간 평활·release·peak hold를 구현한 동일한
   `fft_map.c`를 직접 빌드한다. 입력 수집은 I2S와 WASAPI/SDL로, FFT 실행 백엔드는
   ESP-DSP와 PC용 portable C로 나뉘지만 분석 정책은 시뮬레이터에서 별도로 재구현하지 않는다.
@@ -458,6 +492,11 @@ typedef struct {
   장기 스크립트/바이트코드 런타임이 생긴 뒤에만 SD로 배포한다.
 
 저장 대상: 체인 배정 + 순서 + 변형 + 퀵 앱 id + 마지막 화면 + 테마.
+
+현재 NVS schema v6는 기존 8바이트 앱 설정 크기를 유지하면서 `appearance`를
+Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`은 각각
+`Default/Blue/Blue/Green`으로 이전하고, 전역 `Blue/White/Green`은
+`Dark+Blue/Light+Blue/Dark+Green`으로 이전한다. 이 변환은 첫 v6 부팅 때 한 번 저장된다.
 
 마지막 앱 id는 앱 전환 즉시 쓰지 않고, 같은 앱이 1초간 유지된 뒤 저장한다. 빠른 풋스위치
 순환마다 플래시를 쓰지 않으면서 정상 종료·재부팅 복원에는 충분한 안정화 시간이다. 런처

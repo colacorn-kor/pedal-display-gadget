@@ -100,7 +100,8 @@ static bool smoke_tuner_is_voiced(tuner_result_t *result)
 static bool run_smoke_test(void)
 {
     tuner_result_t tuner;
-    const int initial_theme = theme_index();
+    const ui_theme_mode_t initial_global_mode = theme_mode();
+    const ui_theme_color_t initial_global_color = theme_color();
 
     if (sm_current() != 0) {
         fprintf(stderr, "SMOKE FAIL: startup did not open launcher\n");
@@ -111,12 +112,28 @@ static bool run_smoke_test(void)
         !smoke_send(EV_DOWN, "empty stash row -> action row") ||
         !smoke_send(EV_RIGHT, "reorder -> settings") ||
         !smoke_send(EV_OK, "open launcher settings") ||
-        !smoke_send(EV_OK, "settings -> global theme") ||
-        !smoke_send(EV_RIGHT, "cycle global theme")) {
+        !smoke_send(EV_OK, "settings -> theme") ||
+        !smoke_send(EV_OK, "theme -> mode") ||
+        !smoke_send(EV_DOWN, "cycle global light mode") ||
+        !smoke_send(EV_OK, "apply global light mode")) {
         return false;
     }
-    if (theme_index() != (initial_theme + 1) % theme_count()) {
-        fprintf(stderr, "SMOKE FAIL: global theme selector did not advance\n");
+    if (theme_mode() !=
+        (ui_theme_mode_t)((initial_global_mode + 1) % theme_mode_count()) ||
+        theme_color() != initial_global_color) {
+        fprintf(stderr, "SMOKE FAIL: global theme mode did not advance\n");
+        return false;
+    }
+    if (!smoke_send(EV_DOWN, "theme mode -> color") ||
+        !smoke_send(EV_OK, "theme -> color") ||
+        !smoke_send(EV_DOWN, "cycle global color") ||
+        !smoke_send(EV_OK, "apply global color")) {
+        return false;
+    }
+    if (theme_color() !=
+        (ui_theme_color_t)((initial_global_color + 1) %
+                           theme_color_count())) {
+        fprintf(stderr, "SMOKE FAIL: global theme color did not advance\n");
         return false;
     }
     if (!smoke_send(EV_HOME, "theme -> settings") ||
@@ -180,7 +197,8 @@ static bool run_smoke_test(void)
     }
     if (theme_index() != app_popup_palette ||
         app_slots_color(monitor) != APP_COLOR_BLUE ||
-        theme_for_app_color(app_slots_color(monitor)) != theme_at(0)) {
+        theme_for_app_color(app_slots_color(monitor)) !=
+            theme_at_mode_color(theme_mode(), UI_THEME_COLOR_BLUE)) {
         fprintf(stderr,
                 "SMOKE FAIL: monitor color changed popup palette or was "
                 "not saved independently\n");
@@ -198,6 +216,26 @@ static bool run_smoke_test(void)
         app_slots_mode(monitor) != 3) {
         fprintf(stderr,
                 "SMOKE FAIL: monitor Reference mode was not saved\n");
+        return false;
+    }
+    if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
+        !smoke_send(EV_DOWN, "monitor settings mode -> weighting") ||
+        !smoke_send(EV_OK, "open monitor weighting") ||
+        !smoke_send(EV_DOWN, "monitor Flat -> A-weighted") ||
+        !smoke_send(EV_OK, "apply monitor A-weighted") ||
+        monitor_app_debug_weighting_index() != 1) {
+        fprintf(stderr,
+                "SMOKE FAIL: monitor A-weighting was not applied\n");
+        return false;
+    }
+    if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
+        !smoke_send(EV_DOWN, "monitor settings mode -> weighting") ||
+        !smoke_send(EV_OK, "reopen monitor weighting") ||
+        !smoke_send(EV_UP, "monitor A-weighted -> Flat") ||
+        !smoke_send(EV_OK, "restore monitor Flat") ||
+        monitor_app_debug_weighting_index() != 0) {
+        fprintf(stderr,
+                "SMOKE FAIL: monitor Flat weighting was not restored\n");
         return false;
     }
     if (!run_frames_for(150)) return false;
@@ -335,7 +373,7 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
+    printf("SMOKE PASS: three-row launcher, theme Mode/Color, reorder, "
            "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
            "Curve controls, Reference mode, Color/Mode app settings, "
            "Classic Cat runner, input-voltage meter, quick app, cleanup\n",

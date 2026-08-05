@@ -122,7 +122,8 @@ audio_mode_t audio_get_mode(void)
 
 void audio_set_viz_mode(viz_mode_t mode)
 {
-    if (mode != VIZ_MONITOR && mode != VIZ_DECOR) return;
+    if (mode != VIZ_MONITOR && mode != VIZ_DECOR &&
+        mode != VIZ_REFERENCE) return;
     atomic_store_explicit(&s_viz_mode, (int)mode, memory_order_release);
 }
 

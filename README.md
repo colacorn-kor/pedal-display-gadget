@@ -48,7 +48,7 @@ PC simulator
 
 | ID | 표시명 | 역할 |
 |---|---|---|
-| `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무보정 Reference |
+| `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무잔상 Reference, Flat/A-weighted 표시 |
 | `images` | Gallery | SD의 JPG/PNG/BMP/GIF/LVGL BIN 이미지 탐색·표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
 | `bounce` | Bounce | 소리 온셋 고양이·종이컵 러너, Classic Cat 모드 |
@@ -61,9 +61,11 @@ PC simulator
 이동하고 좌·우는 현재 행 안에서만 이동한다. 앱 화면에서 홈을 누르면
 `Exit/Settings`, 런처의 Settings에는 `Theme/Info`가 열린다.
 
-런처의 Theme은 런처와 모든 공통 팝업의 전역 UI 팔레트를 바꾼다. 모든 앱의
-`Settings → Color`는 해당 앱 콘텐츠만 바꾸며 `Default`는 런처 Theme을 상속한다.
-`Settings → Mode`는 색과 독립적으로 앱의 화면 형식을 선택한다.
+런처의 `Theme → Mode`는 `Dark/Light`, `Theme → Color`는
+`Blue/Green/Yellow/Red`를 선택하며 런처와 모든 공통 팝업에 함께 적용된다. 모든 앱의
+`Settings → Color`는 `Default/Blue/Green/Yellow/Red` 중 해당 앱 콘텐츠 색만 바꾸고,
+`Default`는 런처의 Mode와 Color를 모두 상속한다. 고정 앱 색도 전역 Dark/Light는
+따른다. `Settings → Mode`는 색과 독립적으로 앱의 화면 형식을 선택한다.
 
 ## SD 카드
 
@@ -119,7 +121,8 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |
 | `renderer*.c`, `theme.c` | 로그·12밴드·원형 모니터 렌더러와 테마 |
 | `audio_level.{c,h}` | dBFS·Vrms·dBV·dBu 변환 |
-| `fft_map.{c,h}` | 48kHz FFT와 12kHz 저역 FFT를 20Hz~20kHz, -72~0dBFS의 256점 로그 스펙트럼으로 매핑 |
+| `fft_map.{c,h}` | 중심 시각을 맞춘 48k/12k/3kHz FFT를 20Hz~20kHz, -72~0dBFS 256점 로그 스펙트럼으로 매핑 |
+| `spectrum_weighting.{c,h}` | 원 분석값과 분리된 Flat/A-weighted 표시 응답 |
 | `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
 | `storage.{c,h}` | 이미지·음악·Game 콘텐츠 공통 카탈로그와 안전한 파일 접근 |
@@ -128,7 +131,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
 | `sim/` | SDL2 PC 시뮬레이터, `platform_sim`, PC용 FFT 실행 백엔드 |
 | `PC_SIMULATOR_PRODUCT.md` | PC 기준 제품과 ESP 이식 계약 |
-| `tests/` | MIDI, 튜너, 오디오 레벨 단위, 공통 FFT 매핑 기준 호스트 테스트 |
+| `tests/` | MIDI, 튜너, 오디오 레벨·weighting 단위, 공통 FFT 매핑 기준 호스트 테스트 |
 
 ## 펌웨어 빌드
 

@@ -57,11 +57,14 @@ Windows가 완전한 무음에서 loopback 패킷을 보내지 않으면 시뮬�
 0 표본을 보충한다. 따라서 공통 FFT의 평균·release·peak hold가 정지하지 않고 표시 하한까지
 내려간다.
 
-시뮬레이터는 펌웨어의 `fft_map.c`를 직접 빌드한다. 48kHz/2048-point의 23.4375Hz
-주 분석과 12kHz/2048-point의 5.859375Hz 저역 분석, 로그 매핑, 평균, release와 peak
-hold는 본체와 같다. 오디오 수집과 FFT 실행 백엔드만 WASAPI/SDL·portable C와
-I2S·ESP-DSP로 나뉜다. 분석값에는 `dB/oct` 기울기를 적용하지 않으며 Curve의 평활은
-렌더러 표시만 바꾼다.
+시뮬레이터는 펌웨어의 `fft_map.c`를 직접 빌드한다. 48kHz/2048-point 23.4375Hz,
+12kHz/2048-point 5.859375Hz, 3kHz/2048-point 1.46484375Hz 분석과 창 중심 정렬,
+로그 매핑, 평균, release와 peak hold는 본체와 같다. Reference는 시간 평균과 release 없이
+세 해상도를 혼합한다. 오디오 수집과 FFT 실행 백엔드만 WASAPI/SDL·portable C와
+I2S·ESP-DSP로 나뉜다. 분석값에는 `dB/oct` 기울기를 적용하지 않으며 Curve의 평활과
+선택형 `A-weighted` 응답은 렌더러에 전달되는 복사본만 바꾼다.
+Curve와 Reference 배경은 Sub Bass/Bass/Low-Mid/Mid/High-Mid/High 여섯 구간을 옅은
+색으로 나누고 `Bass/Mid/High`만 글자로 표시한다.
 
 캡처 장치를 열 수 없을 때는 경고를 출력하고 합성 visualizer, 마우스 pitch와 `O` onset을
 사용한다. 캡처 없이 결정론적 화면을 보려면:
@@ -87,6 +90,8 @@ NVS 상태와 키 입력 없이 특정 화면을 연다.
 .\sim\build\pedal_sim.exe --preview monitor-mode
 ```
 
+런처 Theme은 `Mode=Dark/Light`와 `Color=Blue/Green/Yellow/Red`를 독립적으로 저장한다.
+각 앱 Color는 `Default/Blue/Green/Yellow/Red`이며 Default는 전역 조합을 상속한다.
 런처·테마·슬롯의 지속 상태는 현재 작업 디렉터리의 `sim_nvs.bin`에 저장된다.
 
 ## PC SD 폴더

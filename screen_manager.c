@@ -25,9 +25,12 @@ typedef enum {
 typedef enum {
     POPUP_APP_MENU,
     POPUP_SETTINGS,
-    POPUP_GLOBAL_THEME,
+    POPUP_THEME_SETTINGS,
+    POPUP_GLOBAL_MODE,
+    POPUP_GLOBAL_COLOR,
     POPUP_APP_COLOR,
     POPUP_APP_MODE,
+    POPUP_APP_CHOICE,
     POPUP_INFO,
 } popup_page_t;
 
@@ -66,6 +69,7 @@ static lv_obj_t *s_popup;
 static lv_obj_t *s_popup_item[POPUP_ITEM_MAX];
 static int s_popup_item_count;
 static int s_popup_sel;
+static int s_popup_choice_setting;
 static popup_page_t s_popup_page = POPUP_APP_MENU;
 static popup_origin_t s_popup_origin = POPUP_FROM_APP;
 static sm_mode_t s_popup_return_mode = MODE_LIVE;
@@ -138,6 +142,28 @@ static const char *app_mode_name(const gadget_app_t *app, int idx)
 {
     if (app_has_modes(app)) return app->mode_name(idx);
     return idx == 0 ? "Default" : "";
+}
+
+static int app_choice_setting_count(const gadget_app_t *app)
+{
+    if (!app || !app->choice_settings || app->choice_setting_count <= 0) {
+        return 0;
+    }
+    const int maximum = POPUP_ITEM_MAX - 3;
+    return app->choice_setting_count < maximum
+        ? app->choice_setting_count : maximum;
+}
+
+static const app_choice_setting_t *app_choice_setting_at(
+    const gadget_app_t *app, int index)
+{
+    return index >= 0 && index < app_choice_setting_count(app)
+        ? &app->choice_settings[index] : NULL;
+}
+
+static const app_choice_setting_t *active_popup_choice_setting(void)
+{
+    return app_choice_setting_at(active_app(), s_popup_choice_setting);
 }
 
 static int app_index(const gadget_app_t *app)
@@ -560,19 +586,32 @@ static void popup_set_page(popup_page_t page)
 {
     s_popup_page = page;
     const gadget_app_t *app = active_app();
+    const app_choice_setting_t *choice = active_popup_choice_setting();
     if (page == POPUP_APP_COLOR) {
         s_popup_sel = (int)app_slots_color(app);
     } else if (page == POPUP_APP_MODE) {
         s_popup_sel = app_has_modes(app)
             ? app->mode_index()
             : (int)app_slots_mode(app);
+    } else if (page == POPUP_APP_CHOICE) {
+        s_popup_sel = choice && choice->item_index
+            ? choice->item_index() : 0;
+    } else if (page == POPUP_GLOBAL_MODE) {
+        s_popup_sel = (int)theme_mode();
+    } else if (page == POPUP_GLOBAL_COLOR) {
+        s_popup_sel = (int)theme_color();
     } else {
         s_popup_sel = 0;
     }
-    const int count = page == POPUP_APP_COLOR
-        ? APP_COLOR_COUNT
-        : (page == POPUP_APP_MODE ? app_mode_count(app) : 0);
-    if ((page == POPUP_APP_COLOR || page == POPUP_APP_MODE) &&
+    const int count = page == POPUP_APP_COLOR ? APP_COLOR_COUNT
+        : (page == POPUP_APP_MODE ? app_mode_count(app)
+        : (page == POPUP_APP_CHOICE && choice && choice->item_count
+            ? choice->item_count()
+        : (page == POPUP_GLOBAL_MODE ? theme_mode_count()
+        : (page == POPUP_GLOBAL_COLOR ? theme_color_count() : 0))));
+    if ((page == POPUP_APP_COLOR || page == POPUP_APP_MODE ||
+         page == POPUP_APP_CHOICE || page == POPUP_GLOBAL_MODE ||
+         page == POPUP_GLOBAL_COLOR) &&
         (s_popup_sel < 0 || s_popup_sel >= count ||
          s_popup_sel >= POPUP_ITEM_MAX)) {
         s_popup_sel = 0;
@@ -584,11 +623,13 @@ static void popup_build(void)
 {
     static const char *const app_menu[] = { "Exit", "Settings" };
     static const char *const launcher_settings[] = { "Theme", "Info" };
-    static const char *const app_settings[] = { "Color", "Mode", "Info" };
+    static const char *const theme_settings[] = { "Mode", "Color" };
     const char *const *labels = 0;
     const char *title_text = "MENU";
     int panel_w = 280;
     int panel_h = 176;
+    const gadget_app_t *app = active_app();
+    const app_choice_setting_t *choice = active_popup_choice_setting();
 
     popup_clear_objects();
 
@@ -597,22 +638,48 @@ static void popup_build(void)
         s_popup_item_count = 2;
     } else if (s_popup_page == POPUP_SETTINGS) {
         const bool launcher = s_popup_origin == POPUP_FROM_LAUNCHER;
-        labels = launcher ? launcher_settings : app_settings;
+        labels = launcher ? launcher_settings : NULL;
         title_text = "SETTINGS";
-        s_popup_item_count = launcher ? 2 : 3;
-    } else if (s_popup_page == POPUP_GLOBAL_THEME) {
+        s_popup_item_count = launcher
+            ? 2 : 3 + app_choice_setting_count(app);
+        if (!launcher && s_popup_item_count > 3) {
+            panel_h = 82 + s_popup_item_count * 42;
+            if (panel_h > 286) panel_h = 286;
+        }
+    } else if (s_popup_page == POPUP_THEME_SETTINGS) {
         title_text = "Theme";
-        panel_h = 150;
+        labels = theme_settings;
+        s_popup_item_count = 2;
+    } else if (s_popup_page == POPUP_GLOBAL_MODE) {
+        title_text = "Mode";
+        panel_w = 310;
+        s_popup_item_count = theme_mode_count();
+        panel_h = 82 + s_popup_item_count * 34;
+    } else if (s_popup_page == POPUP_GLOBAL_COLOR) {
+        title_text = "Color";
+        panel_w = 310;
+        s_popup_item_count = theme_color_count();
+        panel_h = 82 + s_popup_item_count * 34;
     } else if (s_popup_page == POPUP_APP_COLOR) {
         title_text = "Color";
         panel_w = 310;
         s_popup_item_count = APP_COLOR_COUNT;
         panel_h = 82 + s_popup_item_count * 34;
     } else if (s_popup_page == POPUP_APP_MODE) {
-        const gadget_app_t *app = active_app();
         title_text = "Mode";
         panel_w = 310;
         s_popup_item_count = app_mode_count(app);
+        if (s_popup_item_count > POPUP_ITEM_MAX) {
+            s_popup_item_count = POPUP_ITEM_MAX;
+        }
+        panel_h = 82 + s_popup_item_count * 34;
+        if (panel_h < 150) panel_h = 150;
+        if (panel_h > 286) panel_h = 286;
+    } else if (s_popup_page == POPUP_APP_CHOICE) {
+        title_text = choice && choice->name ? choice->name : "Option";
+        panel_w = 310;
+        s_popup_item_count = choice && choice->item_count
+            ? choice->item_count() : 0;
         if (s_popup_item_count > POPUP_ITEM_MAX) {
             s_popup_item_count = POPUP_ITEM_MAX;
         }
@@ -652,17 +719,7 @@ static void popup_build(void)
     lv_obj_set_style_text_font(title, font_small(), 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 16);
 
-    if (s_popup_page == POPUP_GLOBAL_THEME) {
-        lv_obj_t *selector = lv_label_create(panel);
-        lv_label_set_text_fmt(
-            selector,
-            LV_SYMBOL_LEFT "   %s   " LV_SYMBOL_RIGHT,
-            theme_get()->name);
-        lv_obj_set_style_text_font(selector, &lv_font_montserrat_14, 0);
-        lv_obj_set_style_text_color(selector, t->text, 0);
-        lv_obj_align(selector, LV_ALIGN_CENTER, 0, 14);
-    } else if (s_popup_page == POPUP_INFO) {
-        const gadget_app_t *app = active_app();
+    if (s_popup_page == POPUP_INFO) {
         lv_obj_t *info = lv_label_create(panel);
         lv_label_set_text_fmt(
             info,
@@ -673,16 +730,40 @@ static void popup_build(void)
         lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(info, LV_ALIGN_CENTER, 0, 14);
     } else {
-        const gadget_app_t *app = active_app();
         for (int i = 0; i < s_popup_item_count; i++) {
             const bool appearance_page =
                 s_popup_page == POPUP_APP_COLOR ||
-                s_popup_page == POPUP_APP_MODE;
-            const char *label = s_popup_page == POPUP_APP_COLOR
-                ? theme_app_color_name(i)
-                : (s_popup_page == POPUP_APP_MODE
-                    ? app_mode_name(app, i)
-                    : labels[i]);
+                s_popup_page == POPUP_APP_MODE ||
+                s_popup_page == POPUP_APP_CHOICE ||
+                s_popup_page == POPUP_GLOBAL_MODE ||
+                s_popup_page == POPUP_GLOBAL_COLOR;
+            const char *label;
+            if (s_popup_page == POPUP_APP_COLOR) {
+                label = theme_app_color_name(i);
+            } else if (s_popup_page == POPUP_APP_MODE) {
+                label = app_mode_name(app, i);
+            } else if (s_popup_page == POPUP_APP_CHOICE) {
+                label = choice && choice->item_name
+                    ? choice->item_name(i) : "";
+            } else if (s_popup_page == POPUP_GLOBAL_MODE) {
+                label = theme_mode_name(i);
+            } else if (s_popup_page == POPUP_GLOBAL_COLOR) {
+                label = theme_color_name(i);
+            } else if (s_popup_page == POPUP_SETTINGS &&
+                       s_popup_origin == POPUP_FROM_APP) {
+                const int choice_count = app_choice_setting_count(app);
+                if (i == 0) label = "Color";
+                else if (i == 1) label = "Mode";
+                else if (i < 2 + choice_count) {
+                    const app_choice_setting_t *setting =
+                        app_choice_setting_at(app, i - 2);
+                    label = setting && setting->name ? setting->name : "Option";
+                } else {
+                    label = "Info";
+                }
+            } else {
+                label = labels[i];
+            }
             s_popup_item[i] = lv_label_create(panel);
             lv_label_set_text(s_popup_item[i], label);
             lv_obj_set_style_text_font(
@@ -708,6 +789,7 @@ static void popup_open_app_menu(void)
     s_popup_return_mode = MODE_LIVE;
     s_popup_page = POPUP_APP_MENU;
     s_popup_sel = 0;
+    s_popup_choice_setting = 0;
     s_mode = MODE_POPUP;
     popup_build();
 }
@@ -729,13 +811,6 @@ static void popup_move(int delta)
     s_popup_sel =
         (s_popup_sel + delta + s_popup_item_count) % s_popup_item_count;
     popup_highlight();
-}
-
-static void popup_adjust_theme(int delta)
-{
-    if (s_popup_page != POPUP_GLOBAL_THEME || theme_count() <= 0) return;
-    theme_set_index(
-        (theme_index() + delta + theme_count()) % theme_count());
 }
 
 static void enter_app(int idx, int variant)
@@ -818,15 +893,28 @@ static void popup_activate(void)
     } else if (s_popup_page == POPUP_SETTINGS) {
         if (s_popup_origin == POPUP_FROM_LAUNCHER) {
             popup_set_page(s_popup_sel == 0
-                ? POPUP_GLOBAL_THEME
+                ? POPUP_THEME_SETTINGS
                 : POPUP_INFO);
         } else if (s_popup_sel == 0) {
             popup_set_page(POPUP_APP_COLOR);
         } else if (s_popup_sel == 1) {
             popup_set_page(POPUP_APP_MODE);
+        } else if (s_popup_sel <
+                   2 + app_choice_setting_count(active_app())) {
+            s_popup_choice_setting = s_popup_sel - 2;
+            popup_set_page(POPUP_APP_CHOICE);
         } else {
             popup_set_page(POPUP_INFO);
         }
+    } else if (s_popup_page == POPUP_THEME_SETTINGS) {
+        popup_set_page(s_popup_sel == 0
+            ? POPUP_GLOBAL_MODE : POPUP_GLOBAL_COLOR);
+    } else if (s_popup_page == POPUP_GLOBAL_MODE) {
+        theme_set_mode((ui_theme_mode_t)s_popup_sel);
+        popup_set_page(POPUP_THEME_SETTINGS);
+    } else if (s_popup_page == POPUP_GLOBAL_COLOR) {
+        theme_set_color((ui_theme_color_t)s_popup_sel);
+        popup_set_page(POPUP_THEME_SETTINGS);
     } else if (s_popup_page == POPUP_APP_COLOR) {
         const gadget_app_t *app = active_app();
         if (app) {
@@ -843,8 +931,11 @@ static void popup_activate(void)
             app_slots_set_mode(app, (uint8_t)s_popup_sel);
         }
         popup_set_page(POPUP_SETTINGS);
-    } else if (s_popup_page == POPUP_GLOBAL_THEME ||
-               s_popup_page == POPUP_INFO) {
+    } else if (s_popup_page == POPUP_APP_CHOICE) {
+        const app_choice_setting_t *choice = active_popup_choice_setting();
+        if (choice && choice->item_set) choice->item_set(s_popup_sel);
+        popup_set_page(POPUP_SETTINGS);
+    } else if (s_popup_page == POPUP_INFO) {
         popup_set_page(POPUP_SETTINGS);
     }
 }
@@ -859,6 +950,11 @@ static void popup_back(void)
         } else {
             popup_close();
         }
+    } else if (s_popup_page == POPUP_THEME_SETTINGS) {
+        popup_set_page(POPUP_SETTINGS);
+    } else if (s_popup_page == POPUP_GLOBAL_MODE ||
+               s_popup_page == POPUP_GLOBAL_COLOR) {
+        popup_set_page(POPUP_THEME_SETTINGS);
     } else {
         popup_set_page(POPUP_SETTINGS);
     }
@@ -1130,10 +1226,6 @@ void sm_on_event(ui_event_t event)
             popup_move(-1);
         } else if (event == EV_DOWN) {
             popup_move(1);
-        } else if (event == EV_LEFT) {
-            popup_adjust_theme(-1);
-        } else if (event == EV_RIGHT) {
-            popup_adjust_theme(1);
         } else if (event == EV_OK) {
             popup_activate();
         } else if (event == EV_HOME) {

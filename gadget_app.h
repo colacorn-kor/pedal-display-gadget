@@ -30,6 +30,14 @@ typedef const char *(*app_mode_name_fn)(int idx);
 typedef int (*app_mode_index_fn)(void);
 typedef void (*app_mode_set_fn)(int idx);
 
+typedef struct {
+    const char *name;
+    app_mode_count_fn item_count;
+    app_mode_name_fn item_name;
+    app_mode_index_fn item_index;
+    app_mode_set_fn item_set;
+} app_choice_setting_t;
+
 struct gadget_app {
     const char *id;
     const char *name;
@@ -46,6 +54,8 @@ struct gadget_app {
     app_mode_name_fn mode_name;
     app_mode_index_fn mode_index;
     app_mode_set_fn mode_set;
+    const app_choice_setting_t *choice_settings;
+    int choice_setting_count;
 
     app_input_source_t input_sources; /* Phase 2 reserved; zero means default inputs. */
     app_output_route_t output_routes; /* Phase 2 reserved; no enum value exists for main output. */
@@ -73,6 +83,7 @@ int images_app_count(void);
 
 #ifdef PEDAL_SIM
 int monitor_app_debug_smoothing_index(void);
+int monitor_app_debug_weighting_index(void);
 int bounce_app_debug_cat_y(void);
 bool bounce_app_debug_game_over(void);
 int bounce_app_debug_mode_index(void);

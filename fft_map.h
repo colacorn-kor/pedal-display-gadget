@@ -1,6 +1,10 @@
 #pragma once
 #include "esp_err.h"
-typedef enum { VIZ_MONITOR=0, VIZ_DECOR=1 } viz_mode_t;
+typedef enum {
+    VIZ_MONITOR = 0,
+    VIZ_DECOR,
+    VIZ_REFERENCE,
+} viz_mode_t;
 esp_err_t  fft_map_init(void);
 void       fft_map_reset(void);
 void       fft_map_set_mode(viz_mode_t m);
