@@ -9,8 +9,8 @@
 ## P1 - PC 기준 제품
 
 1. **D0A Sound Monitor 우선 최적화**
-   - Curve·12-Band·Circular·Reference의 프레임 시간과 입력 응답 측정
-   - 무음 바닥 복귀·저역 해상도·PC/GG 공유 renderer 계약 회귀 검사
+   - 완료: Curve/Reference 무가중화, 5.859375Hz 저역 FFT, 41/108/1037Hz 폭 회귀 검사
+   - 남음: 12-Band·Circular의 프레임 시간과 입력 응답 계측
 2. **D0 기존 UI·설정 기준선 감사**
    - Launcher, Sound Monitor, Gallery, Tuner, Bounce, dB Meter의 모든 화면·빈 상태·오류 상태 목록화
    - 공통 Color/Mode와 앱별 세부 설정의 실제 값·표시·NVS 대체 파일 복원 일치 확인
@@ -79,7 +79,7 @@
   온보드 레벨 변환을 거치는 3.3V 로직
 - NVS v1 -> v2 최초 부팅 시 1회 기본값 리셋은 정상
 - 3행 런처: 빈 STASH 경유, Settings/Reorder 왕복, 선택 테두리와 대각 커서 실기 통과
-- Sound Monitor: 20Hz~20kHz 로그 축, -72~0dBFS, 1kHz 기준 +4.5dB/oct,
+- Sound Monitor: 20Hz~20kHz 로그 축, -72~0dBFS 무가중 분석,
   평활 현재선·채움 적용. peak hold는 12-Band에만 표시. PC 시각 검수와 COM4 정상 부팅 통과
 - Sound Monitor 12밴드:
   50/100/200/400/600/800/1.2k/1.6k/3.2k/4.5k/6.4k/10kHz 적용
@@ -96,14 +96,15 @@
   8MB PSRAM 80MHz, 240MHz, ST7796/LVGL, ladder IDLE과 오류 0회 확인
 - 사용자 실기: 공통 Color/Mode 화면과 Classic Cat 장애물 구간의 짧은
   HOME/FOOTSW 응답을 포함해 이상 없음
-- Sound Monitor 개발본: Spectrum 표시명을 Curve로 변경하고 Curve 상하 기울기,
-  좌우 DETAIL/BALANCED/SIMPLE, 별도 flat Reference 모드 구현. 시뮬레이터 smoke 통과
+- 초기 Sound Monitor 개발본은 Curve 상하 기울기와 좌우 단순화를 제공했다. 이후 정확한
+  모니터링 계약에 따라 기울기는 제거하고 좌우 `DETAIL/BALANCED/SIMPLE`만 유지했다.
 - Curve/Reference 개발본: ESP-IDF 기본 `0xd2040`·래더 비활성 `0xce9c0`,
   호스트 4/4, COM4 일반 플래시와 25초 무오류 부팅 로그 통과
 - Basic 래더는 판정창 변경 없이 6키 UI 동작이 다시 정상임을 사용자가 확인했다.
   전압 재수집은 하지 않았으며 앞선 이탈은 일시적 접점 변화로 관찰한다.
-- 사용자 실기에서 Curve tilt·단순화 조작과 Reference `FLAT`, 짧은 HOME/FOOTSW가
-  모두 정상 동작했다. USB-only 무입력의 20~70Hz 약 -65dBFS 성분은 TL072 무전원
+- 사용자 실기에서 당시 Curve tilt·단순화 조작과 Reference `FLAT`, 짧은 HOME/FOOTSW가
+  모두 정상 동작했다. tilt 제거·저역 다중 해상도 개발본은 아직 본체에 플래시하지 않았다.
+  USB-only 무입력의 20~70Hz 약 -65dBFS 성분은 TL072 무전원
   부유 입력의 60Hz 주변 험으로 분류하며 외부 9V 실오디오 시험 전에는 성능 판정에서 제외한다.
 - PC 시뮬레이터의 별도 256-point DFT를 제거하고 본체와 같은 `fft_map.c`를 직접 빌드한다.
   23.4375Hz bin, 로그 매핑, 65ms 평균, 220ms release와 peak hold가 양쪽에서 일치하며
@@ -114,3 +115,6 @@
 - Sound Monitor 1차 PC 최적화로 Curve/Reference의 숨은 peak 계산·상태 추적을 제거하고
   목표 주기를 30ms로 조정했다. 결정론적 smoke에서 약 28fps가 31~32fps로 개선됐고,
   Gallery의 어두운 `GG` 빈 상태도 자동 회귀 검사에 포함했다.
+- 사용자 sweep 캡처에서 41Hz가 20~50Hz의 넓은 평면으로 복제되는 현상을 확인했다.
+  `dB/oct` 경로를 제거하고 12kHz 저역 FFT를 추가한 뒤 41Hz peak=40.9Hz/-12dB 폭=19.5Hz,
+  108Hz=105.1Hz/14.4Hz, 1037Hz=1041.9Hz/83.2Hz 회귀 검사가 통과했다.

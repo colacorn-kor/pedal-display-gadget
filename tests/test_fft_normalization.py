@@ -5,8 +5,8 @@ import math
 
 FFT_SIZE = 2048
 BIN = 100
-DISPLAY_SLOPE_DB_OCT = 4.5
-DISPLAY_PIVOT_HZ = 1000.0
+SAMPLE_RATE = 48000.0
+LOW_DECIMATION = 4
 
 
 def measured_dbfs(amplitude: float) -> float:
@@ -32,13 +32,21 @@ for amplitude in (1.0, 0.5, 0.1, 0.01):
     assert abs(actual - expected) < 0.01, (amplitude, actual, expected)
 
 
-def display_tilt(frequency: float) -> float:
-    return DISPLAY_SLOPE_DB_OCT * math.log2(frequency / DISPLAY_PIVOT_HZ)
+high_bin_hz = SAMPLE_RATE / FFT_SIZE
+low_bin_hz = SAMPLE_RATE / LOW_DECIMATION / FFT_SIZE
+assert abs(high_bin_hz - 23.4375) < 1e-9
+assert abs(low_bin_hz - 5.859375) < 1e-9
 
 
-assert abs(display_tilt(DISPLAY_PIVOT_HZ)) < 1e-9
-assert abs(display_tilt(2000.0) - DISPLAY_SLOPE_DB_OCT) < 1e-9
-assert abs(display_tilt(500.0) + DISPLAY_SLOPE_DB_OCT) < 1e-9
-assert display_tilt(20.0) < 0.0
-assert display_tilt(20000.0) > 0.0
+def boxcar_gain(frequency: float) -> float:
+    numerator = math.sin(math.pi * frequency * LOW_DECIMATION / SAMPLE_RATE)
+    denominator = LOW_DECIMATION * math.sin(math.pi * frequency / SAMPLE_RATE)
+    return abs(numerator / denominator)
+
+
+# Two cascaded four-sample boxcars form the 7-tap triangular decimator. It is
+# effectively flat in the low-resolution branch and strongly rejects aliases
+# around its first 12kHz null.
+assert 40.0 * math.log10(boxcar_gain(300.0)) > -0.02
+assert 40.0 * math.log10(boxcar_gain(11900.0)) < -75.0
 

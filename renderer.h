@@ -47,7 +47,6 @@ void              renderer_select(int idx, lv_obj_t *parent, const viz_theme_t *
 void              renderer_render(const viz_frame_t *frame);
 void              renderer_teardown(void);
 void              renderer_curve_configure(curve_display_mode_t mode,
-                                           int tilt_tenths,
                                            int smoothing_level);
 
 /* 내장 테마 + 등록 */

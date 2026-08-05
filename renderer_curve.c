@@ -77,7 +77,6 @@ static int64_t s_last_draw_us;
 static int64_t s_fps_start_us;
 static int s_fps_frames;
 static curve_display_mode_t s_display_mode = CURVE_DISPLAY_VISUAL;
-static int s_tilt_tenths = 45;
 static int s_smoothing_level = 1;
 
 static float clamp_unit(float value)
@@ -168,23 +167,15 @@ static void update_header_labels(void)
     static const char *const smoothing_names[CURVE_SMOOTHING_LEVELS] = {
         "DETAIL", "BALANCED", "SIMPLE",
     };
-    char text[40];
-    lv_snprintf(text, sizeof(text), "%d.%d dB/oct   %s",
-                s_tilt_tenths / 10, s_tilt_tenths % 10,
-                smoothing_names[s_smoothing_level]);
     lv_label_set_text(s_title_label, "CURVE");
-    lv_label_set_text(s_profile_label, text);
+    lv_label_set_text(s_profile_label, smoothing_names[s_smoothing_level]);
 }
 
 void renderer_curve_configure(curve_display_mode_t mode,
-                              int tilt_tenths,
                               int smoothing_level)
 {
     s_display_mode = mode == CURVE_DISPLAY_REFERENCE
         ? CURVE_DISPLAY_REFERENCE : CURVE_DISPLAY_VISUAL;
-    if (tilt_tenths < 0) tilt_tenths = 0;
-    if (tilt_tenths > 120) tilt_tenths = 120;
-    s_tilt_tenths = tilt_tenths;
     if (smoothing_level < 0) smoothing_level = 0;
     if (smoothing_level >= CURVE_SMOOTHING_LEVELS) {
         smoothing_level = CURVE_SMOOTHING_LEVELS - 1;

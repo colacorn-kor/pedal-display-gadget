@@ -56,7 +56,6 @@ static audio_viz_snapshot_t s_viz;
 static audio_mode_t s_active_mode = AUDIO_SPECTRUM;
 static bool s_active_mode_ready;
 static viz_mode_t s_active_viz_mode = VIZ_MONITOR;
-static int s_active_viz_tilt_tenths;
 static bool s_active_viz_ready;
 
 static float s_mouse_x = SIM_SCREEN_W * 0.5f;
@@ -302,18 +301,12 @@ static void handle_mode_change(audio_mode_t mode)
 static void sync_visualizer_profile(void)
 {
     const viz_mode_t requested_mode = audio_get_viz_mode();
-    const int requested_tilt_tenths = audio_get_viz_tilt_tenths();
     const bool mode_changed =
         !s_active_viz_ready || requested_mode != s_active_viz_mode;
 
     if (mode_changed) {
         s_active_viz_mode = requested_mode;
         fft_map_set_mode(requested_mode);
-    }
-    if (!s_active_viz_ready || mode_changed ||
-        requested_tilt_tenths != s_active_viz_tilt_tenths) {
-        s_active_viz_tilt_tenths = requested_tilt_tenths;
-        fft_map_set_tilt_db_oct((float)requested_tilt_tenths * 0.1f);
     }
     s_active_viz_ready = true;
 }

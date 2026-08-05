@@ -50,7 +50,6 @@ static bool s_smoke_test;
 static const char *s_preview;
 static audio_mode_t s_audio_mode = AUDIO_SPECTRUM;
 static viz_mode_t s_viz_mode = VIZ_MONITOR;
-static int s_viz_tilt_tenths = 45;
 static int s_mute;
 
 static bool queue_push(ui_event_t ev)
@@ -298,18 +297,6 @@ void audio_set_viz_mode(viz_mode_t mode)
 viz_mode_t audio_get_viz_mode(void)
 {
     return s_viz_mode;
-}
-
-void audio_set_viz_tilt_tenths(int tilt_tenths)
-{
-    if (tilt_tenths < 0) tilt_tenths = 0;
-    if (tilt_tenths > 120) tilt_tenths = 120;
-    s_viz_tilt_tenths = tilt_tenths;
-}
-
-int audio_get_viz_tilt_tenths(void)
-{
-    return s_viz_tilt_tenths;
 }
 
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out)

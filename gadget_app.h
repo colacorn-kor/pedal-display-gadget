@@ -72,7 +72,6 @@ void images_app_set_content(int content);
 int images_app_count(void);
 
 #ifdef PEDAL_SIM
-int monitor_app_debug_tilt_index(void);
 int monitor_app_debug_smoothing_index(void);
 int bounce_app_debug_cat_y(void);
 bool bounce_app_debug_game_over(void);

@@ -119,7 +119,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |
 | `renderer*.c`, `theme.c` | 로그·12밴드·원형 모니터 렌더러와 테마 |
 | `audio_level.{c,h}` | dBFS·Vrms·dBV·dBu 변환 |
-| `fft_map.{c,h}` | 2048-point FFT를 20Hz~20kHz, -72~0dBFS의 256점 로그 스펙트럼으로 매핑 |
+| `fft_map.{c,h}` | 48kHz FFT와 12kHz 저역 FFT를 20Hz~20kHz, -72~0dBFS의 256점 로그 스펙트럼으로 매핑 |
 | `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
 | `storage.{c,h}` | 이미지·음악·Game 콘텐츠 공통 카탈로그와 안전한 파일 접근 |

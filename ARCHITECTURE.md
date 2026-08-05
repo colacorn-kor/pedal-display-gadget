@@ -240,14 +240,19 @@ typedef enum {
 ### Sound Monitor 스펙트럼 표시 계약
 
 - 분석 범위는 20Hz~20kHz 로그 주파수 축, 세로축은 `-72..0dBFS`다.
-- `Curve`는 1kHz 기준 표시 기울기를 `0/1.5/3.0/4.5/6.0dB/oct` 중에서 상·하로,
-  공간 단순화를 `DETAIL/BALANCED/SIMPLE` 중에서 좌·우로 조정한다. 기본값은
-  `+4.5dB/oct / BALANCED`다. 이는 오디오 신호를 바꾸는 EQ가 아니라 사람이 읽기 좋은
-  스펙트럼 모양을 위한 표시 보정이다.
-- `Reference`는 별도 모드다. 표시 기울기 `0dB/oct`, 공간 평활 없음으로 고정해 입력의
-  상대 주파수 분포를 가공하지 않고 보여 준다. 현재 65ms 시간 평균·220ms release와
+- 분석 데이터는 모든 모드에서 **Slope 0인 무가중 dBFS**다. 청감상 평평하게 보이게 하는
+  `dB/oct` 시각 기울기는 정확한 주파수 비교를 왜곡하므로 제공하지 않는다.
+- `Curve`는 공간 단순화를 `DETAIL/BALANCED/SIMPLE` 중에서 좌·우로 조정한다. 이 평활은
+  로그 축에서 이웃 점을 섞는 렌더링 옵션이며 FFT 레벨과 다른 앱의 데이터는 바꾸지 않는다.
+- `Reference`는 별도 모드다. 공간 평활도 끄고 입력의 상대 주파수 분포를 보여 준다.
+  현재 65ms 시간 평균·220ms release와
   PCM1808/프론트엔드의 실제 주파수 응답은 남으므로 교정 전에는 실험실급 분석기를
   뜻하지 않는다.
+- 48kHz/2048-point 분석의 23.4375Hz bin을 로그 축 저역에 반복 복제하지 않는다.
+  20~300Hz는 7-tap anti-alias FIR로 12kHz까지 낮춘 별도 2048-point FFT를 사용해
+  5.859375Hz 해상도를 확보하고, 300~500Hz에서 원 48kHz FFT와 교차 혼합한다.
+  표시 band가 FFT bin보다 좁으면 중심 주파수의 power를 보간하고, 넓을 때만 band 안의
+  최대 power를 사용한다.
 - FFT 파워는 65ms 평균, 즉시 attack, 220ms release를 사용하고 별도 peak envelope를
   유지한다. Curve/Reference는 선택한 공간 평활 뒤 현재 선과 반투명 채움만 그리며,
   peak hold는 12-Band의 밴드별 마커로만 표시한다.

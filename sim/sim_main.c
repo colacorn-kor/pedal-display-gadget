@@ -151,7 +151,6 @@ static bool run_smoke_test(void)
     const int initial_mode = monitor && monitor->mode_index
         ? monitor->mode_index()
         : -1;
-    const int initial_tilt = monitor_app_debug_tilt_index();
     const int initial_smoothing = monitor_app_debug_smoothing_index();
     if (!monitor ||
         app_slots_color(monitor) != APP_COLOR_DEFAULT ||
@@ -160,17 +159,8 @@ static bool run_smoke_test(void)
                 "SMOKE FAIL: monitor Default color did not inherit UI theme\n");
         return false;
     }
-    if (!smoke_send(EV_UP, "Curve tilt up") ||
-        !monitor->mode_index ||
-        monitor->mode_index() != initial_mode ||
-        monitor_app_debug_tilt_index() !=
-            (initial_tilt < 4 ? initial_tilt + 1 : initial_tilt) ||
-        monitor_app_debug_smoothing_index() != initial_smoothing) {
-        fprintf(stderr,
-                "SMOKE FAIL: Curve direction controls changed wrong state\n");
-        return false;
-    }
-    if (!smoke_send(EV_RIGHT, "Curve simplification up") ||
+    if (!monitor->mode_index || monitor->mode_index() != initial_mode ||
+        !smoke_send(EV_RIGHT, "Curve simplification up") ||
         monitor_app_debug_smoothing_index() !=
             (initial_smoothing < 2
                 ? initial_smoothing + 1 : initial_smoothing) ||
@@ -205,10 +195,9 @@ static bool run_smoke_test(void)
         return false;
     }
     if (monitor->mode_index() != 3 ||
-        app_slots_mode(monitor) != 3 ||
-        audio_get_viz_tilt_tenths() != 0) {
+        app_slots_mode(monitor) != 3) {
         fprintf(stderr,
-                "SMOKE FAIL: monitor Reference mode was not flat or saved\n");
+                "SMOKE FAIL: monitor Reference mode was not saved\n");
         return false;
     }
     if (!run_frames_for(150)) return false;

@@ -57,9 +57,11 @@ Windows가 완전한 무음에서 loopback 패킷을 보내지 않으면 시뮬�
 0 표본을 보충한다. 따라서 공통 FFT의 평균·release·peak hold가 정지하지 않고 표시 하한까지
 내려간다.
 
-시뮬레이터는 펌웨어의 `fft_map.c`를 직접 빌드한다. 2048-point window, 23.4375Hz bin,
-로그 매핑, 평균, release와 peak hold는 본체와 같다. 오디오 수집과 FFT 실행 백엔드만
-WASAPI/SDL·portable C와 I2S·ESP-DSP로 나뉜다.
+시뮬레이터는 펌웨어의 `fft_map.c`를 직접 빌드한다. 48kHz/2048-point의 23.4375Hz
+주 분석과 12kHz/2048-point의 5.859375Hz 저역 분석, 로그 매핑, 평균, release와 peak
+hold는 본체와 같다. 오디오 수집과 FFT 실행 백엔드만 WASAPI/SDL·portable C와
+I2S·ESP-DSP로 나뉜다. 분석값에는 `dB/oct` 기울기를 적용하지 않으며 Curve의 평활은
+렌더러 표시만 바꾼다.
 
 캡처 장치를 열 수 없을 때는 경고를 출력하고 합성 visualizer, 마우스 pitch와 `O` onset을
 사용한다. 캡처 없이 결정론적 화면을 보려면:

@@ -114,6 +114,9 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
   무음 복귀, 저역 해상도와 입력 응답을 회귀 검사한다.
 - 공유 renderer·`fft_map`을 최적화하되 PC와 GG의 시각·시간 동작을 갈라놓지 않는다.
 - 미디어·게임 구현보다 이 단계의 정확도와 안정성을 먼저 유지한다.
+- [Voxengo SPAN](https://www.voxengo.com/product/span/)처럼 FFT block size, 시간 평균과
+  spectrum smoothing을 서로 다른 개념으로 다룬다. 다만 GG는 정밀 분석 기본값이므로
+  SPAN의 선택형 visual slope에 해당하는 `dB/oct` 보정은 두지 않고 Slope 0으로 고정한다.
 
 ### D0. 공통 UI 기준선
 

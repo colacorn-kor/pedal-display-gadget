@@ -34,6 +34,53 @@ static void feed_tone(float frequency, float amplitude, int sample_count,
     }
 }
 
+static int strongest_band(const float *bars)
+{
+    int strongest = 0;
+    for (int i = 1; i < VIZ_POINTS; i++) {
+        if (bars[i] > bars[strongest]) strongest = i;
+    }
+    return strongest;
+}
+
+static int check_tone_shape(float tone_hz, float minimum_peak_hz,
+                            float maximum_peak_hz, float maximum_width_hz,
+                            float *bars, float *peaks)
+{
+    int sample_cursor = 0;
+    memset(bars, 0, sizeof(float) * VIZ_POINTS);
+    memset(peaks, 0, sizeof(float) * VIZ_POINTS);
+    fft_map_reset();
+    feed_tone(tone_hz, 0.5f, AUDIO_SAMPLE_RATE,
+              &sample_cursor, bars, peaks);
+
+    const int strongest = strongest_band(bars);
+    const float peak_hz = fft_map_frequency_at(strongest);
+    if (peak_hz < minimum_peak_hz || peak_hz > maximum_peak_hz) {
+        fprintf(stderr, "tone %.1fHz peaked at %.1fHz\n", tone_hz, peak_hz);
+        return fail("tone peak mapped to wrong frequency");
+    }
+
+    const float threshold = bars[strongest] -
+        12.0f / (VIZ_DB_TOP - VIZ_DB_FLOOR);
+    int first = strongest;
+    int last = strongest;
+    while (first > 0 && bars[first - 1] >= threshold) first--;
+    while (last + 1 < VIZ_POINTS && bars[last + 1] >= threshold) last++;
+    const float width_hz = fft_map_frequency_at(last) -
+                           fft_map_frequency_at(first);
+    if (width_hz > maximum_width_hz) {
+        fprintf(stderr,
+                "tone %.1fHz -12dB width %.1fHz (%0.1f..%0.1fHz)\n",
+                tone_hz, width_hz,
+                fft_map_frequency_at(first), fft_map_frequency_at(last));
+        return fail("tone occupied an implausibly wide display area");
+    }
+    printf("tone %.1fHz -> peak %.1fHz, -12dB width %.1fHz\n",
+           tone_hz, peak_hz, width_hz);
+    return 0;
+}
+
 int main(void)
 {
     float bars[VIZ_POINTS];
@@ -44,16 +91,23 @@ int main(void)
     memset(peaks, 0, sizeof(peaks));
     if (fft_map_init() != ESP_OK) return fail("fft_map_init");
     fft_map_set_mode(VIZ_MONITOR);
-    fft_map_set_tilt_db_oct(0.0f);
 
-    /* Bin 2 at 48k/2048 is 46.875Hz. This specifically guards the low
-     * resolution regression caused by the simulator's former 256-point DFT. */
+    if (check_tone_shape(41.0f, 34.0f, 48.0f, 25.0f,
+                         bars, peaks) != 0 ||
+        check_tone_shape(108.0f, 98.0f, 118.0f, 45.0f,
+                         bars, peaks) != 0 ||
+        check_tone_shape(1037.0f, 980.0f, 1100.0f, 160.0f,
+                         bars, peaks) != 0) {
+        return 1;
+    }
+
+    fft_map_reset();
+    sample_cursor = 0;
+    memset(bars, 0, sizeof(bars));
+    memset(peaks, 0, sizeof(peaks));
     feed_tone(46.875f, 0.5f, 8192, &sample_cursor, bars, peaks);
 
-    int strongest = 0;
-    for (int i = 1; i < VIZ_POINTS; i++) {
-        if (bars[i] > bars[strongest]) strongest = i;
-    }
+    const int strongest = strongest_band(bars);
     if (strongest >= 64) return fail("low tone mapped outside low bands");
     if (bars[strongest] < 0.75f) return fail("low tone level too small");
     if (peaks[strongest] + 1e-6f < bars[strongest]) {
@@ -77,6 +131,6 @@ int main(void)
         }
     }
 
-    printf("PASS: shared low-band mapping, peak hold, and silence release\n");
+    printf("PASS: multi-resolution tone shape, peak hold, and silence release\n");
     return 0;
 }

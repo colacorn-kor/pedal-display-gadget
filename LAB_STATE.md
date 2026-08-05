@@ -9,6 +9,9 @@
 - 마지막 실기 펌웨어: 위 커밋의 dirty 작업 트리에서 빌드한 Curve/Reference 개발본
 - 현재 펌웨어 상태: 자동 빌드·플래시·25초 부팅 로그 통과, Curve/Reference 사용자
   화면·버튼 실기 확인 통과
+- 현재 미플래시 개발본: Curve/Reference의 `dB/oct` 표시 기울기를 제거하고
+  12kHz/2048-point 저역 FFT를 추가했다. PC·호스트·ESP 자동 검증은 통과했으나
+  본체 화면과 실제 오디오 입력은 아직 확인하지 않았다.
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
@@ -191,7 +194,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | 항목 | 상태 |
 |---|---|
 | 깨끗한 ESP-IDF 전체 빌드 / `-Werror` | 통과 (`pedal_display.bin` 0xeed00 bytes, 7% 여유) |
-| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xeb720` bytes, 8% 여유) |
+| `INPUT_TRS_LADDER=0` 컴파일 | 통과 (`0xe3300` bytes, 11% 여유) |
 | `AUDIO_DUAL_RANGE=1` 컴파일 | 통과 (`0xef9d0` bytes, 6% 여유), 현재 장치에는 미플래시 |
 | 호스트 검증 7/7 | 통과 (CTest 6개 + FFT normalization) |
 | PC 시뮬레이터 | 깨끗한 빌드·Gallery 포함 전체 결정론적 smoke·Windows 기본 출력 WASAPI 루프백 개방 통과 |
@@ -208,7 +211,27 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 | USB-only 오디오 | TL072 무전원 부유 입력이라 기능 판정 제외 |
 | dB Meter 전압·시간평균 실기 | 사용자 요청으로 보류, 1kHz 1점 교정 대기 |
 | 공통 Color/Mode + Nyan 제거 실기 | 플래시·25초 로그·사용자 화면/입력 확인 통과 |
-| Curve/Reference 실기 | tilt·단순화·FLAT 표시와 짧은 HOME/FOOTSW 모두 통과 |
+| Curve/Reference 실기 | 이전 tilt 개발본의 단순화·FLAT 표시와 짧은 HOME/FOOTSW 통과. 무가중 저역 FFT 개발본은 미확인 |
+
+### 2026-08-05 Sound Monitor 저역 다중 해상도 개발본
+
+- 사용자 20Hz~20kHz sweep 캡처에서 41Hz가 약 20~50Hz 전체에 평면처럼 반복되고,
+  108Hz도 실제보다 넓은 저역 덩어리로 보이는 현상을 확인했다. 48kHz/2048-point FFT의
+  23.4375Hz bin 하나를 여러 로그 표시점이 공유하던 것이 원인이었다.
+- 시각적 저역 감쇠일 뿐 해상도를 늘리지 못하는 `dB/oct` 경로와 Curve 상·하 조작을
+  제거했다. 모든 Sound Monitor 모드는 Slope 0인 무가중 dBFS를 받으며 Curve 좌·우의
+  `DETAIL/BALANCED/SIMPLE` 공간 평활만 남겼다.
+- 원 48kHz FFT는 유지하고, 7-tap triangular anti-alias FIR와 4:1 decimation으로 만든
+  12kHz/2048-point 저역 FFT를 20~300Hz에 사용한다. 300~500Hz는 두 분석을 power에서
+  혼합하고, FFT bin보다 좁은 로그 표시점은 중심 주파수 power를 보간한다.
+- 공유 `fft_map` 회귀 시험에서 41Hz는 peak 40.9Hz / -12dB 폭 19.5Hz,
+  108Hz는 105.1Hz / 14.4Hz, 1037Hz는 1041.9Hz / 83.2Hz로 통과했다. 호스트 CTest 6개와
+  FFT normalization, PC 결정론 smoke가 통과했다.
+- 깨끗한 ESP-IDF `-Werror=all` 기본 빌드는 `0xeed00` bytes(7% 여유),
+  `INPUT_TRS_LADDER=0` 빌드는 `0xe3300` bytes(11% 여유)로 통과했다. 오디오 Core1 소유,
+  I2S 수집과 seqlock 발행 구조는 바꾸지 않았다.
+- 이 개발본은 아직 COM4에 플래시하지 않았다. 본체에서 41/108/1037Hz 또는 sweep 형상,
+  Curve 좌·우와 HOME/FOOTSW 응답, Core1 부하·I2S overflow를 확인해야 한다.
 
 ## 6. PC 시뮬레이터 자동 확인
 
