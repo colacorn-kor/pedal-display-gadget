@@ -531,14 +531,35 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   공통 게임 순이다. 상세 계약은 `PC_SIMULATOR_PRODUCT.md`에 기록했다.
 - 이번 작업은 문서와 개발 계약 정리이며 코드·추적 EXE·본체 펌웨어를 변경하지 않았다.
 
+### 2026-08-05 Sound Monitor 1차 최적화와 SD 앱 폴백 계약
+
+- Sound Monitor를 최우선으로 두고 Curve/Reference에서 이미 표시하지 않던 peak 계산과
+  상태 추적을 제거했다. Curve 목표 주기는 33.3ms에서 30ms로 줄였고, 결정론적 PC smoke의
+  측정값은 약 28fps에서 31~32fps로 개선됐다. 12-Band의 peak 표시는 그대로 유지한다.
+- Gallery는 이미지나 SD 루트가 없을 때 어두운 `GG` 월페이퍼와 상태 문구를 표시한다.
+  smoke가 이 폴백 화면을 실제 객체 상태로 검사하도록 확장했다.
+- 저장소의 Retro 명칭을 Game으로 바꾸고 표준 경로를 `GG/games`로 정했다. Game의
+  `No Game`→내장 점프 게임과 Music의 내장 8비트 로비 음악은 제품 계약을 확정했으며,
+  실제 앱·재생 구현은 다음 단계다. 앱은 한 번에 하나만 실행하고 Bluetooth audio는
+  GG 범위에서 제외한다.
+- 깨끗한 PC Debug 빌드와 갱신된 추적 `pedal_sim.exe` smoke, 호스트 CTest 6/6,
+  FFT normalization이 통과했다. ESP-IDF 5.4.4 기본 `0xeec00`과
+  `INPUT_TRS_LADDER=0` `0xeb620`도 `-Werror=all` 전체 빌드를 통과했다.
+- 로컬 ESP-IDF 공식 Python 환경은 삭제된 Python 3.14 경로를 가리켜 동작하지 않았다.
+  전역 설치를 건드리지 않고 작업공간의 임시 Python 3.12 환경으로 검증했으며, 정리 후
+  다음 일상 빌드·플래시 전에 공식 환경을 복구해야 한다.
+- 이번 작업에서는 본체 플래시와 실기 검증을 수행하지 않았다.
+
 ## 7. 다음 작업
 
-1. PC 시뮬레이터에서 기존 런처·5개 앱·설정의 정상·빈 상태·오류 상태를 감사하고 preview/
-   smoke 수용 기준을 확장한다.
+1. Sound Monitor의 12-Band·Circular 프레임 시간과 입력 응답을 같은 방식으로 계측하고,
+   renderer 공통 경로에서 남은 병목을 줄인다.
 2. 물리 `needs_codec`를 플랫폼 오디오 출력 능력으로 일반화하고 공통 재생 API와 PC 출력
    백엔드를 구현한다.
-3. PC에서 `GG/music` Music 앱의 WAV 재생 흐름을 완성한 뒤 Metronome·효과음으로 확장한다.
-4. 하드웨어 작업을 재개할 때는 먼저 실물 오디오 연결을 확인해
+3. PC에서 Music의 내장 로비 음악과 `GG/music` WAV 재생, Game의 `No Game` 내장 점프 게임
+   진입 흐름을 순서대로 구현한다.
+4. ESP-IDF v5.4.4 공식 Python 환경을 복구해 일반 `idf.py` 빌드·플래시 경로를 정상화한다.
+5. 하드웨어 작업을 재개할 때는 먼저 실물 오디오 연결을 확인해
    `hardware/AS_BUILT_WIRING.md`의 미확인 행을 갱신한다.
-5. `ASSEMBLY.md` 권장 TL072 배선을 반영한 뒤 무전원·외부 9V 검사와 기준 측정을 수행한다.
-6. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.
+6. `ASSEMBLY.md` 권장 TL072 배선을 반영한 뒤 무전원·외부 9V 검사와 기준 측정을 수행한다.
+7. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.

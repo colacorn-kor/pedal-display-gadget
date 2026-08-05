@@ -480,7 +480,9 @@ typedef struct {
 | `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Curve/12-Band/Circular/Reference` |
 | `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, 입력잭 Vrms·dBV·dBu·dBFS |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
-| `images` | Gallery | SPECTRUM | — | SD `GG/images`의 JPG/PNG/BMP/GIF/BIN 탐색 |
+| `images` | Gallery | SPECTRUM | — | SD 이미지 탐색, 없으면 어두운 `GG` 월페이퍼 |
+| `music` | Music | NONE | — | SD 음악, 없으면 내장 8비트 로비 음악 *(예정)* |
+| `game` | Game | NONE | — | SD 게임, 없으면 `No Game`에서 내장 점프 게임 *(예정)* |
 | `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |
 | `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
 | `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
@@ -539,7 +541,7 @@ typedef struct {
 | 6버튼+홈+확인, 풋스위치 숏/롱, 오토리피트 | ✅ 구현 | — |
 | 두 체인·순서변경·퀵 앱·변형 | ✅ 구현 | — |
 | 설정 영속성 | NVS(id 기반 슬롯/순서/테마/마지막 앱/퀵앱) | SD JSON 로더 |
-| SD 콘텐츠 | Gallery 이미지 + music/ROM 공통 카탈로그 | Music 재생·Retro 코어·스크립트 앱 |
+| SD 콘텐츠 | Gallery 이미지 + music/game 공통 카탈로그 | Music 재생·Game 코어·스크립트 앱 |
 | `in_sources`/`out_paths` 라우팅 | 필드 예약(0) | 활성(디지털 믹서) |
 | 드럼/AUX 모니터 앱 | 비활성 스텁 | 동작 |
 

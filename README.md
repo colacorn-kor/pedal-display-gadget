@@ -77,7 +77,7 @@ SD 카드는 FAT32로 포맷하고 다음 폴더를 사용한다.
 GG/
   images/   JPG, JPEG, PNG, BMP, GIF, LVGL BIN
   music/    WAV, MP3, FLAC, OGG (카탈로그만 구현, 재생은 코덱 단계)
-  roms/     Retro-Go급 ROM (카탈로그만 구현, 에뮬레이터 코어는 후속 단계)
+  games/    Game 앱 콘텐츠 (카탈로그만 구현, 에뮬레이터 코어는 후속 단계)
 ```
 
 Gallery 진입 시 카드를 지연 마운트하므로 SD가 없어도 본체의 부팅과 다른 앱은 영향을 받지
@@ -122,7 +122,7 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `fft_map.{c,h}` | 2048-point FFT를 20Hz~20kHz, -72~0dBFS의 256점 로그 스펙트럼으로 매핑 |
 | `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
-| `storage.{c,h}` | 이미지·음악·Retro ROM 공통 카탈로그와 안전한 파일 접근 |
+| `storage.{c,h}` | 이미지·음악·Game 콘텐츠 공통 카탈로그와 안전한 파일 접근 |
 | `storage_esp.c`, `sim/storage_sim.c` | SDSPI/FATFS와 PC 폴더 스토리지 백엔드 |
 | `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |

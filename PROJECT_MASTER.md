@@ -39,9 +39,9 @@
 [완료] 신회로 TRS 6키 ADC 실측 · HOME/FOOTSW 롱 동작 확인
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
        · Windows 기본 출력 WASAPI 루프백 입력
-[완료] SDSPI/FATFS 기반 · SD Gallery · PC SD 폴더 · music/ROM 공통 카탈로그
-[현재 SW] PC 기준 제품 D0/D1: 기존 UI·설정 감사 → 플랫폼 능력·PC 오디오 출력
-[다음 SW] Music → Metronome/효과음 → Gallery UX → 공통 게임/Retro-Go급 실행
+[완료] SDSPI/FATFS 기반 · SD Gallery · PC SD 폴더 · music/game 공통 카탈로그
+[현재 SW] Sound Monitor 우선 최적화 → PC 기준 제품 D0/D1
+[다음 SW] 플랫폼 능력·PC 오디오 출력 → Music → Gallery UX → Game
 [병행 HW] SD 기능 확인 · TL072 분석 탭 재배선 · 자동 듀얼레인지 · KiCad 목표 회로
 [확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
        → S6 스마트 컨트롤러 → S7 GG Analog Meter
@@ -60,12 +60,15 @@
   처음 필요할 때 10MHz SDSPI/FATFS를 마운트하므로 카드가 없어도 기본 부팅은 유지된다.
 - 실제 모듈은 `SZH-EKBZ-005`이며 VCC는 `+5V`(4.5~5.5V), SPI 신호는 온보드
   레벨 변환을 거치는 3.3V 로직이다.
-- `/GG/images`, `/GG/music`, `/GG/roms`를 공통 카탈로그로 읽는다. Gallery의
+- `/GG/images`, `/GG/music`, `/GG/games`를 공통 카탈로그로 읽는다. Gallery의
   JPG/PNG/BMP/GIF/BIN 표시는 구현됐다. Music 재생은 PC 출력에서 먼저 구현하고 GG에서는
   S2 코덱 백엔드에 연결한다.
-- Retro는 공식 [Retro-Go](https://github.com/ducalex/retro-go) 코어의 포팅·GPLv2
+- 사용자-facing 이름은 Game이다. 외부 게임 실행은 공식
+  [Retro-Go](https://github.com/ducalex/retro-go) 코어의 포팅·GPLv2
   라이선스 결정·확장 파티션 승인 뒤 진행한다.
   현재는 ROM 파일 판별과 정렬 기반만 있으며 게임 실행을 가장하지 않는다.
+- Gallery·Music·Game은 SD가 없어도 각각 `GG` 월페이퍼·내장 8비트 로비 음악·내장
+  점프 게임으로 기본 동작한다. Music과 Game은 동시에 실행하지 않는다.
 
 ### S1.6. PC 기준 제품 (현재)
 - PC 시뮬레이터는 테스트 창이 아니라 앱·런처·설정을 먼저 완성하는 기준 구현이며,

@@ -21,7 +21,7 @@
 #define PY    TOP
 #define PW    (SCR_W - LEFT - RIGHT)
 #define PH    (SCR_H - TOP - BOT)
-#define CURVE_FRAME_US 33333
+#define CURVE_FRAME_US 30000
 #define CURVE_SMOOTHING_LEVELS 3
 #define RGB565(r,g,b) (uint16_t)((((r)&0xF8)<<8)|(((g)&0xFC)<<3)|((b)>>3))
 #define C565(h) RGB565(((h)>>16)&0xFF,((h)>>8)&0xFF,(h)&0xFF)
@@ -34,11 +34,8 @@ typedef struct {
 
 typedef struct {
     float smooth[VIZ_POINTS];
-    float peak_smooth[VIZ_POINTS];
     int y_curve[PW];
-    int y_peak[PW];
     int y_prev[PW];
-    int peak_prev[PW];
 } curve_work_t;
 
 static const frequency_mark_t FREQUENCY_MARKS[] = {
@@ -367,11 +364,10 @@ static void draw_trace_segment(int x, int first_y, int second_y,
     }
 }
 
-static int minimum_visible_y(int current, int adjacent, int peak)
+static int minimum_visible_y(int current, int adjacent)
 {
     int result = current;
     if (adjacent >= 0 && adjacent < result) result = adjacent;
-    if (peak >= 0 && peak < result) result = peak;
     return result;
 }
 
@@ -420,7 +416,6 @@ static void curve_create(lv_obj_t *parent, const viz_theme_t *theme)
     }
     for (int x = 0; x < PW; x++) {
         s_work->y_prev[x] = -1;
-        s_work->peak_prev[x] = -1;
     }
 
     s_root = lv_obj_create(parent);
@@ -510,36 +505,24 @@ static void curve_update(const viz_frame_t *frame)
 
     int count = frame->n < VIZ_POINTS ? frame->n : VIZ_POINTS;
     smooth_bands(frame->bars, count, s_work->smooth);
-    if (frame->peaks) {
-        smooth_bands(frame->peaks, count, s_work->peak_smooth);
-    }
 
     float step = (float)(count - 1) / (float)(PW - 1);
     for (int x = 0; x < PW; x++) {
         s_work->y_curve[x] =
             value_to_y(sample_column(s_work->smooth, count, step, x));
-        s_work->y_peak[x] = -1;
-        if (frame->peaks) {
-            float peak =
-                sample_column(s_work->peak_smooth, count, step, x);
-            if (peak > 0.008f) s_work->y_peak[x] = value_to_y(peak);
-        }
     }
 
     uint16_t accent = C565(s_theme.accent);
     uint16_t line = C565(s_theme.line);
-    uint16_t peak = mix_565(C565(s_theme.bg), C565(s_theme.peak), 150);
     int dirty_x0 = PW;
     int dirty_y0 = PH;
     int dirty_x1 = -1;
 
     for (int x = 0; x < PW; x++) {
         int adjacent_changed = x > 0 &&
-            (s_work->y_prev[x - 1] != s_work->y_curve[x - 1] ||
-             s_work->peak_prev[x - 1] != s_work->y_peak[x - 1]);
+            s_work->y_prev[x - 1] != s_work->y_curve[x - 1];
         int changed = !s_frame_valid ||
                       s_work->y_prev[x] != s_work->y_curve[x] ||
-                      s_work->peak_prev[x] != s_work->y_peak[x] ||
                       adjacent_changed;
         if (!changed) continue;
 
@@ -548,19 +531,13 @@ static void curve_update(const viz_frame_t *frame)
         int new_adjacent = x > 0
             ? s_work->y_curve[x - 1] : s_work->y_curve[x];
         int old_top = s_frame_valid
-            ? minimum_visible_y(s_work->y_prev[x], old_adjacent,
-                                s_work->peak_prev[x])
+            ? minimum_visible_y(s_work->y_prev[x], old_adjacent)
             : 0;
-        int new_top = minimum_visible_y(s_work->y_curve[x], new_adjacent,
-                                        s_work->y_peak[x]);
+        int new_top = minimum_visible_y(s_work->y_curve[x], new_adjacent);
         int y0 = old_top < new_top ? old_top : new_top;
         restore_column(x, y0 - 2);
 
         draw_fill_column(x, s_work->y_curve[x], accent);
-        int previous_peak = x > 0
-            ? s_work->y_peak[x - 1] : s_work->y_peak[x];
-        draw_trace_segment(x, previous_peak, s_work->y_peak[x],
-                           peak, peak, 55);
         draw_trace_segment(x, new_adjacent, s_work->y_curve[x],
                            line, accent, 118);
 
@@ -571,7 +548,6 @@ static void curve_update(const viz_frame_t *frame)
 
     for (int x = 0; x < PW; x++) {
         s_work->y_prev[x] = s_work->y_curve[x];
-        s_work->peak_prev[x] = s_work->y_peak[x];
     }
 
     if (dirty_x1 >= dirty_x0) {

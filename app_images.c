@@ -61,11 +61,11 @@ static bool has_gif_extension(const char *path)
 static void images_show_empty(void)
 {
     if (!s_images) {
-        content_show_text("Gallery memory unavailable", "Gallery");
+        content_show_wallpaper("GG", "Gallery memory unavailable");
     } else if (storage_ready()) {
-        content_show_text("No images found\n\nGG/images", "Gallery");
+        content_show_wallpaper("GG", "No images");
     } else {
-        content_show_text(storage_status(), "Gallery");
+        content_show_wallpaper("GG", storage_status());
     }
 }
 

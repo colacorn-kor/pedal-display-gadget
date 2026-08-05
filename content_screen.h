@@ -9,4 +9,9 @@ void content_screen_destroy(void);
 void content_show_image(const char *file, const char *name);
 void content_show_gif(const char *file, const char *name);
 void content_show_text(const char *text, const char *name);
+void content_show_wallpaper(const char *text, const char *name);
+
+#ifdef PEDAL_SIM
+bool content_screen_debug_wallpaper_visible(void);
+#endif
 

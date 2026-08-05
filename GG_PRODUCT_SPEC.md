@@ -23,7 +23,12 @@
 - 9V DC 입력
 - 개발·업데이트용 USB와 외부 장치용 USB Host
 - AUX 입력, 헤드폰 출력, 앱 효과음용 오디오 코덱은 후속 하드웨어 단계
-- microSD: 미디어, 테마, 설정, 제한된 스크립트 앱과 Retro-Go급 게임 콘텐츠
+- microSD: 미디어, 테마, 설정, 제한된 스크립트 앱과 Game 콘텐츠
+
+현재는 분석 정확도를 맡는 PCM1808과 향후 재생 DAC·헤드폰 앰프를 분리한 구성을 기준으로
+유지한다. 입력 ADC까지 하나의 통합 코덱으로 바꾸는 결정은 Sound Monitor 교정·잡음 성능을
+실측 비교하기 전에는 하지 않는다. 재생 DAC와 헤드폰 앰프를 한 모듈로 줄이는 선택은
+PC 재생 경로를 완성한 뒤 별도 하드웨어 선정 단계에서 평가한다.
 
 ### 기본 옵션
 
@@ -95,20 +100,28 @@
 
 ### GG 목표 기본 앱
 
-- Monitor, Tuner, dB Meter, Metronome, Gallery, Music, Bounce
-- Gallery와 Music은 SD의 이미지·음악을 사용한다.
+- Sound Monitor, Tuner, dB Meter, Metronome, Gallery, Music, Game, Bounce
+- **Sound Monitor의 정확도와 성능을 미디어·게임 기능보다 우선한다.**
+- Gallery, Music, Game은 SD 콘텐츠 중심 앱이지만 카드나 파일이 없어도 실행된다.
+  Gallery는 어두운 `GG` 월페이퍼, Music은 내장 8비트 로비 음악, Game은 목록의
+  `No Game`과 내장 점프 게임을 폴백으로 제공한다.
+- Game 목록에서 콘텐츠를 선택하지 않았거나 `No Game`을 선택한 상태에서 OK/Play를
+  실행하면 내장 점프 게임을 시작한다.
 - Music, Metronome과 앱 효과음은 향후 코덱의 헤드폰 출력으로만 재생한다. 하드와이어
   Thru에 소프트웨어 오디오를 섞지 않는다.
+- 앱은 한 번에 하나만 활성화한다. Music을 떠날 때 재생을 정지하므로 Game과 Music
+  스트리밍은 동시에 실행하지 않는다.
 
 ## 5. SD와 소프트웨어 확장 범위
 
 - SD가 없어도 본체와 내장 앱은 부팅하고 동작한다.
-- SD의 표준 루트는 `GG/images`, `GG/music`, `GG/roms`다. Gallery와 세 카탈로그
-  기반은 구현됐고 Music 재생·Retro 실행은 아직 구현되지 않았다.
+- SD의 표준 루트는 `GG/images`, `GG/music`, `GG/games`다. Gallery와 세 카탈로그
+  기반은 구현됐고 Music 재생·Game 실행은 아직 구현되지 않았다.
 - SD는 이미지·음악·게임 샘플, 테마, 설정, 업데이트 패키지를 제공한다.
 - 펌웨어 업데이트 없이 추가하는 앱은 서명·권한·자원 제한이 가능한 스크립트/바이트코드
   런타임을 장기 목표로 한다. 임의의 ESP32 네이티브 바이너리를 직접 실행하지 않는다.
-- GG의 게임 범위는 Retro-Go급 8/16비트 에뮬레이션까지다. GBA와 NDS는 GG 범위가 아니다.
+- 제품과 런처의 앱 이름은 **Game**이다. 그 안에서 지원할 외부 게임 범위는 Retro-Go급
+  8/16비트 에뮬레이션까지이며 GBA와 NDS는 GG 범위가 아니다.
 - GBA/NDS, 터치 중심 UI, 더 높은 연산량과 오디오 인터페이스 기능은 차기 하드웨어
   **GG2** 검토 범위다.
 
@@ -128,10 +141,10 @@
 |---|---|---|
 | 주 정체성 | 무손실 Thru 사운드 디스플레이 | 고성능 오디오·휴대형 컴퓨팅 |
 | 입력 UI | 풋스위치 + 옵션 6키 | 기본 터치 UI |
-| 게임 | Retro-Go급 | GBA/NDS 검토 |
+| 게임 | Game 앱의 내장 점프 게임 + Retro-Go급 | GBA/NDS 검토 |
 | USB 오디오 인터페이스 | 범위 밖 | 검토 |
 | 외부 화면 | GG Analog Meter 1종 | 듀얼 일반/터치 화면 검토 |
 | 메인 오디오 | 하드와이어 Thru | Thru 보존을 전제로 별도 아키텍처 검토 |
 
-ESP32-S3에는 Bluetooth Classic이 없으므로 GG의 Bluetooth 오디오(A2DP)는 범위에서
-제외한다. BLE는 MIDI·제어·설정 연동에 사용할 수 있다.
+Bluetooth 오디오는 제품 범위에서 제외한다. ESP32-S3에는 Bluetooth Classic이 없어
+A2DP를 직접 제공할 수도 없다. BLE는 MIDI·제어·설정 연동에만 사용할 수 있다.

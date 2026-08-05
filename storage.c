@@ -18,7 +18,7 @@ static const char *const IMAGE_EXTENSIONS[] = {
 static const char *const MUSIC_EXTENSIONS[] = {
     "flac", "mp3", "ogg", "wav",
 };
-static const char *const ROM_EXTENSIONS[] = {
+static const char *const GAME_EXTENSIONS[] = {
     "bin", "col", "gb", "gbc", "gen", "gg", "gw", "lnx", "md", "nes",
     "pce", "sfc", "sg", "smc", "sms", "wad", "zip",
 };
@@ -37,10 +37,10 @@ static const media_spec_t MEDIA_SPECS[] = {
             (int)(sizeof(MUSIC_EXTENSIONS) / sizeof(MUSIC_EXTENSIONS[0])),
     },
     {
-        .directory = "GG/roms",
-        .extensions = ROM_EXTENSIONS,
+        .directory = "GG/games",
+        .extensions = GAME_EXTENSIONS,
         .extension_count =
-            (int)(sizeof(ROM_EXTENSIONS) / sizeof(ROM_EXTENSIONS[0])),
+            (int)(sizeof(GAME_EXTENSIONS) / sizeof(GAME_EXTENSIONS[0])),
     },
 };
 
@@ -58,7 +58,7 @@ static int ascii_casecmp(const char *a, const char *b)
 
 static bool valid_kind(storage_media_kind_t kind)
 {
-    return kind >= STORAGE_MEDIA_IMAGE && kind <= STORAGE_MEDIA_ROM;
+    return kind >= STORAGE_MEDIA_IMAGE && kind <= STORAGE_MEDIA_GAME;
 }
 
 static bool safe_relative_path(const char *path)

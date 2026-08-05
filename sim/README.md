@@ -6,7 +6,7 @@ GG 없이도 사용할 수 있는 독립 데스크톱 앱으로 개발한다. �
 `../PC_SIMULATOR_PRODUCT.md`가 권위다.
 
 현재 Windows 시스템 오디오/캡처 입력, PC 폴더 Gallery, 기존 5개 앱은 동작한다.
-Music은 파일 목록만 있고 재생은 없으며, Retro도 ROM 목록만 있고 실행 코어는 없다.
+Music은 파일 목록만 있고 재생은 없으며, Game도 게임 목록만 있고 실행 코어는 없다.
 
 ## 빌드
 
@@ -94,11 +94,12 @@ NVS 상태와 키 입력 없이 특정 화면을 연다.
 ```text
 sim/sdcard/GG/images
 sim/sdcard/GG/music
-sim/sdcard/GG/roms
+sim/sdcard/GG/games
 ```
 
 다른 폴더를 쓰려면 `GG_SD_ROOT` 환경변수를 지정한다. Gallery는 `GG/images`를 실제로
-표시한다. Music과 ROM은 현재 필터·정렬·안전한 상대경로 카탈로그만 공유하며 재생·실행은
+표시한다. 이미지가 없으면 어두운 `GG` 월페이퍼를 표시한다. Music과 Game은 현재
+필터·정렬·안전한 상대경로 카탈로그만 공유하며 재생·실행은
 후속 구현이다.
 
 ```powershell

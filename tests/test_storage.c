@@ -15,7 +15,7 @@ static const char *const IMAGE_FILES[] = {
 static const char *const MUSIC_FILES[] = {
     "song.WAV", "cover.jpg", "track.flac",
 };
-static const char *const ROM_FILES[] = {
+static const char *const GAME_FILES[] = {
     "mario.NES", "zelda.gb", "new.gba", "dual.nds",
 };
 
@@ -46,9 +46,9 @@ static const char *const *files_for_directory(
         *count = (int)(sizeof(MUSIC_FILES) / sizeof(MUSIC_FILES[0]));
         return MUSIC_FILES;
     }
-    if (strcmp(directory, "GG/roms") == 0) {
-        *count = (int)(sizeof(ROM_FILES) / sizeof(ROM_FILES[0]));
-        return ROM_FILES;
+    if (strcmp(directory, "GG/games") == 0) {
+        *count = (int)(sizeof(GAME_FILES) / sizeof(GAME_FILES[0]));
+        return GAME_FILES;
     }
     *count = 0;
     return NULL;
@@ -103,11 +103,11 @@ int main(void)
     count = storage_scan(STORAGE_MEDIA_MUSIC, items, STORAGE_MAX_ITEMS);
     if (count != 2) return fail("music filter");
 
-    count = storage_scan(STORAGE_MEDIA_ROM, items, STORAGE_MAX_ITEMS);
-    if (count != 2) return fail("Retro-Go ROM filter");
-    if (storage_media_accepts_filename(STORAGE_MEDIA_ROM, "game.gba") ||
-        storage_media_accepts_filename(STORAGE_MEDIA_ROM, "game.nds")) {
-        return fail("unsupported ROM accepted");
+    count = storage_scan(STORAGE_MEDIA_GAME, items, STORAGE_MAX_ITEMS);
+    if (count != 2) return fail("Game content filter");
+    if (storage_media_accepts_filename(STORAGE_MEDIA_GAME, "game.gba") ||
+        storage_media_accepts_filename(STORAGE_MEDIA_GAME, "game.nds")) {
+        return fail("unsupported game accepted");
     }
 
     if (storage_open("../secret", "rb") != NULL || s_open_calls != 0) {

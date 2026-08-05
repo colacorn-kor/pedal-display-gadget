@@ -86,6 +86,7 @@ static lv_obj_t *s_name;
 static lv_timer_t *s_name_timer;
 static const ui_theme_t *s_theme;
 static bool s_obj_is_text;
+static bool s_obj_is_wallpaper;
 
 static void panel_style(lv_obj_t *obj, lv_opa_t bg_opa, uint32_t color)
 {
@@ -109,6 +110,7 @@ static void root_delete_cb(lv_event_t *event)
     s_obj = NULL;
     s_name = NULL;
     s_obj_is_text = false;
+    s_obj_is_wallpaper = false;
 }
 
 void content_screen_destroy(void)
@@ -120,6 +122,7 @@ void content_screen_destroy(void)
     if (s_root) lv_obj_delete(s_root);
     s_root = s_holder = s_obj = s_name = NULL;
     s_obj_is_text = false;
+    s_obj_is_wallpaper = false;
 }
 
 void content_screen_apply_theme(const ui_theme_t *theme)
@@ -133,7 +136,8 @@ void content_screen_apply_theme(const ui_theme_t *theme)
         lv_obj_set_style_text_color(s_name, theme->grid, 0);
     }
     if (s_obj && s_obj_is_text) {
-        lv_obj_set_style_text_color(s_obj, theme->text, 0);
+        lv_obj_set_style_text_color(
+            s_obj, s_obj_is_wallpaper ? theme->grid : theme->text, 0);
     }
 }
 
@@ -144,6 +148,7 @@ static void clear_content(void)
         s_obj = NULL;
     }
     s_obj_is_text = false;
+    s_obj_is_wallpaper = false;
 }
 
 static void name_hide_cb(lv_timer_t *timer)
@@ -230,3 +235,28 @@ void content_show_text(const char *text, const char *name)
     lv_obj_center(s_obj);
     flash_name(name);
 }
+
+void content_show_wallpaper(const char *text, const char *name)
+{
+    if (!s_holder || !text) return;
+    clear_content();
+    s_obj = lv_label_create(s_holder);
+    s_obj_is_text = true;
+    s_obj_is_wallpaper = true;
+    lv_label_set_text(s_obj, text);
+    lv_obj_set_style_text_color(
+        s_obj, s_theme ? s_theme->grid : theme_get()->grid, 0);
+    lv_obj_set_style_text_font(s_obj, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_align(s_obj, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_opa(s_obj, LV_OPA_60, 0);
+    lv_obj_center(s_obj);
+    flash_name(name);
+}
+
+#ifdef PEDAL_SIM
+bool content_screen_debug_wallpaper_visible(void)
+{
+    return s_obj && s_obj_is_wallpaper &&
+           strcmp(lv_label_get_text(s_obj), "GG") == 0;
+}
+#endif

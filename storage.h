@@ -10,7 +10,7 @@
 typedef enum {
     STORAGE_MEDIA_IMAGE = 0,
     STORAGE_MEDIA_MUSIC,
-    STORAGE_MEDIA_ROM,
+    STORAGE_MEDIA_GAME,
 } storage_media_kind_t;
 
 typedef struct {

@@ -8,53 +8,59 @@
 
 ## P1 - PC 기준 제품
 
-1. **D0 기존 UI·설정 기준선 감사**
+1. **D0A Sound Monitor 우선 최적화**
+   - Curve·12-Band·Circular·Reference의 프레임 시간과 입력 응답 측정
+   - 무음 바닥 복귀·저역 해상도·PC/GG 공유 renderer 계약 회귀 검사
+2. **D0 기존 UI·설정 기준선 감사**
    - Launcher, Sound Monitor, Gallery, Tuner, Bounce, dB Meter의 모든 화면·빈 상태·오류 상태 목록화
    - 공통 Color/Mode와 앱별 세부 설정의 실제 값·표시·NVS 대체 파일 복원 일치 확인
    - 앱별 preview와 smoke 수용 기준 확장
-2. **D1 플랫폼 능력과 PC 오디오 출력 기반**
+3. **D1 플랫폼 능력과 PC 오디오 출력 기반**
    - `needs_codec` 하드코딩을 `AUDIO_PLAYBACK_OUTPUT` 플랫폼 능력 검사로 일반화
    - 공통 재생 transport·믹서 API와 PC SDL 출력 백엔드 구현
    - 코덱 없는 ESP는 명시적 unavailable 상태로 같은 공통 앱 소스를 계속 빌드
-3. **D2 Music 앱**
+4. **D2 Music 앱**
    - `GG/music` 브라우저, WAV 재생/일시정지, 이전/다음, 진행률, 볼륨, 오류 상태
+   - 파일이 없을 때 내장 8비트 로비 음악 재생, 앱 종료 시 정지
    - MP3/FLAC/OGG는 메모리·라이선스·ESP 이식성 확인 뒤 공통 디코더 경계에 추가
-4. **D3 Metronome과 앱 효과음**
+5. **D3 Metronome과 앱 효과음**
    - BPM·박자·subdivision·accent UI와 click 출력
    - Bounce 등 공통 앱 효과음을 같은 믹서에 연결
-5. **D4 Gallery 미디어 UX**
-   - 빈 폴더·손상 파일·긴 파일명·로딩·정렬·새로고침 상태 완성
-6. **D5 게임 실행**
+6. **D4 Gallery 미디어 UX**
+   - 어두운 `GG` 빈 화면 폴백·손상 파일·긴 파일명·로딩·정렬·새로고침 상태 완성
+7. **D5 Game 앱과 실행**
    - 공통 게임 루프와 입력/오디오 출력 API 정리
+   - 파일 없음=`No Game`, 무선택 또는 `No Game`에서 OK/Play=내장 점프 게임
    - GG에서 가능한 Retro-Go급 코어만 PC와 동일 어댑터로 실제 실행
    - GBA/NDS는 GG2 범위로 유지
-7. **Setlist와 MIDI Monitor**
+8. **Setlist와 MIDI Monitor**
    - PC MIDI 입출력 백엔드와 앱 UI를 먼저 구현하고 ESP UART/BLE에 이식
 
 ## P2 - PC 앱 완성도와 지속 검증
 
-8. 시스템 오디오·마이크·미디어 폴더·출력 장치 선택을 앱 UI에서도 제공
-9. 창 배율·전체화면·게임패드 입력과 배포 가능한 실행 패키지 정리
-10. 모든 새 공통 기능에 preview/smoke/호스트 테스트와 ESP 기본·래더 비활성 빌드 유지
+9. 시스템 오디오·마이크·미디어 폴더·출력 장치 선택을 앱 UI에서도 제공
+10. 창 배율·전체화면·게임패드 입력과 배포 가능한 실행 패키지 정리
+11. 모든 새 공통 기능에 preview/smoke/호스트 테스트와 ESP 기본·래더 비활성 빌드 유지
+12. 삭제된 Python 3.14 경로를 가리키는 ESP-IDF v5.4.4 공식 Python 환경 복구
 
 ## P3 - 병행 하드웨어
 
-11. **실물 As-Built 오디오 기록과 TL072 재배선**
+13. **실물 As-Built 오디오 기록과 TL072 재배선**
    - 현재 오디오 끝점을 직접 확인해 `hardware/AS_BUILT_WIRING.md`의 미확인 행 갱신
    - `ASSEMBLY.md` 권장안 반영 뒤 As-Built를 다시 현재 상태로 갱신
    - 전원 OFF에서 Thru 연속성·레일 단락 확인
    - USB 분리·외부 9V 단독으로 +5V/+3V3/+9V_OPAMP/VREF와 무입력 noise 확인
    - 100mVrms 1kHz LINE/INST, clip, 전원 ON/OFF Thru 기준 기록
-12. **SD 실기 브링업**
+14. **SD 실기 브링업**
    - 완료된 `SZH-EKBZ-005` 배선과 `+5V`↔`+3V3` 미연결을 무전원 검사
    - FAT32 `GG/images` mount·탐색, LCD 공유 SPI, 입력 응답과 전원 OFF 카드 교체 확인
-13. KiCad 커스텀 풋프린트 배치와 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
-14. 튜너 5분 무리셋·I2S overflow와 실제 오디오 onset/Curve/Reference 실기 튜닝
-15. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
-16. 미래 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
-17. OPA2192 자동 듀얼레인지 부품 조달·별도 실장·1kHz/sweep 교정
-18. GG Analog Meter USB HID·바늘 ballistics·전력 예산 설계
-19. 16MB 앱 파티션 확장과 NVS 보존·플래시 마이그레이션 계획
+15. KiCad 커스텀 풋프린트 배치와 실측: DevKit 행간, 6.35mm 잭, MP1584, 9V 커넥터
+16. 튜너 5분 무리셋·I2S overflow와 실제 오디오 onset/Curve/Reference 실기 튜닝
+17. `CONFIG_LV_DEF_REFR_PERIOD=33ms`에서 15ms 변경 여부 결정
+18. 미래 코덱 모듈 선정: PCM5102A와 ES8388 중 선택
+19. OPA2192 자동 듀얼레인지 부품 조달·별도 실장·1kHz/sweep 교정
+20. GG Analog Meter USB HID·바늘 ballistics·전력 예산 설계
+21. 16MB 앱 파티션 확장과 NVS 보존·플래시 마이그레이션 계획
 
 ## 해결 및 관찰
 
@@ -105,3 +111,6 @@
 - Windows 루프백이 재생 중단 뒤 무음 패킷을 보내지 않는 구간에는 실시간 48kHz 무음 표본을
   보충해 release가 멈추지 않도록 했다. Curve/Reference의 peak 선을 제거하고 12-Band
   마커만 유지했으며, 5초 무음 뒤 현재선·peak 바닥 복귀 회귀 테스트가 통과했다.
+- Sound Monitor 1차 PC 최적화로 Curve/Reference의 숨은 peak 계산·상태 추적을 제거하고
+  목표 주기를 30ms로 조정했다. 결정론적 smoke에서 약 28fps가 31~32fps로 개선됐고,
+  Gallery의 어두운 `GG` 빈 상태도 자동 회귀 검사에 포함했다.

@@ -229,6 +229,11 @@ static bool run_smoke_test(void)
     if (!smoke_send(EV_RIGHT, "select images") ||
         !smoke_send(EV_OK, "launcher -> images") ||
         !smoke_expect_app("images")) return false;
+    if (!content_screen_debug_wallpaper_visible()) {
+        fprintf(stderr,
+                "SMOKE FAIL: empty Gallery did not show GG wallpaper\n");
+        return false;
+    }
 
     if (!smoke_send(EV_FOOTSW, "images -> tuner") ||
         !smoke_expect_app("tuner")) return false;
@@ -342,7 +347,7 @@ static bool run_smoke_test(void)
     }
 
     printf("SMOKE PASS: three-row launcher, settings themes, reorder, "
-           "monitor viz, Gallery, live cycle, tuner %.2f Hz (%s%d), "
+           "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
            "Curve controls, Reference mode, Color/Mode app settings, "
            "Classic Cat runner, input-voltage meter, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
