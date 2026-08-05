@@ -13,7 +13,10 @@
   정렬로 확장하고 Reference의 시간 잔상을 제거했다. 2Hz DC blocker와 선택형
   Flat/A-weighted 표시도 추가했다. Curve/Reference의 6개 주파수 구간 배경과 전역
   `Dark/Light × 4 Color`, 앱 5 Color 체계도 반영했다. PC·호스트·ESP 자동 검증은
-  통과했으나 본체 화면, Core1 실시간 부하와 실제 오디오 입력은 아직 확인하지 않았다.
+  통과했다. 이후 팝업을 앱 `Settings/Info`, 런처 `Theme/About`, 앱
+  `Settings → Theme → Mode/Color`로 정리하고 60-phon Loudness 표시 두 종류를 추가했다.
+  이 최신 UI/Weighting 개발본은 PC·호스트·ESP 자동 검증을 통과했으며 본체 화면,
+  Core1 실시간 부하, 실제 오디오 입력은 아직 확인하지 않았다.
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
 - 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
@@ -270,6 +273,27 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
   ESP-IDF 5.4.4 `-Werror=all` 깨끗한 기본 빌드는 `0xf03b0`(6% 여유),
   `INPUT_TRS_LADDER=0`은 `0xecd70`(7% 여유)로 통과했고 기본 빌드의 정적 D/IRAM은
   87,897 bytes가 남았다. 이 개발본은 플래시하지 않았다.
+
+### 2026-08-05 팝업 계층·Loudness Weighting 개발본
+
+- 런처 Settings의 `Info`를 `About`으로 바꾸고, 앱 홈 메뉴의 `Exit/Settings`를
+  `Settings/Info`로 교체했다. 앱 Settings에서는 Info를 제거하고 첫 항목 Theme 아래에
+  앱별 `Mode/Color`를 배치한다. Sound Monitor Settings는 `Theme/Weighting`이다.
+- Weighting은 기존 인덱스 `Flat=0`, `A-weighted=1`을 보존하면서
+  `Flat(Loudness)=2`, `A-weighted(Loudness)=3`을 추가했다. NVS schema는 v6 그대로다.
+- Loudness는 1kHz를 0dB로 정규화한 60-phon 등청감 참조 역감도다. 100Hz는 약
+  -18.64dB, 3.15kHz는 약 +3.59dB를 표시 복사본에 더하며, 12.5~20kHz는 12.5kHz 보정값을
+  유지한다. 실제 청취 SPL을 모르므로 절대 phon/loudness 측정은 아니다.
+- 주파수별 보정은 설정 적용 시 256점 캐시를 만들고 매 프레임에는 덧셈만 한다. 원 FFT
+  스냅샷, dB Meter, 다른 앱은 변하지 않는다.
+- 호스트 CTest 9/9, 깨끗한 PC 시뮬레이터 빌드와 갱신된 추적 `pedal_sim.exe`의 새 메뉴
+  계층·4종 Weighting smoke가 통과했다. smoke 전후 사용자 `sim_nvs.bin` SHA-256은
+  `622C40B35CFAA0D2B63C2C71703FB95A63342BD466883990F311AE76988CD37F`로 같았다.
+- ESP-IDF 5.4.4 기본 `0xf0560`과 `INPUT_TRS_LADDER=0` `0xecf20`이
+  `-Werror=all` 전체 빌드를 통과했다. 1MiB 앱 파티션 여유는 기본 6%, 래더 비활성
+  7%다. 손상된 공식 Python 환경 대신 작업공간 임시 Python 3.12 환경을 사용했다.
+- 이 개발본은 플래시하지 않았다. 본체 팝업 글자 배치, 네 Weighting의 실제 오디오 표시와
+  Core1 실시간 부하는 실기 확인 전이다.
 
 ## 6. PC 시뮬레이터 자동 확인
 

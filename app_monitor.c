@@ -33,6 +33,8 @@ static const char *const MODE_RENDERERS[MONITOR_MODE_COUNT] = {
 #define MONITOR_OPTIONS_SMOOTH_SHIFT   3u
 #define MONITOR_OPTIONS_SMOOTH_MASK    0x03u
 #define MONITOR_OPTIONS_WEIGHT_A       0x01u
+#define MONITOR_OPTIONS_WEIGHT_LOUDNESS 0x02u
+#define MONITOR_OPTIONS_WEIGHT_MASK    0x03u
 #define MONITOR_DEFAULT_SMOOTH_INDEX   1
 
 #define CURVE_SMOOTH_COUNT 3
@@ -44,6 +46,15 @@ static int s_renderer = -1;
 static lv_obj_t *s_host;
 static viz_theme_t s_viz_theme;
 static audio_viz_snapshot_t s_viz_snapshot;
+static float s_weighting_db[VIZ_POINTS];
+
+static void monitor_update_weighting_cache(void)
+{
+    for (int i = 0; i < VIZ_POINTS; i++) {
+        s_weighting_db[i] = spectrum_weighting_db(
+            fft_map_frequency_at(i), s_weighting);
+    }
+}
 
 static void monitor_load_options(void)
 {
@@ -60,17 +71,21 @@ static void monitor_load_options(void)
     if (s_curve_smoothing >= CURVE_SMOOTH_COUNT) {
         s_curve_smoothing = MONITOR_DEFAULT_SMOOTH_INDEX;
     }
+    const uint8_t saved_weighting = options & MONITOR_OPTIONS_WEIGHT_MASK;
     s_weighting = (options & MONITOR_OPTIONS_WEIGHT_VALID) &&
-                  (options & MONITOR_OPTIONS_WEIGHT_A)
-        ? SPECTRUM_WEIGHT_A : SPECTRUM_WEIGHT_FLAT;
+                  saved_weighting < SPECTRUM_WEIGHT_COUNT
+        ? (spectrum_weighting_t)saved_weighting
+        : SPECTRUM_WEIGHT_FLAT;
 }
 
 static void monitor_save_options(void)
 {
     const uint8_t options = MONITOR_OPTIONS_VALID |
         MONITOR_OPTIONS_WEIGHT_VALID |
-        (s_weighting == SPECTRUM_WEIGHT_A
+        (spectrum_weighting_uses_a(s_weighting)
             ? MONITOR_OPTIONS_WEIGHT_A : 0u) |
+        (spectrum_weighting_uses_loudness(s_weighting)
+            ? MONITOR_OPTIONS_WEIGHT_LOUDNESS : 0u) |
         (uint8_t)(s_curve_smoothing << MONITOR_OPTIONS_SMOOTH_SHIFT);
     app_slots_set_options(&APP_MONITOR, options);
 }
@@ -125,7 +140,8 @@ static void monitor_select_renderer(void)
     renderer_curve_configure(
         reference ? CURVE_DISPLAY_REFERENCE : CURVE_DISPLAY_VISUAL,
         reference ? 0 : s_curve_smoothing,
-        s_weighting == SPECTRUM_WEIGHT_A);
+        s_weighting);
+    monitor_update_weighting_cache();
 
     s_renderer = renderer_find(MODE_RENDERERS[s_mode]);
     if (s_renderer < 0) return;
@@ -143,8 +159,8 @@ static int monitor_weighting_count(void)
 
 static const char *monitor_weighting_name(int idx)
 {
-    static const char *const names[] = { "Flat", "A-weighted" };
-    return idx >= 0 && idx < SPECTRUM_WEIGHT_COUNT ? names[idx] : "";
+    return idx >= 0 && idx < SPECTRUM_WEIGHT_COUNT
+        ? spectrum_weighting_name((spectrum_weighting_t)idx) : "";
 }
 
 static int monitor_weighting_index(void)
@@ -157,11 +173,12 @@ static void monitor_weighting_set(int idx)
     if (idx < 0 || idx >= SPECTRUM_WEIGHT_COUNT) return;
     s_weighting = (spectrum_weighting_t)idx;
     monitor_save_options();
+    monitor_update_weighting_cache();
     renderer_curve_configure(
         s_mode == MONITOR_MODE_REFERENCE
             ? CURVE_DISPLAY_REFERENCE : CURVE_DISPLAY_VISUAL,
         s_mode == MONITOR_MODE_REFERENCE ? 0 : s_curve_smoothing,
-        s_weighting == SPECTRUM_WEIGHT_A);
+        s_weighting);
 }
 
 static const app_choice_setting_t MONITOR_CHOICE_SETTINGS[] = {
@@ -250,11 +267,10 @@ static void monitor_render(void)
     plat_audio_viz_get(&s_viz_snapshot);
     if (s_weighting != SPECTRUM_WEIGHT_FLAT) {
         for (int i = 0; i < VIZ_POINTS; i++) {
-            const float frequency = fft_map_frequency_at(i);
-            s_viz_snapshot.bars[i] = spectrum_weighting_apply(
-                s_viz_snapshot.bars[i], frequency, s_weighting);
-            s_viz_snapshot.peaks[i] = spectrum_weighting_apply(
-                s_viz_snapshot.peaks[i], frequency, s_weighting);
+            s_viz_snapshot.bars[i] = spectrum_weighting_apply_db(
+                s_viz_snapshot.bars[i], s_weighting_db[i]);
+            s_viz_snapshot.peaks[i] = spectrum_weighting_apply_db(
+                s_viz_snapshot.peaks[i], s_weighting_db[i]);
         }
     }
     const viz_frame_t frame = {
@@ -289,7 +305,7 @@ static bool monitor_on_event(ui_event_t event)
     renderer_curve_configure(
         CURVE_DISPLAY_VISUAL,
         s_curve_smoothing,
-        s_weighting == SPECTRUM_WEIGHT_A);
+        s_weighting);
     return true;
 }
 

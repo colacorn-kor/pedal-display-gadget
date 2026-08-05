@@ -137,6 +137,9 @@ static bool run_smoke_test(void)
         return false;
     }
     if (!smoke_send(EV_HOME, "theme -> settings") ||
+        !smoke_send(EV_DOWN, "launcher Theme -> About") ||
+        !smoke_send(EV_OK, "open launcher About") ||
+        !smoke_send(EV_HOME, "About -> launcher settings") ||
         !smoke_send(EV_HOME, "settings -> launcher") ||
         !smoke_send(EV_LEFT, "settings -> reorder") ||
         !smoke_send(EV_OK, "enter reorder at action row") ||
@@ -188,9 +191,10 @@ static bool run_smoke_test(void)
         return false;
     }
     if (!smoke_send(EV_HOME, "monitor -> app menu") ||
-        !smoke_send(EV_DOWN, "app menu -> settings") ||
         !smoke_send(EV_OK, "open app settings") ||
-        !smoke_send(EV_OK, "app settings -> monitor color") ||
+        !smoke_send(EV_OK, "app settings -> app theme") ||
+        !smoke_send(EV_DOWN, "app theme mode -> color") ||
+        !smoke_send(EV_OK, "app theme -> monitor color") ||
         !smoke_send(EV_DOWN, "monitor Default -> Blue") ||
         !smoke_send(EV_OK, "apply monitor Blue color")) {
         return false;
@@ -204,8 +208,7 @@ static bool run_smoke_test(void)
                 "not saved independently\n");
         return false;
     }
-    if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
-        !smoke_send(EV_OK, "open monitor mode") ||
+    if (!smoke_send(EV_OK, "app theme -> monitor mode") ||
         !smoke_send(EV_DOWN, "Curve -> 12-Band") ||
         !smoke_send(EV_DOWN, "12-Band -> Circular") ||
         !smoke_send(EV_DOWN, "Circular -> Reference") ||
@@ -218,20 +221,23 @@ static bool run_smoke_test(void)
                 "SMOKE FAIL: monitor Reference mode was not saved\n");
         return false;
     }
-    if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
-        !smoke_send(EV_DOWN, "monitor settings mode -> weighting") ||
+    if (!smoke_send(EV_HOME, "app theme -> monitor settings") ||
+        !smoke_send(EV_DOWN, "monitor theme -> weighting") ||
         !smoke_send(EV_OK, "open monitor weighting") ||
         !smoke_send(EV_DOWN, "monitor Flat -> A-weighted") ||
-        !smoke_send(EV_OK, "apply monitor A-weighted") ||
-        monitor_app_debug_weighting_index() != 1) {
+        !smoke_send(EV_DOWN, "A-weighted -> Flat(Loudness)") ||
+        !smoke_send(EV_DOWN, "Flat(Loudness) -> A-weighted(Loudness)") ||
+        !smoke_send(EV_OK, "apply monitor A-weighted(Loudness)") ||
+        monitor_app_debug_weighting_index() != 3) {
         fprintf(stderr,
-                "SMOKE FAIL: monitor A-weighting was not applied\n");
+                "SMOKE FAIL: monitor A-weighted(Loudness) was not applied\n");
         return false;
     }
-    if (!smoke_send(EV_DOWN, "monitor settings color -> mode") ||
-        !smoke_send(EV_DOWN, "monitor settings mode -> weighting") ||
+    if (!smoke_send(EV_DOWN, "monitor theme -> weighting") ||
         !smoke_send(EV_OK, "reopen monitor weighting") ||
-        !smoke_send(EV_UP, "monitor A-weighted -> Flat") ||
+        !smoke_send(EV_UP, "A-weighted(Loudness) -> Flat(Loudness)") ||
+        !smoke_send(EV_UP, "Flat(Loudness) -> A-weighted") ||
+        !smoke_send(EV_UP, "A-weighted -> Flat") ||
         !smoke_send(EV_OK, "restore monitor Flat") ||
         monitor_app_debug_weighting_index() != 0) {
         fprintf(stderr,
@@ -240,6 +246,9 @@ static bool run_smoke_test(void)
     }
     if (!run_frames_for(150)) return false;
     if (!smoke_send(EV_HOME, "app settings -> app menu") ||
+        !smoke_send(EV_DOWN, "app Settings -> Info") ||
+        !smoke_send(EV_OK, "open app Info") ||
+        !smoke_send(EV_HOME, "Info -> app menu") ||
         !smoke_send(EV_HOME, "close app menu") ||
         !smoke_expect_app("monitor")) {
         return false;
@@ -292,9 +301,8 @@ static bool run_smoke_test(void)
         return false;
     }
     if (!smoke_send(EV_HOME, "bounce -> app menu") ||
-        !smoke_send(EV_DOWN, "bounce app menu -> settings") ||
         !smoke_send(EV_OK, "open bounce settings") ||
-        !smoke_send(EV_DOWN, "bounce settings color -> mode") ||
+        !smoke_send(EV_OK, "bounce settings -> theme") ||
         !smoke_send(EV_OK, "open bounce mode") ||
         !smoke_send(EV_OK, "apply Classic Cat mode")) {
         return false;
@@ -307,7 +315,8 @@ static bool run_smoke_test(void)
                 "palette are inconsistent\n");
         return false;
     }
-    if (!smoke_send(EV_HOME, "bounce settings -> app menu") ||
+    if (!smoke_send(EV_HOME, "bounce theme -> settings") ||
+        !smoke_send(EV_HOME, "bounce settings -> app menu") ||
         !smoke_send(EV_HOME, "close bounce app menu")) {
         return false;
     }
@@ -373,27 +382,39 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    printf("SMOKE PASS: three-row launcher, theme Mode/Color, reorder, "
+    printf("SMOKE PASS: three-row launcher, Theme/About, app Theme "
+           "Mode/Color, four monitor weightings, reorder, "
            "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
-           "Curve controls, Reference mode, Color/Mode app settings, "
-           "Classic Cat runner, input-voltage meter, quick app, cleanup\n",
+           "Curve controls, Reference mode, Classic Cat runner, "
+           "input-voltage meter, quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }
 
 static bool open_preview(const char *preview)
 {
-    if (strcmp(preview, "monitor-settings") == 0 ||
+    if (strcmp(preview, "monitor-menu") == 0 ||
+        strcmp(preview, "monitor-settings") == 0 ||
         strcmp(preview, "monitor-color") == 0 ||
-        strcmp(preview, "monitor-mode") == 0) {
+        strcmp(preview, "monitor-mode") == 0 ||
+        strcmp(preview, "monitor-weighting") == 0) {
         sm_on_event(EV_OK);
         sm_on_event(EV_HOME);
-        sm_on_event(EV_DOWN);
+        if (strcmp(preview, "monitor-menu") == 0) return true;
+
+        sm_on_event(EV_OK);
+        if (strcmp(preview, "monitor-settings") == 0) return true;
+        if (strcmp(preview, "monitor-weighting") == 0) {
+            sm_on_event(EV_DOWN);
+            sm_on_event(EV_OK);
+            return true;
+        }
+
         sm_on_event(EV_OK);
         if (strcmp(preview, "monitor-color") == 0) {
-            sm_on_event(EV_OK);
-        } else if (strcmp(preview, "monitor-mode") == 0) {
             sm_on_event(EV_DOWN);
+            sm_on_event(EV_OK);
+        } else {
             sm_on_event(EV_OK);
         }
         return true;

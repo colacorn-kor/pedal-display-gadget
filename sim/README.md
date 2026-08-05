@@ -62,7 +62,8 @@ Windows가 완전한 무음에서 loopback 패킷을 보내지 않으면 시뮬�
 로그 매핑, 평균, release와 peak hold는 본체와 같다. Reference는 시간 평균과 release 없이
 세 해상도를 혼합한다. 오디오 수집과 FFT 실행 백엔드만 WASAPI/SDL·portable C와
 I2S·ESP-DSP로 나뉜다. 분석값에는 `dB/oct` 기울기를 적용하지 않으며 Curve의 평활과
-선택형 `A-weighted` 응답은 렌더러에 전달되는 복사본만 바꾼다.
+선택형 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)` 응답은 렌더러에 전달되는
+복사본만 바꾼다. Loudness는 1kHz 기준 60-phon 비교 표시이며 절대 청취 loudness가 아니다.
 Curve와 Reference 배경은 Sub Bass/Bass/Low-Mid/Mid/High-Mid/High 여섯 구간을 옅은
 색으로 나누고 `Bass/Mid/High`만 글자로 표시한다.
 
@@ -85,13 +86,17 @@ NVS 상태와 키 입력 없이 특정 화면을 연다.
 .\sim\build\pedal_sim.exe --preview gallery
 .\sim\build\pedal_sim.exe --preview dbmeter
 .\sim\build\pedal_sim.exe --preview bounce
+.\sim\build\pedal_sim.exe --preview monitor-menu
 .\sim\build\pedal_sim.exe --preview monitor-settings
 .\sim\build\pedal_sim.exe --preview monitor-color
 .\sim\build\pedal_sim.exe --preview monitor-mode
+.\sim\build\pedal_sim.exe --preview monitor-weighting
 ```
 
 런처 Theme은 `Mode=Dark/Light`와 `Color=Blue/Green/Yellow/Red`를 독립적으로 저장한다.
 각 앱 Color는 `Default/Blue/Green/Yellow/Red`이며 Default는 전역 조합을 상속한다.
+런처 Settings는 `Theme/About`, 앱 홈 메뉴는 `Settings/Info`다. 앱 Settings의 Theme
+아래에 앱별 `Mode/Color`가 있고 Sound Monitor는 Theme 뒤에 Weighting을 둔다.
 런처·테마·슬롯의 지속 상태는 현재 작업 디렉터리의 `sim_nvs.bin`에 저장된다.
 
 ## PC SD 폴더

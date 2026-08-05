@@ -10,7 +10,7 @@
 
 1. **D0A Sound Monitor 우선 최적화**
    - 완료: Curve/Reference Slope 0, 중심 정렬 3단계 FFT, DC 차단, Reference 무잔상,
-     30/300/3000Hz·경계 sweep 회귀 검사, Flat/A-weighted 표시
+     30/300/3000Hz·경계 sweep 회귀 검사, Flat/A-weighted와 60-phon Loudness 표시
    - 남음: 12-Band·Circular의 프레임 시간과 입력 응답 계측
 2. **D0 기존 UI·설정 기준선 감사**
    - Launcher, Sound Monitor, Gallery, Tuner, Bounce, dB Meter의 모든 화면·빈 상태·오류 상태 목록화
@@ -91,7 +91,8 @@
 - Bounce 앱: SPECTRUM 온셋 기반 고양이·종이컵 러너, 점수·충돌·온셋 재시작 구현
 - 앱 외형 소유권 분리: 전역 UI Theme은 런처·모든 공통 팝업, 앱 Color는 해당 앱만 변경.
   전역 Theme은 `Dark/Light × Blue/Green/Yellow/Red`, 모든 앱은
-  `Default/Blue/Green/Yellow/Red` Color와 Mode 메뉴를 제공하며 Sound Monitor는
+  `Settings → Theme → Mode/Color`에서 `Default/Blue/Green/Yellow/Red` Color와 Mode를
+  제공하며 Sound Monitor는
   4개 Mode, Bounce는 Classic Cat만 제공. NVS v6는 v2~v5 blob을 보존 마이그레이션
 - 사용자 실기: 전역 Theme과 앱 팝업 팔레트 연동은 정상. Nyan은 장애물 등장 시
   프레임·입력 지연이 심해 제거

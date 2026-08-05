@@ -7,7 +7,7 @@
 > **구현 진척(2026-08-05 기준):** ① 앱 레지스트리/기존 화면 마이그레이션, ② 9종 입력
 > 이벤트와 홈·풋스위치 정책, ③-A 슬롯/NVS, ③-B/C 런처·순서변경·테마를 구현했다.
 > 런처는 `LIVE`·`STASH`·`Reorder/Settings`의 3행 내비게이션이며, 앱 홈 메뉴와
-> `Settings → Color/Mode/Info` 계층도 동작한다. 전역 UI 테마는 런처와 모든 공통 팝업의
+> `Settings/Info`, `Settings → Theme → Mode/Color` 계층도 동작한다. 전역 UI 테마는 런처와 모든 공통 팝업의
 > 팔레트를 함께 바꾸고, 각 앱의 Color와 Mode는 콘텐츠 팔레트와 화면 형식을 독립적으로
 > 바꾼다.
 > 진척 상세는 §13 표 참조.
@@ -134,7 +134,7 @@ struct gadget_app {
 };
 ```
 
-`choice_settings`는 앱이 `Color/Mode` 뒤와 `Info` 앞에 단일 선택 페이지를 등록하는 공통
+`choice_settings`는 앱이 Settings의 `Theme` 뒤에 단일 선택 페이지를 등록하는 공통
 UI 계약이다. 매니저는 이름·항목·현재값·적용 콜백만 디스패치하고 값의 의미와 저장은 앱이
 소유한다. Sound Monitor의 `Weighting`이 첫 사용처다.
 
@@ -215,12 +215,12 @@ typedef enum {
 |------|------------------|-------------|----------------|
 | 풋스위치 숏 | 현재 체인 다음 앱 / (퀵 앱 오버레이면) 직전 복귀 | 라이브로 복귀 | — |
 | 풋스위치 롱 | 퀵 앱 오버레이 진입 (이미 오버레이면 무동작) | 퀵 앱 오버레이 진입(직교) | — |
-| 홈 롱 | **즉시 나가기**(=Exit 자동확정, 안전장치) | — | 순서변경 종료 → 런처 |
-| 홈 숏 | **표준 팝업 열기**(첫 항목 Exit, 확인=나가기) | 뒤로 (첫 화면이면 무동작) | 순서변경 종료 → 런처 |
+| 홈 롱 | **즉시 나가기**(안전장치) | — | 순서변경 종료 → 런처 |
+| 홈 숏 | **표준 팝업 열기**(Settings/Info) | 뒤로 (첫 화면이면 무동작) | 순서변경 종료 → 런처 |
 | 상·하·좌·우·확인 | **전부 활성 앱이 자유 해석** | 상하=행, 좌우=행 내부 / 확인=실행·진입 | 집어듦·이동·줄전환·내려놓음 |
 
 > 홈 키는 **항상 매니저 소유**다. 라이브/오버레이에서 홈 숏 = 표준 팝업(공통 항목
-> Exit·Settings, 첫 선택 Exit), 홈 롱 = 즉시 나가기. 런처에서 홈 숏 = 뒤로
+> Settings·Info, 첫 선택 Settings), 홈 롱 = 즉시 나가기. 런처에서 홈 숏 = 뒤로
 > (첫 화면이면 무동작). 팝업/앱 상태와 무관하게 홈 롱은 항상 런처로 빠져나온다(안전망).
 
 ### 매니저가 가로채는 것 vs 위임하는 것
@@ -239,20 +239,21 @@ typedef enum {
 ### 표준 팝업 메뉴 (홈 숏)
 
 매니저 소유 표준 컴포넌트. 어떤 앱에서도 홈 숏으로 열린다. 첫 페이지 항목은
-**Exit · Settings**(첫 선택 Exit)다. 여러 앱에 공통으로 필요하지만 메인 화면에 두면 혼잡한 것들의
-집 → 앱 메인 화면을 깨끗하게 유지하고, 나가기 동작을 모든 앱에서 동일하게(홈 숏→확인, 또는
-홈 롱) 만든다.
+**Settings · Info**(첫 선택 Settings)다. 앱 메뉴에서 Exit를 제거해 설정 진입을 한 단계
+줄이고, 나가기는 어느 앱에서나 홈 롱으로 유지한다.
 
-- **Launcher Settings**: `Theme · Info`. Theme 아래의 `Mode=Dark/Light`와
+- **Launcher Settings**: `Theme · About`. Theme 아래의 `Mode=Dark/Light`와
   `Color=Blue/Green/Yellow/Red`를 독립적으로 저장하고, 조합된 팔레트를 런처와 모든
   공통 팝업에 함께 적용한다.
-- **App Settings**: 모든 앱이 `Color · Mode · Info`를 보며, 앱은 그 사이에 자체 선택
-  설정을 등록할 수 있다. Color의 `Default`는
+- **App Settings**: 첫 항목 `Theme` 아래에 앱의 `Mode · Color`를 둔다. Info는 Settings
+  밖의 앱 메뉴 두 번째 항목이며, 앱은 Theme 뒤에 자체 선택 설정을 등록할 수 있다.
+  Color의 `Default`는
   현재 전역 UI 테마를 상속하고 `Blue/Green/Yellow/Red`는 앱 콘텐츠의 강조색만
   고정한다. 고정색도 전역 `Dark/Light`를 따르며, 어느 앱 선택도 런처나 공통 팝업
   팔레트에는 영향을 주지 않는다.
 - **Sound Monitor**의 Mode는 `Curve/12-Band/Circular/Reference`, **Bounce**의 Mode는
-  `Classic Cat`이다. Sound Monitor는 자체 `Weighting=Flat/A-weighted`를 추가한다.
+  `Classic Cat`이다. Sound Monitor Settings는 `Theme/Weighting`이며 Weighting은
+  `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`를 제공한다.
   색, 화면 형식과 weighting을 서로 독립적으로 저장한다.
 
 ### Sound Monitor 스펙트럼 표시 계약
@@ -264,10 +265,13 @@ typedef enum {
   좁은 화면의 밀도를 낮추기 위해 텍스트는 `Bass/Mid/High`만 표시한다.
 - 공통 분석 데이터는 모든 모드에서 **Slope 0인 무가중 dBFS**다. 청감상 평평하게 보이게
   하는 `dB/oct` 시각 기울기는 정확한 주파수 비교를 왜곡하므로 제공하지 않는다.
-  앱의 `Weighting` 기본값 `Flat`은 이 값을 그대로 표시한다. 선택형 `A-weighted`는 렌더링
-  복사본에만 표준 A-weighting 응답을 더하며 원 스냅샷, dB Meter와 다른 앱의 값은 바꾸지
-  않는다. 마이크 SPL 교정이 없으므로 이 표시는 `dBA` 측정이나 특정 ISO 226 등청감곡선이
-  아니다.
+  앱의 `Weighting` 기본값 `Flat`은 이 값을 그대로 표시한다. `A-weighted`는 표준
+  A-weighting 응답을 더한다. `(Loudness)` 두 항목은 1kHz를 0dB로 정규화한 60-phon
+  등청감 참조의 역감도 보정을 더해 동일한 물리 레벨에서 덜 민감한 저·초고역을 낮게
+  표시한다. `A-weighted(Loudness)`는 두 보정을 합산한다. 네 선택 모두 렌더링 복사본에만
+  적용되어 원 스냅샷, dB Meter와 다른 앱의 값은 바꾸지 않는다. 실제 청취 SPL과 출력
+  장치가 교정되지 않았으므로 Loudness는 비교용이며 `dBA`, phon 또는 절대 loudness
+  측정값이 아니다.
 - `Curve`는 공간 단순화를 `DETAIL/BALANCED/SIMPLE` 중에서 좌·우로 조정한다. 이 평활은
   로그 축에서 이웃 점을 섞는 렌더링 옵션이며 FFT 레벨과 다른 앱의 데이터는 바꾸지 않는다.
 - `Reference`는 별도 모드다. 공간 평활도 끄고 입력의 상대 주파수 분포를 보여 준다.
@@ -615,5 +619,5 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 - [x] 신성한 원칙 = 출력 enum에 OUT_MAIN 부재 *(①)*
 - [x] 두 체인 = 한 배열 두 뷰, 활성화 = 줄 옮기기 *(③-A/C)*
 - [x] 퀵 앱 = 직교 전환 + 상태 복귀 *(뱃지 제외)*
-- [x] 표준 팝업 실내용(Settings/Theme/Info) *(앱별 기여 훅 제외)*
+- [x] 표준 팝업 실내용(App Settings/Info, Launcher Theme/About, 앱별 선택 훅)
 - [ ] Phase 2 앱은 `requires_codec`로 비활성(라우팅 필드 예약은 ①에서 완료) *(Phase 2)*

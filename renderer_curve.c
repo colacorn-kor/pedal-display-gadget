@@ -97,7 +97,7 @@ static int64_t s_fps_start_us;
 static int s_fps_frames;
 static curve_display_mode_t s_display_mode = CURVE_DISPLAY_VISUAL;
 static int s_smoothing_level = 1;
-static bool s_a_weighted;
+static spectrum_weighting_t s_weighting = SPECTRUM_WEIGHT_FLAT;
 
 static float clamp_unit(float value)
 {
@@ -179,11 +179,11 @@ static void update_header_labels(void)
     if (!s_title_label || !s_profile_label) return;
 
     if (s_display_mode == CURVE_DISPLAY_REFERENCE) {
+        char text[48];
         lv_label_set_text(s_title_label, "REFERENCE");
-        lv_label_set_text(
-            s_profile_label,
-            s_a_weighted ? "-72..0 dBFS   A-WEIGHTED"
-                         : "-72..0 dBFS   FLAT");
+        lv_snprintf(text, sizeof(text), "-72..0 dBFS   %s",
+                    spectrum_weighting_name(s_weighting));
+        lv_label_set_text(s_profile_label, text);
         return;
     }
 
@@ -191,10 +191,11 @@ static void update_header_labels(void)
         "DETAIL", "BALANCED", "SIMPLE",
     };
     lv_label_set_text(s_title_label, "CURVE");
-    if (s_a_weighted) {
-        char text[28];
-        lv_snprintf(text, sizeof(text), "%s / A-WEIGHTED",
-                    smoothing_names[s_smoothing_level]);
+    if (s_weighting != SPECTRUM_WEIGHT_FLAT) {
+        char text[48];
+        lv_snprintf(text, sizeof(text), "%s / %s",
+                    smoothing_names[s_smoothing_level],
+                    spectrum_weighting_name(s_weighting));
         lv_label_set_text(s_profile_label, text);
     } else {
         lv_label_set_text(s_profile_label, smoothing_names[s_smoothing_level]);
@@ -203,7 +204,7 @@ static void update_header_labels(void)
 
 void renderer_curve_configure(curve_display_mode_t mode,
                               int smoothing_level,
-                              bool a_weighted)
+                              spectrum_weighting_t weighting)
 {
     s_display_mode = mode == CURVE_DISPLAY_REFERENCE
         ? CURVE_DISPLAY_REFERENCE : CURVE_DISPLAY_VISUAL;
@@ -212,7 +213,9 @@ void renderer_curve_configure(curve_display_mode_t mode,
         smoothing_level = CURVE_SMOOTHING_LEVELS - 1;
     }
     s_smoothing_level = smoothing_level;
-    s_a_weighted = a_weighted;
+    s_weighting = weighting >= SPECTRUM_WEIGHT_FLAT &&
+                  weighting < SPECTRUM_WEIGHT_COUNT
+        ? weighting : SPECTRUM_WEIGHT_FLAT;
     s_frame_valid = 0;
     update_header_labels();
 }

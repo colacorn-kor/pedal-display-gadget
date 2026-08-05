@@ -8,6 +8,7 @@
  * ========================================================================== */
 #pragma once
 #include "lvgl.h"
+#include "spectrum_weighting.h"
 #include <stdint.h>
 
 /* 데이터 피드 (분리 지점) */
@@ -48,7 +49,7 @@ void              renderer_render(const viz_frame_t *frame);
 void              renderer_teardown(void);
 void              renderer_curve_configure(curve_display_mode_t mode,
                                            int smoothing_level,
-                                           bool a_weighted);
+                                           spectrum_weighting_t weighting);
 
 /* 내장 테마 + 등록 */
 void                renderers_init(void);            /* 곡선·막대 등록 */

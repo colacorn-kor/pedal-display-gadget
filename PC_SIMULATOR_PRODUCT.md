@@ -120,8 +120,10 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 - Reference는 3k/12k/48kHz의 2048-point FFT 창 중심 시각을 맞춰 혼합하고 시간 평균이나
   release를 적용하지 않는다. 고정 진폭 30/300/3000Hz와 250~700Hz 이동 sweep으로 위치,
   폭, 레벨 편차와 경계 이중 피크를 자동 검사한다.
-- `Weighting`은 `Flat`이 기본이다. `A-weighted`는 원 분석값을 바꾸지 않는 선택형 표시
-  응답이며, SPL 교정이 없는 PC loopback을 `dBA`나 ISO 등청감 측정으로 표기하지 않는다.
+- `Weighting`은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)` 네 항목이다.
+  Loudness는 1kHz 기준 60-phon 참조 곡선의 역감도 표시이고, A-weighted와 독립적으로
+  합산할 수 있다. 원 분석값은 바꾸지 않으며 SPL 교정이 없는 PC loopback을 `dBA`, phon
+  또는 절대 loudness 측정으로 표기하지 않는다.
 
 ### D0. 공통 UI 기준선
 

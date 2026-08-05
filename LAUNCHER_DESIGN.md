@@ -129,19 +129,22 @@ static app_slot_t s_slots[APP_COUNT];
 - drop 시 `s_slots[].chain/order` 갱신 → 영속성 저장(§5).
 
 ### 설정 팝업
-- 런처 `Settings` → `Theme`, `Info`.
+- 런처 `Settings` → `Theme`, `About`.
 - `Theme` 아래에는 `Mode`, `Color`가 있다. Mode는 `Dark/Light`, Color는
   `Blue/Green/Yellow/Red`이며 확인으로 적용해 NVS에 저장한다. 조합된 팔레트는
   런처뿐 아니라 모든 앱의 공통 팝업 배경·패널·글자·강조색에도 적용된다.
-- 앱 화면 홈 → `Exit`, `Settings`. 세로 메뉴는 상·하로만 이동하며 좌·우는 항목 이동에
-  쓰지 않는다.
-- 모든 앱의 `Settings`는 `Color`, `Mode`, `Info`를 표시한다. Color는
+- 앱 화면 홈 → `Settings`, `Info`. 세로 메뉴는 상·하로만 이동하며 좌·우는 항목 이동에
+  쓰지 않는다. 앱 메뉴의 Exit 항목은 없으며 홈 길게 누르기가 즉시 런처 복귀를 유지한다.
+- 모든 앱의 `Settings` 첫 항목은 `Theme`이다. Theme 아래의 `Mode`, `Color`가 앱 화면
+  형식과 콘텐츠 팔레트를 각각 선택한다. Color는
   `Default/Blue/Green/Yellow/Red`이며, `Default`는 현재 런처 Theme을 상속한다.
   고정 Color는 앱 콘텐츠의 색만 바꾸되 전역 Dark/Light는 따르고, 런처나 공통 팝업
   팔레트에는 영향을 주지 않는다.
 - Sound Monitor의 Mode는 `Curve`, `12-Band`, `Circular`, `Reference`이고 Bounce의 Mode는
   `Classic Cat`이다. 나머지 현재 앱도 확장 위치를 일관되게 유지하기 위해 한 개의
-  명명된 Mode를 제공한다. Curve만 앱 화면의 방향키로 기울기와 단순화를 조정한다.
+  명명된 Mode를 제공한다. Sound Monitor Settings에는 Theme 뒤에 `Weighting`을 두며,
+  네 항목은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`다. Curve만 앱 화면의
+  방향키로 단순화 수준을 조정한다.
 
 ---
 
