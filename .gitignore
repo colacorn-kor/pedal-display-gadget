@@ -7,6 +7,7 @@
 /tests/build/
 /sim/build/*
 !/sim/build/pedal_sim.exe
+!/sim/build/SDL2d.dll
 /hardware/.history/
 *.pyc
 __pycache__/
