@@ -40,6 +40,11 @@ const char *app_registry_name(int idx)
     return app ? app->name : "";
 }
 
+bool app_registry_is_available(const gadget_app_t *app)
+{
+    return app && plat_has_capabilities(app->required_capabilities);
+}
+
 void apps_init(void)
 {
     if (s_initialized) return;
@@ -48,6 +53,10 @@ void apps_init(void)
     app_registry_register(&APP_MONITOR);
     app_registry_register(&APP_IMAGES);
     app_registry_register(&APP_TUNER);
-    app_registry_register(&APP_BOUNCE);
     app_registry_register(&APP_DB_METER);
+    app_registry_register(&APP_MUSIC);
+    app_registry_register(&APP_GAME);
+    app_registry_register(&APP_METRONOME);
+    app_registry_register(&APP_OSCILLOSCOPE);
+    app_registry_register(&APP_MIDI_MONITOR);
 }

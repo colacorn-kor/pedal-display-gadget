@@ -1,5 +1,9 @@
 #include "platform.h"
 
+#include <stdatomic.h>
+#include <string.h>
+
+#include "audio_playback.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
@@ -13,6 +17,7 @@
 static const char *TAG = "platform";
 static bool s_nvs_checked;
 static bool s_nvs_ready;
+static atomic_uint s_game_input_state;
 
 static bool nvs_ready(void)
 {
@@ -41,6 +46,16 @@ static bool nvs_ready(void)
 
 void plat_init(void)
 {
+    atomic_init(&s_game_input_state, 0u);
+    (void)audio_playback_init(false);
+}
+
+platform_capability_mask_t plat_capabilities(void)
+{
+    return PLAT_CAP_DISPLAY |
+           PLAT_CAP_AUDIO_ANALYSIS_INPUT |
+           PLAT_CAP_MEDIA_STORAGE |
+           PLAT_CAP_GAME_RUNTIME;
 }
 
 uint32_t plat_millis(void)
@@ -48,10 +63,26 @@ uint32_t plat_millis(void)
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
+uint64_t plat_micros(void)
+{
+    return (uint64_t)esp_timer_get_time();
+}
+
 bool plat_input_poll(ui_event_t *ev)
 {
     (void)ev;
     return false;
+}
+
+platform_game_input_mask_t plat_game_input_state(void)
+{
+    return atomic_load_explicit(&s_game_input_state, memory_order_acquire);
+}
+
+void plat_game_input_publish(platform_game_input_mask_t held_mask)
+{
+    atomic_store_explicit(
+        &s_game_input_state, held_mask, memory_order_release);
 }
 
 void plat_nvs_load(void *blob, size_t n, bool *found)
@@ -103,6 +134,19 @@ void plat_audio_viz_get(audio_viz_snapshot_t *out)
 void plat_music_get(music_snapshot_t *out)
 {
     music_snapshot_get(out);
+}
+
+void plat_midi_get_status(platform_midi_status_t *out)
+{
+    if (out) memset(out, 0, sizeof(*out));
+}
+
+bool plat_midi_send_short(uint8_t status, uint8_t data1, uint8_t data2)
+{
+    (void)status;
+    (void)data1;
+    (void)data2;
+    return false;
 }
 
 void plat_lvgl_lock(void)

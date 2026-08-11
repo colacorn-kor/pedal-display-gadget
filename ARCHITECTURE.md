@@ -31,8 +31,8 @@ Phase 1 하드웨어(디스플레이 + 튜너 + 비주얼라이저 + 기타 탭)
 2. **신성한 원칙의 타입화** — 기타 메인 출력은 무손상 패시브. 앱이 메인 출력으로
    라우팅하는 것을 **언어적으로 불가능**하게 만든다(출력 경로 enum에 메인 부재).
 3. **인지부담 최소** — 스마트폰 모델, 기본/고급 변형, **외울 제스처 0개**.
-4. **기존 구조 재사용** — `renderer_t` 패턴을 `app_t`로 승격. **오디오 코어(Core1)는
-   무변경.** 앱 플랫폼은 현재 `screen_manager`가 있던 자리(Core0/LVGL)에 그대로 앉는다.
+4. **기존 구조 재사용** — `renderer_t` 패턴을 `app_t`로 승격. I2S와 DSP 상태는 계속
+   **Core1만 소유**한다. 앱 플랫폼은 현재 `screen_manager`가 있던 자리(Core0/LVGL)에 앉는다.
 5. **매니저/앱 경계** — 매니저는 **풋스위치(숏/롱) + 홈(숏=공통 팝업 / 롱=즉시 나가기)**
    만 가로채고, 나머지 5키(상·하·좌·우·확인)는 전부 활성 앱에 위임.
 6. **PC 우선 기준 구현** — 앱·UI·설정·미디어·게임은 PC 시뮬레이터에서 먼저 완성하고,
@@ -43,17 +43,17 @@ Phase 1 하드웨어(디스플레이 + 튜너 + 비주얼라이저 + 기타 탭)
 ## 2. 시스템 컨텍스트 (기존 구조와의 경계)
 
 ```
-Core 1 (무변경): I2S + DSP(fft_map/tuner) + seqlock 발행
-        ↓ audio_viz_snapshot_get() / tuner_get()  (일관된 복사본)
+Core 1: I2S + DSP(fft_map/tuner) + seqlock 발행
+        ↓ audio_viz_snapshot_get() / audio_waveform_snapshot_get() / tuner_get()
 Core 0 (이 문서): LVGL + 앱 플랫폼  ← screen_manager 자리
         - 모든 앱 코드는 lvgl_port_lock 안에서 실행 (현재와 동일)
         - 입력: input_task(샘플링·판정) → UI queue
                 → display_task(큐 배출·앱 플랫폼 디스패치·렌더)
 ```
 
-**중요:** 크로스코어 오디오 발행 구조(`s_viz_seq`, `publish_result` 등)는 **건드리지
-않는다.** 앱은 기존 `audio_viz_snapshot_get()` / `tuner_get()`으로만 오디오를 소비한다.
-앱 플랫폼은 순수하게 Core0/LVGL 측 일반화다.
+**중요:** I2S와 DSP 상태는 Core1만 변경하고, 앱은 발행된 일관된 복사본만 소비한다.
+스펙트럼·레벨은 `audio_viz_snapshot_get()`, 튜너는 `tuner_get()`, Oscilloscope는 앱이
+활성일 때만 발행되는 `audio_waveform_snapshot_get()`을 사용한다.
 
 `input_task`는 물리 입력을 샘플링해 이벤트를 큐에 넣는 데까지만 책임진다. 앱 전환,
 LVGL 작업, NVS 쓰기는 `display_task`가 큐를 꺼낸 뒤 수행한다. 따라서 화면 생성이나
@@ -61,11 +61,20 @@ LVGL 작업, NVS 쓰기는 `display_task`가 큐를 꺼낸 뒤 수행한다. 따
 
 ### PC 기준 구현
 
-PC에서는 SDL/LVGL 화면, 키보드 입력, WASAPI loopback 또는 캡처 장치, 로컬 `GG/`
+PC에서는 SDL/LVGL 화면, 키보드 입력, WASAPI loopback 또는 캡처 장치, WinMM MIDI,
+로컬 `GG/`
 폴더와 설정 파일이 ST7796, TRS 입력, PCM1808, MicroSD와 NVS를 대신한다. 앱 생명주기와
-상태 기계는 양쪽에서 동일하다. 향후 오디오 출력·MIDI·게임 런타임도 같은 방식으로 공통
-계약과 PC/ESP 백엔드를 나눈다. 제품 역할과 기능 이식 순서는 `PC_SIMULATOR_PRODUCT.md`를
-따른다.
+상태 기계는 양쪽에서 동일하다. 오디오 출력과 Game Boy 런타임은 이미 공통 계약으로
+구현됐다. MIDI는 공통 parser/service/app과 PC WinMM·ESP unavailable 백엔드로 나뉜다.
+제품 역할과 기능 이식 순서는 `PC_SIMULATOR_PRODUCT.md`를 따른다.
+
+### 플래시 파티션
+
+GG의 16MB flash는 저장소의 `partitions.csv`가 정의하는 커스텀 표를 사용한다. 기존 장치의
+설정을 보존하기 위해 NVS는 `0x9000`/`0x6000`, PHY는 `0xf000`/`0x1000`, factory 앱은
+`0x10000` 시작 주소를 유지한다. factory와 두 OTA 슬롯은 각각 4MB다. 현재 펌웨어는
+factory에서 부팅하며, OTA 슬롯과 `otadata`는 S3 WiFi/OTA 구현 전까지 예약 영역이다.
+파티션 변경 플래시는 NVS를 먼저 백업하고 전체 flash erase 없이 수행한다.
 
 ---
 
@@ -111,7 +120,7 @@ typedef struct {
 struct gadget_app {
     const char  *id;            /* "tuner" — 안정적 식별자(설정 키) */
     const char  *name;          /* "Tuner" — 표시명 */
-    audio_mode_t audio_mode;    /* 이 앱이 오디오코어에 요구: SPECTRUM/TUNER */
+    audio_mode_t audio_mode;    /* 이 앱이 오디오코어에 요구: SPECTRUM/TUNER/NONE */
     const lv_img_dsc_t *icon;   /* 런처 아이콘. NULL이면 이름 첫 글자 */
 
     app_enter_fn  on_enter;     /* 화면 빌드 + 자원 획득(뮤트/오디오모드) */
@@ -130,7 +139,7 @@ struct gadget_app {
     app_input_source_t input_sources;  /* [Phase 2 예약] 0 = 기본 입력 */
     app_output_route_t output_routes;  /* [Phase 2 예약] 0 = 없음 */
     int                variant_count;  /* 변형 개수 */
-    bool               needs_codec;    /* 임시: 오디오 재생 출력 부재 시 비활성 */
+    platform_capability_mask_t required_capabilities; /* 0 = 추가 요구 없음 */
 };
 ```
 
@@ -138,8 +147,12 @@ struct gadget_app {
 UI 계약이다. 매니저는 이름·항목·현재값·적용 콜백만 디스패치하고 값의 의미와 저장은 앱이
 소유한다. Sound Monitor의 `Weighting`과 dB Meter의 `Input/Window`가 이 계약을 사용한다.
 
-`needs_codec`는 물리 코덱 이름을 앱 계약에 노출하는 임시 필드다. PC 오디오 출력과 미래
-GG 코덱을 같은 능력으로 취급하도록 플랫폼의 `AUDIO_PLAYBACK_OUTPUT` 검사로 교체한다.
+앱 가용성은 물리 부품 이름이 아니라 `required_capabilities`와 플랫폼의 능력 마스크를
+비교해 정한다. 현재 능력 타입은 `DISPLAY`, `AUDIO_ANALYSIS_INPUT`,
+`AUDIO_PLAYBACK_OUTPUT`, `MEDIA_STORAGE`, `MIDI_INPUT/OUTPUT`, `GAME_RUNTIME` 자리를
+정의한다. PC는 SDL 기본 출력 장치가 실제로 열린 경우에만 `AUDIO_PLAYBACK_OUTPUT`을
+보고하고, 현재 코덱 없는 ESP는 이 비트를 보고하지 않는다. 매니저는 같은 검사로 런처
+비활성 표시·직접 진입·부팅 복원·풋스위치 라이브 순환을 모두 처리한다.
 
 레지스트리도 렌더러와 동일 패턴으로 구현됨(`gadget_app.c`):
 ```c
@@ -148,7 +161,8 @@ int                  app_registry_count(void);
 const gadget_app_t  *app_registry_at(int idx);
 int                  app_registry_find(const char *id);   /* 없으면 -1 */
 const char          *app_registry_name(int idx);
-void                 apps_init(void);   /* renderers_init() 이후 3앱 등록 */
+bool                 app_registry_is_available(const gadget_app_t *app);
+void                 apps_init(void);   /* renderers_init() 이후 네이티브 앱 등록 */
 ```
 
 **생명주기:** `on_enter(variant)` → (매 프레임 `on_render()`, 입력 시 `on_event()`) →
@@ -251,8 +265,8 @@ typedef enum {
   현재 전역 UI 테마를 상속하고 `Blue/Green/Yellow/Red`는 앱 콘텐츠의 강조색만
   고정한다. 고정색도 전역 `Dark/Light`를 따르며, 어느 앱 선택도 런처나 공통 팝업
   팔레트에는 영향을 주지 않는다.
-- **Sound Monitor**의 Mode는 `Curve/12-Band/Circular/Reference`, **Bounce**의 Mode는
-  `Classic Cat`이다. Sound Monitor Settings는 `Theme/Weighting`이며 Weighting은
+- **Sound Monitor**의 Mode는 `Curve/12-Band/Circular/Reference`다. Sound Monitor
+  Settings는 `Theme/Weighting`이며 Weighting은
   `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`를 제공한다.
   색, 화면 형식과 weighting을 서로 독립적으로 저장한다.
 
@@ -262,7 +276,7 @@ typedef enum {
 - Curve와 Reference의 그래프 배경은
   `Sub Bass 20~60 / Bass 60~250 / Low-Mid 250~500 / Mid 500~2k /
   High-Mid 2k~8k / High 8k~20kHz`를 여섯 개의 옅은 색 구간으로 표시한다.
-  좁은 화면의 밀도를 낮추기 위해 텍스트는 `Bass/Mid/High`만 표시한다.
+  모든 구간명을 표시하되 `Sub Bass/Low Mid/High Mid`는 두 줄로 표시한다.
 - 공통 분석 데이터는 모든 모드에서 **Slope 0인 무가중 dBFS**다. 청감상 평평하게 보이게
   하는 `dB/oct` 시각 기울기는 정확한 주파수 비교를 왜곡하므로 제공하지 않는다.
   앱의 `Weighting` 기본값 `Flat`은 이 값을 그대로 표시한다. `A-weighted`는 표준
@@ -339,6 +353,17 @@ typedef enum {
   sample peak는 각 표시 구간의 최댓값을 1초간 hold한다.
 - 현재 AC 커플링과 PCM1808 내장 HPF를 통과한 오디오만 측정하므로 DC 전압계가 아니다.
   따라서 화면의 V 값은 오디오 대역 AC RMS이며 DC 전압계가 아니다.
+
+### Oscilloscope 표시 계약
+
+- `audio_waveform_snapshot_t`는 정규화 PCM을 signed 16-bit 2,048샘플로 보관한다. Core1이
+  기존 I2S 블록에서 별도 double-buffer seqlock으로 발행하며 앱은 복사본만 읽는다.
+- 파형 발행은 Oscilloscope의 `on_enter`에서 켜고 `on_exit`에서 끈다. 비활성 앱 때문에
+  매 블록 4KB 복사가 계속 발생하지 않는다.
+- 시간축은 2/5/10/20ms, 세로축은 `+/-0.10/0.20/0.50/1.00 FS`다. 최신 rising zero
+  crossing을 화면 25% 지점에 맞추며 신호가 너무 작거나 crossing이 없으면 free-run한다.
+- OK는 Hold/Run을 전환한다. 좌우는 시간축, 상하는 세로 감도를 조절하고 같은 값은
+  Settings의 `Timebase`와 `Scale`에서도 바꾼다.
 
 ### GG 목표 자동 듀얼레인지 계약
 
@@ -448,7 +473,7 @@ static launch_ctx_t s_saved_ctx;      /* 점프 직전 전체 상태(모드·체
 ┌───────────────────────────────────────────────┐
 │  PEDAL DISPLAY                                  │
 │  ── 라이브 ──────────────────────────────────   │  ← 위 줄: CHAIN_LIVE (순환 대상)
-│   [Monitor] [Tuner] [Gallery] [Setlist] ...     │
+│   [Monitor] [Tuner] [Gallery] [Scope] ...       │
 │  ── 보관함 ──────────────────────────────────   │  ← 아래 줄: CHAIN_STASH
 │   [MIDI Mon] [Level] ...                         │
 │                              [순서변경]  [설정]  │  ← 구석 항목
@@ -520,6 +545,48 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 
 ## 11. 오디오 모드 / 뮤트 일반화
 
+### 재생 출력 transport와 믹서
+
+- `audio_playback.*`는 48kHz 스테레오 PCM, 단일 앱 ID 소유권, 재생/일시정지/정지 상태와
+  `Music`/`Effects` 두 버스의 gain·큐·최종 클리핑을 공통으로 구현한다.
+- 디코더와 앱은 장치를 직접 열지 않고 PCM을 공통 큐에 쓴다. 플랫폼 출력 소비자만
+  `audio_playback_render()`로 블록을 가져간다.
+- PC의 `sim_audio_output.*`는 SDL queued output을 사용하며 transport 상태 세대가 바뀌면
+  이미 SDL에 쌓인 블록도 비운다. 자동 smoke는 실제 소리를 내지 않는 가상 sink로 같은
+  스테레오 믹서 경로를 검사한다.
+- 현재 ESP는 `audio_playback_init(false)`로 명시적 unavailable 상태를 만들며 큐 메모리를
+  할당하지 않는다. 미래 코덱 백엔드는 Core1에서 같은 render API를 소비한다.
+- 이 재생 경로는 AUX/헤드폰용이다. 하드와이어 메인 기타 Thru는 capability와 믹서 양쪽에
+  포함되지 않는다.
+- `AUDIO_NONE`은 Music처럼 분석 입력이 필요 없는 앱의 모드다. Core1은 I2S 수신 주기를
+  유지하되 tuner/FFT/meter 처리를 건너뛰므로 재생 앱이 분석 상태를 불필요하게 갱신하지 않는다.
+- `wav_decoder.*`는 저장소의 `FILE*`를 순차 읽는 공통 디코더다. PCM 8/16/24/32-bit와
+  float32, mono/stereo, 8~192kHz WAV를 48kHz stereo float PCM으로 변환하며 UI와 출력
+  장치를 소유하지 않는다.
+- `metronome_engine.*`는 48kHz sample clock으로 40~220 BPM, 2~5박자와
+  quarter/eighth/triplet/sixteenth tick을 만들고 첫 박·박·세분 click을 구분한다.
+- `audio_effects.*`는 점프·장애물 통과·충돌 PCM을 코드로 생성해 `Effects` 버스에 쓴다.
+  Game의 내장 게임은 실행 중에만 재생 소유권을 잡고 종료 시 해제하며, PC loopback이 자기
+  효과음을 새 오디오 onset으로 감지하지 않도록 출력 직후 짧은 억제 구간을 둔다.
+- Metronome·Game은 재생 capability를 필수로 선언하지 않는다. 출력 가능한 PC에서는
+  소리를 내고, 현재 ESP에서는 동일 UI와 동작을 유지한 무음 시각 모드가 된다.
+
+### 미디어 저장소와 Gallery
+
+- `storage_scan_ex()`는 PC 폴더와 FATFS SD를 같은 계약으로 읽고 OK/Unavailable/IO Error,
+  표시 수, 전체 허용 파일 수, 긴 경로 제외 수와 64개 상한 초과 여부를 반환한다.
+- 카탈로그는 대소문자를 무시한 자연 정렬을 사용하고 같은 키는 원 경로로 결정론적으로
+  정렬한다. 하위 폴더는 재귀 탐색하지 않는다.
+- `image_probe.*`는 파일을 LVGL에 넘기기 전에 BMP/PNG/JPEG/GIF/BIN의 서명, 핵심 헤더와
+  끝 구조를 검사한다. 앱은 다시 LVGL decoder의 치수 판정을 통과한 파일만 표시한다.
+- Gallery는 Scanning/Loading/Ready/Empty/Error 상태를 가진다. 좌우 이동은 최종 요청만
+  지연 로드하고, OK 재검색은 경로 기준으로 선택을 복원한다. 파일 형식·치수·크기는 하단에
+  표시하며 긴 이름은 원본 경로를 보존한 채 한 줄 말줄임한다.
+- 이미지가 정상 표시된 뒤 5초 동안 입력이 없으면 상·하단 정보 배너를 숨기고, 다음 버튼
+  입력에서 즉시 다시 표시한다. 빈 상태·로딩·오류 화면은 필수 정보를 계속 표시한다.
+- 빈 폴더·저장소 부재는 어두운 `GG` 월페이퍼를, 손상 파일은 다음 항목으로 이동할 수 있는
+  항목별 오류 화면을 사용한다. 이 상태 기계는 PC와 ESP 공통 앱 코드다.
+
 - 각 앱이 `audio_mode`(SPECTRUM / TUNER / NONE) 선언.
 - 매니저가 앱 `enter()` 시 `audio_set_mode()` 호출(현재 screen_manager가 하던 일을
   일반화). 앱 전환 시 자동으로 맞춰짐. *(②까지는 각 앱 `on_enter`가 직접 `audio_set_mode`를
@@ -538,17 +605,24 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 | `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Curve/12-Band/Circular/Reference` |
 | `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, 입력잭 Vrms·dBV·dBu·dBFS |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
-| `images` | Gallery | SPECTRUM | — | SD 이미지 탐색, 없으면 어두운 `GG` 월페이퍼 |
-| `music` | Music | NONE | — | SD 음악, 없으면 내장 8비트 로비 음악 *(예정)* |
-| `game` | Game | NONE | — | SD 게임, 없으면 `No Game`에서 내장 점프 게임 *(예정)* |
-| `setlist` | Setlist | NONE | — | MIDI PC → 곡·구간 텍스트(content_text 화면) |
-| `metronome` | Visual Metronome | NONE | 기본/고급 | MIDI Clock BPM → 화면 플래시(소리는 Phase 2) |
-| `midimon` | MIDI Monitor | NONE | — | 들어오는 MIDI 표시 |
+| `images` | Gallery | SPECTRUM | — | 자연 정렬·손상 검사·메타데이터, 없으면 어두운 `GG` 월페이퍼 |
+| `music` | Music | NONE | — | WAV 탐색·재생, 없으면 코드 생성 8비트 로비 음악 |
+| `game` | Game | SPECTRUM | — | 검증된 DMG `.gb` + 빈 타일 OK=내장 GG Cat |
+| `oscilloscope` | Oscilloscope | SPECTRUM | — | Core1 시간파형, trigger, timebase/scale, hold |
+| `metronome` | Metronome | NONE | — | 40~220 BPM, 2~5박, 4종 분할. PC click, 현재 GG 시각 모드 |
+| `midimon` | MIDI Monitor | NONE | — | 채널 필터·pause·clear·clock 집계 |
 | `settings` | Settings / About | NONE | — | |
-| `bounce` | Bounce | SPECTRUM | — | 오디오 온셋 러너. Mode=`Classic Cat` |
 
-> 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`bounce`·`dbmeter` 5개.
-> 나머지는 카탈로그다.
+> 현재 실제 등록된 앱 = `monitor`·`images`·`tuner`·`dbmeter`·`music`·`game`·
+> `metronome`·`oscilloscope`·`midimon` 9개.
+> `music`은 `AUDIO_PLAYBACK_OUTPUT` 능력이 있는 플랫폼에서만 런처와 라이브 체인에 나타난다.
+> `game`은 저장소나 외부 ROM이 없어도 내장 GG Cat으로 동작한다. 빈 타일에는 이름이나
+> `built-in` 표기를 노출하지 않으며 OK로 실행되는 이스터 에그다. 게임 화면에도 이름을
+> 표시하지 않는다. 런타임은 Chrome Dino식 대기·점프·가속·선인장·충돌 흐름을 따르고,
+> 버튼 또는 임계 레벨 이상의 오디오 입력 상승 에지로 점프한다. 외부 ROM은 공통
+> Peanut-GB 어댑터의 probe를 통과한 DMG `.gb`만 표시하며 현재 오디오는 무음이다.
+> `metronome`은 출력이 없어도 시각 모드로 동작한다. MIDI Monitor도 물리 MIDI가 없어도
+> 대기 화면으로 실행되며, PC에서는 WinMM 장치를 사용할 수 있다.
 
 ### Phase 2 (코덱 의존 — 등록하되 `requires_codec=true`로 비활성)
 | id | 이름 | 비고 |
@@ -565,7 +639,7 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 | 현재 (`screen_manager.c`) | 앱 모델 | 진척 |
 |---------------------------|---------|------|
 | `SCR_MONITOR` + `select_monitor_renderer` | **`monitor` 앱.** `renderer_t` vtable 중첩 | **완료** — Color와 `Curve/12-Band/Circular/Reference` Mode 분리 |
-| `SCR_IMAGES` + 이미지 순환 | **`images`/Gallery 앱.** SD 카탈로그와 `on_event` 전환 | **완료** — 좌우 탐색·OK 재검색 |
+| `SCR_IMAGES` + 이미지 순환 | **`images`/Gallery 앱.** SD 카탈로그와 `on_event` 전환 | **완료** — 상태 UI·자연 정렬·검증·선택 보존 재검색 |
 | `SCR_TUNER` + 뮤트 특별취급 | **`tuner` 앱.** enter=뮤트, audio=TUNER, variant=2 | **①·②완료** (뮤트/모드 자기소유, 입력 미소비) |
 | `SCR_HOME` 메뉴 | **런처**로 역할 변경(단순 메뉴 → 두 체인 + 메뉴 행 + 순서/설정) | **완료** — 빈 행 포함 3행 내비게이션 |
 | enum `screen_t` + 거대 switch | **활성 앱 인덱스 + 디스패치 + `s_slots[]` 모드** | **완료** |
@@ -589,6 +663,18 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 `content_screen`/`tuner_screen`/렌더러 구현(앱이 호출만 함), `sm_*` 공개 시그니처,
 `gadget_app_t` 예약 필드, `midi.c` 파서.
 
+### 공통 MIDI 서비스
+
+- 플랫폼 백엔드는 받은 바이트를 기존 `midi_feed()`에 전달하고, parser가 완성한 메시지는
+  `midi_service`와 기존 `midi_map`으로 함께 발행한다.
+- 서비스는 최근 비클록 메시지 16개, 전체·clock 수, 최신 Program Change와 sequence를
+  seqlock snapshot으로 제공한다. WinMM callback은 자체 큐에만 쓰고 UI·NVS를 호출하지 않는다.
+- capture는 `NONE/MONITOR` 단일 소유 모드다. MIDI Monitor가 활성화된 동안에는 메시지를
+  앱이 먼저 소비하며 기존 scene/CC/clock 매핑은 중복 실행하지 않는다.
+  앱을 나가면 `NONE`으로 돌아가 기존 매핑이 다시 동작한다.
+- PC는 WinMM 입출력과 장치 열거를 제공한다. 현재 GG 플랫폼은 unavailable stub이며,
+  미래 UART/BLE-MIDI도 같은 parser 진입점과 송신 API에 연결한다.
+
 ---
 
 ## 14. Phase 경계 요약
@@ -599,7 +685,7 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 | 6버튼+홈+확인, 풋스위치 숏/롱, 오토리피트 | ✅ 구현 | — |
 | 두 체인·순서변경·퀵 앱·변형 | ✅ 구현 | — |
 | 설정 영속성 | NVS(id 기반 슬롯/순서/테마/마지막 앱/퀵앱) | SD JSON 로더 |
-| SD 콘텐츠 | Gallery 이미지 + music/game 공통 카탈로그 | Music 재생·Game 코어·스크립트 앱 |
+| SD 콘텐츠 | Gallery + Music WAV/내장 로비 + Game DMG `.gb`/내장 GG Cat | GG Music·외부 게임 오디오 출력, 추가 코어·스크립트 앱 |
 | `in_sources`/`out_paths` 라우팅 | 필드 예약(0) | 활성(디지털 믹서) |
 | 드럼/AUX 모니터 앱 | 비활성 스텁 | 동작 |
 

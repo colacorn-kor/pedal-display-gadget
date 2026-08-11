@@ -2,10 +2,13 @@
  *  midi_map.c  —  MIDI messages to thread-safe UI commands
  * ========================================================================== */
 #include <stdint.h>
+#include <string.h>
 
-#include "esp_timer.h"
 #include "app.h"
 #include "midi.h"
+#include "midi_map.h"
+#include "midi_service.h"
+#include "platform.h"
 
 typedef struct {
     int content;
@@ -74,9 +77,18 @@ static void reset_clock_tracking(void)
     s_valid_ticks = 0;
 }
 
+void midi_map_reset(void)
+{
+    memset(s_cc_high, 0, sizeof(s_cc_high));
+    reset_clock_tracking();
+}
+
 void midi_on_message(const midi_msg_t *message)
 {
     if (!message) return;
+
+    midi_service_publish(message, plat_millis());
+    if (midi_service_capture() != MIDI_CAPTURE_NONE) return;
 
     switch (message->type) {
     case MIDI_PC:
@@ -91,7 +103,7 @@ void midi_on_message(const midi_msg_t *message)
         break;
 
     case MIDI_CLOCK: {
-        int64_t now = esp_timer_get_time();
+        int64_t now = (int64_t)plat_micros();
         if (s_last_clock) {
             int64_t delta = now - s_last_clock;
             /* 25..500 BPM guard prevents one transport gap poisoning the EMA. */

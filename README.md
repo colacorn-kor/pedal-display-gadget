@@ -1,7 +1,7 @@
 # GG - 모듈형 기타 사운드 디스플레이
 
 ESP32-S3 기반 기타 페달보드용 디스플레이 플랫폼이다. 튜너, 사운드 시각화, dB Meter,
-SD Gallery, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마
+Oscilloscope, SD Gallery, Music/Game, MIDI Monitor와 출력 뮤트 제어를 제공하며 앱 레지스트리, 런처, 슬롯/NVS, 테마
 시스템을 통해 기능을 확장한다. 기타 메인 출력은 소프트웨어를 통과하지 않는 아날로그
 패스스루다. 제품 범위와 GG2의 경계는 [`GG_PRODUCT_SPEC.md`](GG_PRODUCT_SPEC.md)가
 권위다.
@@ -14,7 +14,7 @@ SD Gallery, Bounce 앱과 출력 뮤트 제어를 제공하며 앱 레지스트�
 - 컨트롤러: TRS 6키 저항 래더 Basic 구현, Smart 컨트롤러는 Phase 2
 - SD 카드: `SZH-EKBZ-005` 배선 완료, Gallery 실기 확인 대기
 - 미장착 하드웨어: 뮤트 회로
-- PC 시뮬레이터: SDL2 창, 키보드 입력, Windows 시스템 오디오·캡처 입력, PC 폴더 저장소
+- PC 시뮬레이터: SDL2 창, 키보드 입력, Windows 시스템 오디오·캡처 입력, WinMM MIDI, PC 폴더 저장소
 - 개발 방향: 공통 앱·UI·설정을 PC에서 먼저 완성한 뒤 ESP 플랫폼 백엔드에 이식
 
 가장 최근 장치 상태와 다음 실기 절차는 [`LAB_STATE.md`](LAB_STATE.md), 미결 작업은
@@ -51,8 +51,12 @@ PC simulator
 | `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무잔상 Reference, 4종 Weighting 표시 |
 | `images` | Gallery | SD의 JPG/PNG/BMP/GIF/LVGL BIN 이미지 탐색·표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
-| `bounce` | Bounce | 소리 온셋 고양이·종이컵 러너, Classic Cat 모드 |
 | `dbmeter` | dB Meter | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu 표시 |
+| `music` | Music | PC WAV·내장 8비트 로비 트랙 재생, 현재 GG는 코덱 대기 |
+| `game` | Game | 검증된 DMG `.gb` 타일 실행과 빈 타일의 내장 GG Cat 이스터 에그 |
+| `metronome` | Metronome | 40~220 BPM, 2~5박자, 4종 분할과 PC click |
+| `oscilloscope` | Oscilloscope | PCM 시간파형, trigger, timebase/scale, hold |
+| `midimon` | MIDI Monitor | MIDI 메시지 이력·채널 필터·clock 집계 |
 
 앱은 `gadget_app_t` 계약과 `gadget_app.c` 레지스트리에 등록된다. 런처 항목은 레지스트리에서
 생성되며 `app_slots.c`가 LIVE/STASH 슬롯과 NVS 설정을 관리한다.
@@ -86,16 +90,25 @@ SD 카드는 FAT32로 포맷하고 다음 폴더를 사용한다.
 ```text
 GG/
   images/   JPG, JPEG, PNG, BMP, GIF, LVGL BIN
-  music/    WAV, MP3, FLAC, OGG (카탈로그만 구현, 재생은 코덱 단계)
-  games/    Game 앱 콘텐츠 (카탈로그만 구현, 에뮬레이터 코어는 후속 단계)
+  music/    WAV, MP3, FLAC, OGG (PC WAV 재생, GG 출력은 코덱 단계)
+  games/    DMG .gb ROM과 자동 생성되는 같은 이름의 .sav
 ```
 
 Gallery 진입 시 카드를 지연 마운트하므로 SD가 없어도 본체의 부팅과 다른 앱은 영향을 받지
-않는다. 좌·우로 파일을 이동하고 OK로 카드와 폴더를 다시 검색한다. 현재 한 폴더에서
-최대 64개를 파일명 순으로 읽으며 하위 폴더 재귀 탐색은 하지 않는다. 이미지는 화면 크기인
+않는다. 좌·우로 파일을 이동하고 OK로 카드와 폴더를 다시 검색하며, 재검색 뒤에도 같은 파일을
+선택한다. 현재 한 폴더를 모두 확인한 뒤 대소문자를 무시한 자연 정렬(`Image2`가 `Image10`
+보다 먼저)로 최대 64개를 표시하며 하위 폴더 재귀 탐색은 하지 않는다. 화면에는 형식·치수·
+파일 크기가 표시되고, 정상 사진은 입력 없이 5초가 지나면 정보 배너를 숨겼다가 다음 버튼
+입력에 다시 표시한다. 손상 파일은 별도 오류 화면으로 남는다. 이미지는 화면 크기인
 480x320 이하를 권장한다. 더 큰 PNG/GIF도 파일 형식상 허용하지만 디코딩 메모리와 전환
 시간이 크게 늘 수 있다. 카드 파일 시스템 손상을 막기 위해 카드를 빼거나 교체할 때는
 본체 전원을 먼저 끈다.
+
+Game은 소유·사용 권한이 있는 원본 Game Boy DMG `.gb`만 사용한다. 헤더 체크섬과 지원
+카트리지 검사를 통과한 ROM만 타일에 나타나며, save RAM은 앱을 떠날 때 ROM 옆의 같은
+이름 `.sav`에 기록된다. 방향키는 Game Boy D-pad이고, HOME 짧게로 화면 오른쪽의
+`A/B/START/SELECT/BACK`을 고른 뒤 OK로 누른다. HOME 길게는 기존처럼 런처로 나가며
+현재 외부 Game Boy 오디오는 PC와 GG 모두 무음이다.
 
 ## 입력
 
@@ -122,8 +135,15 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `app_monitor.c` | Sound Monitor 앱 |
 | `app_images.c` | SD Gallery 앱 |
 | `app_tuner.c` | Tuner 앱과 뮤트/오디오 모드 생명주기 |
-| `app_bounce.c` | 온셋 기반 고양이 러너 Bounce 앱 |
+| `app_bounce.c`, `bounce_game.h` | Game 내부 GG Cat의 Dino식 런타임과 효과음·오디오 점프 |
 | `app_db_meter.c` | dB Meter 앱 |
+| `app_music.c`, `wav_decoder.{c,h}` | Music 앱과 공통 WAV 디코더 |
+| `app_game.c` | Game 타일 로비·외부 플레이어와 빈 슬롯 이스터 에그 진입 |
+| `game_runtime.{c,h}`, `game_core_peanut.c` | 공통 외부 게임 어댑터와 MIT Peanut-GB DMG 코어 |
+| `app_metronome.c`, `metronome_engine.{c,h}` | Metronome UI와 sample-clock click 엔진 |
+| `app_oscilloscope.c` | PCM 시간파형 Oscilloscope UI와 trigger/timebase/scale |
+| `app_midi_monitor.c`, `midi_service.{c,h}` | MIDI Monitor와 공통 메시지 snapshot 서비스 |
+| `audio_playback.{c,h}`, `audio_effects.{c,h}` | 공통 스테레오 transport·믹서와 앱 효과음 |
 | `audio_autorange.{c,h}` | HOT/SENSITIVE 입력 스케일 환산, clip margin과 hysteresis 선택 |
 | `app_slots.{c,h}` | LIVE/STASH 슬롯과 NVS 영속성 |
 | `screen_manager.c` | 런처, 활성 앱, 팝업, 앱 우선 이벤트 디스패치 |
@@ -134,10 +154,11 @@ UP=0R, DOWN=470R, LEFT=1k, RIGHT=2k, OK=4.7k, HOME=10k
 | `tuner.{c,h}` | MPM/NSDF 피치 검출과 결과 발행 |
 | `music_events.{c,h}` | 온셋, 피치, BPM 이벤트 |
 | `storage.{c,h}` | 이미지·음악·Game 콘텐츠 공통 카탈로그와 안전한 파일 접근 |
+| `image_probe.{c,h}` | Gallery 이미지 형식·치수·끝 구조의 경량 사전 검사 |
 | `storage_esp.c`, `sim/storage_sim.c` | SDSPI/FATFS와 PC 폴더 스토리지 백엔드 |
 | `display_bringup.{c,h}` | ST7796S와 esp_lvgl_port 초기화 |
 | `platform_esp.c` | ESP 하드웨어 플랫폼 구현 |
-| `sim/` | SDL2 PC 시뮬레이터, `platform_sim`, PC용 FFT 실행 백엔드 |
+| `sim/` | SDL2 PC 시뮬레이터, `platform_sim`, PC용 FFT와 WinMM MIDI 백엔드 |
 | `PC_SIMULATOR_PRODUCT.md` | PC 기준 제품과 ESP 이식 계약 |
 | `tests/` | MIDI, 튜너, 오디오 레벨·weighting 단위, 공통 FFT 매핑 기준 호스트 테스트 |
 
@@ -149,6 +170,10 @@ ESP-IDF v5.4.4 환경에서:
 idf.py set-target esp32s3
 idf.py build
 ```
+
+GG는 16MB flash용 `partitions.csv`를 사용한다. 기존 장치와 같은 NVS·PHY·factory 시작
+주소를 유지하면서 factory와 두 OTA 슬롯을 각각 4MB로 잡는다. 파티션 표를 처음 적용할
+때는 `0x9000`의 24KB NVS를 먼저 백업하고, `erase-flash` 없이 일반 플래시한다.
 
 기본 빌드는 현재 브레드보드의 PCM1808 VINL 단일채널을 사용한다. 목표 HOT와
 SENSITIVE 회로를 모두 연결한 뒤에만 `-D AUDIO_DUAL_RANGE=1`로 스테레오 자동 범위 변형을

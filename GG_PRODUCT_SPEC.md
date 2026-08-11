@@ -22,13 +22,18 @@
 - MIDI 입출력 단자
 - 9V DC 입력
 - 개발·업데이트용 USB와 외부 장치용 USB Host
-- AUX 입력, 헤드폰 출력, 앱 효과음용 오디오 코덱은 후속 하드웨어 단계
+- AUX 입력, 헤드폰 출력, 앱 효과음용 Adafruit TLV320DAC3100 재생 모듈
 - microSD: 미디어, 테마, 설정, 제한된 스크립트 앱과 Game 콘텐츠
 
-현재는 분석 정확도를 맡는 PCM1808과 향후 재생 DAC·헤드폰 앰프를 분리한 구성을 기준으로
-유지한다. 입력 ADC까지 하나의 통합 코덱으로 바꾸는 결정은 Sound Monitor 교정·잡음 성능을
-실측 비교하기 전에는 하지 않는다. 재생 DAC와 헤드폰 앰프를 한 모듈로 줄이는 선택은
-PC 재생 경로를 완성한 뒤 별도 하드웨어 선정 단계에서 평가한다.
+분석 정확도를 맡는 PCM1808과 재생 DAC·헤드폰 앰프를 분리한다. 재생 쪽은
+TLV320DAC3100 모듈 하나가 I2S 앱 음원, 스테레오 AUX 아날로그 믹스와 헤드폰 구동을 맡는다.
+입력 ADC까지 통합 코덱으로 바꾸지 않는다. AUX와 앱 소리는 헤드폰에만 섞고 메인 기타
+Thru에는 섞지 않는다. 메인 기타의 헤드폰 모니터는 분석 탭을 부하시키지 않는 전용 버퍼가
+없는 현재 회로에서는 제공하지 않는다.
+
+물리 MIDI는 3.5mm TRS-A IN/OUT 두 단자를 사용한다. IN은 6N138로 회로 GND와 절연하고,
+OUT은 5V SN74AHCT14 버퍼와 표준 전류 루프로 구동한다. 메인 기타 뮤트는 J201 대신
+normally-open 저용량 PhotoMOS를 Thru 출력에 병렬로 연결해 전원 OFF 직결 Thru를 보존한다.
 
 ### 기본 옵션
 
@@ -96,32 +101,38 @@ PC 재생 경로를 완성한 뒤 별도 하드웨어 선정 단계에서 평가
 - Tuner
 - dB Meter
 - Gallery: SD `GG/images`의 JPG/PNG/BMP/GIF/BIN 탐색·표시
-- Bounce
+- Game: 외부 DMG `.gb`와 빈 타일의 내장 GG Cat 이스터 에그
+- Oscilloscope: 실제 입력 PCM 시간파형, trigger, timebase/scale, hold
+- MIDI Monitor: 메시지 이력·채널 필터·clock 집계
 
 ### GG 목표 기본 앱
 
-- Sound Monitor, Tuner, dB Meter, Metronome, Gallery, Music, Game, Bounce
+- Sound Monitor, Tuner, dB Meter, Oscilloscope, Metronome, Gallery, Music,
+  Game, MIDI Monitor
 - **Sound Monitor의 정확도와 성능을 미디어·게임 기능보다 우선한다.**
 - Gallery, Music, Game은 SD 콘텐츠 중심 앱이지만 카드나 파일이 없어도 실행된다.
-  Gallery는 어두운 `GG` 월페이퍼, Music은 내장 8비트 로비 음악, Game은 목록의
-  `No Game`과 내장 점프 게임을 폴백으로 제공한다.
-- Game 목록에서 콘텐츠를 선택하지 않았거나 `No Game`을 선택한 상태에서 OK/Play를
-  실행하면 내장 점프 게임을 시작한다.
-- Music, Metronome과 앱 효과음은 향후 코덱의 헤드폰 출력으로만 재생한다. 하드와이어
-  Thru에 소프트웨어 오디오를 섞지 않는다.
+  Gallery는 어두운 `GG` 월페이퍼, Music은 내장 8비트 로비 음악, Game은 정사각형 타일
+  로비와 내장 GG Cat을 폴백으로 제공한다.
+- Game 로비에는 실제로 플레이 가능한 게임만 표시한다. 빈 타일에서 OK를 누르면 내장
+  GG Cat을 시작하지만 빈 슬롯과 게임 화면 어디에도 이름이나 내장 게임 표기를 노출하지
+  않는다. GG Cat은 고양이 캐릭터의 Chrome Dino식 러너이며 버튼과 오디오 레벨로 점프한다.
+- Music, Metronome과 앱 효과음은 TLV320DAC3100 헤드폰 출력으로만 재생한다. 공통
+  소프트웨어는 PC에서 구현됐고, ESP 코덱 백엔드가 아직 없어 현재 GG의 Metronome·게임은
+  무음 시각 모드로 동작한다. 하드와이어 Thru에 소프트웨어 오디오를 섞지 않는다.
 - 앱은 한 번에 하나만 활성화한다. Music을 떠날 때 재생을 정지하므로 Game과 Music
   스트리밍은 동시에 실행하지 않는다.
 
 ## 5. SD와 소프트웨어 확장 범위
 
 - SD가 없어도 본체와 내장 앱은 부팅하고 동작한다.
-- SD의 표준 루트는 `GG/images`, `GG/music`, `GG/games`다. Gallery와 세 카탈로그
-  기반은 구현됐고 Music 재생·Game 실행은 아직 구현되지 않았다.
+- SD의 표준 루트는 `GG/images`, `GG/music`, `GG/games`다. Gallery, PC Music 재생,
+  Game 타일 로비와 내장 GG Cat에 더해 DMG `.gb` 실행과 `.sav` 저장이 구현됐다.
 - SD는 이미지·음악·게임 샘플, 테마, 설정, 업데이트 패키지를 제공한다.
 - 펌웨어 업데이트 없이 추가하는 앱은 서명·권한·자원 제한이 가능한 스크립트/바이트코드
   런타임을 장기 목표로 한다. 임의의 ESP32 네이티브 바이너리를 직접 실행하지 않는다.
-- 제품과 런처의 앱 이름은 **Game**이다. 그 안에서 지원할 외부 게임 범위는 Retro-Go급
-  8/16비트 에뮬레이션까지이며 GBA와 NDS는 GG 범위가 아니다.
+- 제품과 런처의 앱 이름은 **Game**이다. 현재 외부 지원은 Peanut-GB 기반 원본 Game Boy
+  DMG `.gb`이며, 이후에도 GG에서 지원할 범위는 기기별 검증을 통과한 Retro-Go급 코어까지다.
+  Game Boy Color 전용, GBA와 NDS는 현재 GG 범위가 아니다.
 - GBA/NDS, 터치 중심 UI, 더 높은 연산량과 오디오 인터페이스 기능은 차기 하드웨어
   **GG2** 검토 범위다.
 
@@ -130,7 +141,7 @@ PC 재생 경로를 완성한 뒤 별도 하드웨어 선정 단계에서 평가
 - PC 시뮬레이터는 단순 화면 시험기가 아니라 GG의 앱·런처·설정을 먼저 완성하는 기준
   구현이며, GG 없이도 사용할 수 있는 독립 데스크톱 앱이다.
 - PC 시스템 오디오/캡처 장치는 PCM1808을, 로컬 `GG/` 폴더는 MicroSD를, PC 오디오
-  출력은 미래 헤드폰/AUX 코덱을 대신한다.
+  출력은 GG의 TLV320DAC3100 재생 백엔드를, WinMM은 GG UART/BLE-MIDI 백엔드를 대신한다.
 - 앱·UI·상태·설정 의미는 PC와 GG가 공유하고 하드웨어 차이만 플랫폼 백엔드로 분리한다.
 - Music·Metronome·미디어·게임은 PC에서 실제 사용자 흐름을 먼저 완성한 뒤 같은 공통
   코드를 ESP에 이식한다. 상세 계약과 순서는 `PC_SIMULATOR_PRODUCT.md`가 권위다.

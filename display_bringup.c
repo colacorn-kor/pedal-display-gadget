@@ -196,7 +196,7 @@ lv_display_t* bsp_display_init(void)
     ESP_ERROR_CHECK(lvgl_port_init(&lp));
     const lvgl_port_display_cfg_t dc={
         .io_handle=io, .panel_handle=panel,
-        .buffer_size=LCD_HRES*40,
+        .buffer_size=LCD_HRES*30,
         .double_buffer=true,
         .hres=LCD_HRES, .vres=LCD_VRES,
         .color_format=LV_COLOR_FORMAT_RGB565,

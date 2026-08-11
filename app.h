@@ -9,7 +9,7 @@
 #include "fft_map.h"
 #include "renderer.h"
 
-typedef enum { AUDIO_SPECTRUM, AUDIO_TUNER } audio_mode_t;
+typedef enum { AUDIO_SPECTRUM, AUDIO_TUNER, AUDIO_NONE } audio_mode_t;
 typedef enum {
     AUDIO_INPUT_SOURCE_LEGACY = 0,
     AUDIO_INPUT_SOURCE_SENSITIVE,
@@ -39,6 +39,16 @@ typedef struct {
 } audio_viz_snapshot_t;
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out);
 
+/* Oscilloscope-only time-domain publication. Samples are normalized PCM. */
+#define AUDIO_WAVEFORM_SAMPLES 2048
+typedef struct {
+    int16_t samples[AUDIO_WAVEFORM_SAMPLES];
+    uint16_t count;
+    uint32_t frame_sequence;
+} audio_waveform_snapshot_t;
+void audio_waveform_set_enabled(bool enabled);
+void audio_waveform_snapshot_get(audio_waveform_snapshot_t *out);
+
 /* 출력 뮤트 (소프트 램프는 HW RC) */
 void mute_set(int on);
 int  mute_get(void);
@@ -61,6 +71,8 @@ void sm_render(void);
 int  sm_current(void);
 #ifdef PEDAL_SIM
 bool sm_debug_popup_open(void);
+bool sm_debug_enter_app(const char *id);
+int sm_debug_launcher_hint_mask(void);
 #endif
 
 /* 씬/템포 훅: UI 태스크 안에서만 호출 */

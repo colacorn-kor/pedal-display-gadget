@@ -11,4 +11,6 @@ void sim_audio_pump(void);
 void sim_audio_set_mouse_x(float x);
 void sim_audio_trigger_synthetic_onset(void);
 void sim_audio_audio_viz_get(audio_viz_snapshot_t *out);
+void sim_audio_waveform_set_enabled(bool enabled);
+void sim_audio_waveform_get(audio_waveform_snapshot_t *out);
 void sim_audio_music_get(music_snapshot_t *out);

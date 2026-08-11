@@ -96,7 +96,7 @@ typedef struct {
    선택하고 확인으로 적용+NVS 저장한다.
 5. 앱 홈 메뉴는 `Settings/Info` 순서이며 Exit는 두지 않는다. 모든 앱 Settings의 첫 항목
    `Theme` 아래에 `Mode/Color`를 두고, 앱별 선택 항목은 Theme 뒤에 추가한다. Sound Monitor Mode는
-   `Curve/12-Band/Circular/Reference`, Bounce Mode는 `Classic Cat`이다.
+   `Curve/12-Band/Circular/Reference`다.
    Curve에서 좌·우는 `DETAIL/BALANCED/SIMPLE` 단순화 수준을 조정한다. Sound Monitor의
    `Weighting`은
    `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`이고 기본값 Flat은 원 dBFS 분석을
@@ -106,7 +106,7 @@ typedef struct {
 6. platform_config **version 6**는 기존 1바이트 외형 필드에 Color 3비트와 Mode 5비트를
    패킹한다. v2~v5 blob 크기를 보존하며 v5 앱 White는 Blue로, 전역 White는
    Light+Blue로 이전한다. 이전 Monitor 프리셋은 대응 조합으로, 제거된 Nyan 값은
-   `Default + Classic Cat`으로 마이그레이션한다.
+   제거된 앱 ID는 로드에서 무시하고 다음 저장에서 정리한다.
 7. 현재 구형 dB Meter 상단은 `INPUT LINE/INST`와 `WINDOW LIVE/AVG 1s/AVG 3s` 두
    선택기로 구성한다. 좌·우로 INPUT/WINDOW 포커스를 옮기고 상·하로 선택한 값을 바꾼다.
    같은 선택기는 `Settings → Input/Window`에도 제공한다. 목표 자동 듀얼레인지가

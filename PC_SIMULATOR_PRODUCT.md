@@ -34,7 +34,7 @@ PC 시뮬레이터는 화면을 잠깐 확인하는 모형이 아니라 다음 �
 - 오디오 출력 전송: PC 오디오 장치 / 미래 GG 코덱 I2S
 - 파일 저장소: PC 폴더 / FATFS MicroSD
 - 설정 저장: PC 파일 / ESP NVS
-- MIDI 전송: PC MIDI API / UART·BLE-MIDI
+- MIDI 전송: Windows WinMM / 미래 UART·BLE-MIDI
 - 시간, 태스크, 파일 디코더의 플랫폼 최적화 부분
 
 앱 파일 안에서 `PEDAL_SIM` 조건으로 별도 제품 동작을 만들지 않는다. 필요한 차이는
@@ -51,7 +51,7 @@ PC 시뮬레이터는 화면을 잠깐 확인하는 모형이 아니라 다음 �
 | 오디오 출력 | PC 기본/선택 출력 장치 | 미래 헤드폰/AUX 코덱 | 같은 재생·믹서 API |
 | 미디어 저장소 | `GG_SD_ROOT` 또는 `sim/sdcard` | FAT32 MicroSD | 같은 `storage_*`와 `GG/` 구조 |
 | 설정 | 격리된 PC 파일 | NVS | 같은 설정 구조와 마이그레이션 |
-| MIDI | 향후 PC MIDI 입출력 | 향후 UART·BLE-MIDI | 같은 MIDI 이벤트 |
+| MIDI | WinMM 입출력·장치 열거 | unavailable stub, 향후 UART·BLE-MIDI | 같은 parser·서비스·앱 |
 | 게임 콘텐츠 | PC `GG/games` 폴더 | MicroSD `GG/games` | 같은 카탈로그와 코어 어댑터 |
 
 PC의 시스템 오디오 loopback은 PCM1808의 대체 입력이다. 현재 분석 코어가 단일 입력을
@@ -71,9 +71,9 @@ MIDI_INPUT / MIDI_OUTPUT
 GAME_RUNTIME
 ```
 
-현재 `gadget_app_t.needs_codec`와 매니저의 하드코딩은 임시 상태다. 이를
-`AUDIO_PLAYBACK_OUTPUT` 능력 검사로 일반화한다. 그러면 PC 오디오 출력이 구현된 PC에서는
-Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는 같은 앱이 비활성 또는
+`gadget_app_t.required_capabilities`와 플랫폼 능력 마스크로 가용성을 판단한다. PC에서는
+SDL 출력 장치 개방에 성공하면 `AUDIO_PLAYBACK_OUTPUT`을 제공한다. Music은 이 능력이
+필수라 출력이 없으면 비활성이고, Metronome·Game은 항상 실행하되 출력이 없으면
 무음 시각 모드로 동작한다. 메인 기타 Thru는 이 능력에 포함하지 않으며 출력 경로 enum에
 메인 출력 값을 만들지 않는 원칙도 유지한다.
 
@@ -85,12 +85,12 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 | Sound Monitor | 실오디오·합성 입력 동작 | 동작 | 공통 renderer 유지 |
 | Tuner | 실오디오·합성 입력 동작 | 동작 | 공통 DSP 유지 |
 | dB Meter | 좌우 Input/Window 선택·상하 값 변경과 Settings 동작 | 동작, 실전압 교정 대기 | PC UI 선행, GG는 교정값만 추가 |
-| Gallery | PC 폴더 이미지 표시, 빈 폴더 `GG` 폴백 | SD 소프트웨어 구현, 실기 대기 | 브라우징·오류·메타데이터 개선 |
-| Bounce | 동작 | 동작 | 공통 게임 루프 유지 |
-| Metronome | 미구현 | 미구현 | PC 출력과 UI부터 구현 |
-| Music | 파일 카탈로그만 존재 | 파일 카탈로그만 존재 | 내장 로비 음악 + PC 파일 재생, ESP 코덱 이식 |
-| Game | 게임 카탈로그만 존재 | 게임 카탈로그만 존재 | `No Game`에서 내장 점프 게임, 이후 지원 코어 실행 |
-| Setlist/MIDI Monitor | 미구현 | 파서 기반만 존재 | PC MIDI 백엔드와 UI부터 구현 |
+| Oscilloscope | 시스템/캡처 PCM 시간파형·trigger·hold 동작 | 같은 Core1 snapshot 계약 | 실제 입력에서 trigger·부하 실기 검증 |
+| Gallery | 상태 UI·자연 정렬·손상 검사·메타데이터·5초 배너 숨김 동작 | 같은 공통 코드, SD 실기 대기 | FAT32 카드 실기 검증 |
+| Metronome | click·UI·설정 동작 | 무음 시각 모드 동작 | GG 코덱 백엔드에서 같은 click 출력 |
+| Music | 내장 로비 음악·WAV 재생 동작 | 출력 코덱 부재로 비활성 | ESP 코덱 백엔드 이식 |
+| Game | 내장 GG Cat과 검증된 DMG `.gb` 동작 | 같은 UI·코어, 외부 게임 오디오 무음 | 실제 SD·프레임·입력 실기 검증 |
+| MIDI Monitor | WinMM Monitor 동작 | 공통 UI 동작, 물리 MIDI 백엔드 없음 | GG UART/BLE 전송계층 연결 |
 
 카탈로그가 존재하는 것과 파일을 실제 재생·실행하는 것은 구분한다. UI에 실행 가능한 것처럼
 보이게 만들지 않는다.
@@ -101,8 +101,8 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 - Gallery는 이미지가 없으면 어두운 `GG` 월페이퍼를 표시한다.
 - Music은 파일이 없으면 내장 8비트 로비 트랙을 재생한다. 현재는 사용자가 제작할 원곡이
   준비되기 전까지 코드 생성 임시 트랙을 사용하며, 앱 종료 시 반드시 정지한다.
-- Game은 파일이 없으면 목록에 `No Game`을 표시하고, 선택 후 OK/Play 또는 무선택
-  OK/Play에서 내장 점프 게임을 시작한다.
+- Game은 정사각형 타일 로비를 표시한다. 플레이 가능한 외부 게임만 타일에 표시하며,
+  빈 타일에서 OK를 누르면 이름을 노출하지 않은 내장 GG Cat을 시작한다.
 - 매니저는 한 번에 앱 하나만 활성화하고 앱의 `on_exit`를 마친 뒤 다음 앱에 진입한다.
   재생 transport도 활성 앱 소유권을 따르므로 Music과 Game 오디오는 동시에 재생하지 않는다.
 
@@ -139,41 +139,83 @@ Music·Metronome·효과음 앱이 활성화되고, 코덱이 없는 GG에서는
 - dB Meter는 화면의 `좌우=Input/Window 선택`, `상하=값 변경`과
   `Settings → Input/Window`가 같은 상태를 조작하는지 smoke로 검사한다.
 
-### D1. 플랫폼 능력과 PC 오디오 출력
+### D1. 플랫폼 능력과 PC 오디오 출력 *(완료)*
 
-- 물리 `needs_codec` 판정을 플랫폼 능력 검사로 교체한다.
-- 공통 재생 transport·믹서 API를 만들고 PC SDL 오디오 출력 백엔드를 먼저 구현한다.
-- ESP는 코덱이 없다는 능력 상태를 반환하되 공통 앱 코드는 그대로 빌드한다.
+- 물리 `needs_codec` 판정을 앱 요구 capability와 플랫폼 능력 검사로 교체했다.
+- 공통 48kHz 스테레오 transport는 활성 앱 ID 하나가 소유하고 Music/Effects 버스를
+  gain 적용 후 믹스·클리핑한다. 디코더와 UI는 출력 장치를 직접 소유하지 않는다.
+- PC는 SDL queued output을 쓰며 실제 기본/선택 장치 개방 성공 시에만
+  `AUDIO_PLAYBACK_OUTPUT`을 제공한다. `--output-device N`과 `--list-audio`를 지원한다.
+- 코덱 없는 ESP는 명시적 unavailable 상태를 반환하고 큐 메모리를 할당하지 않지만 같은
+  공통 소스를 빌드한다. 자동 smoke는 무음 가상 sink에서 스테레오 경로를 검증한다.
 
-### D2. Music
+### D2. Music *(완료)*
 
-- `GG/music` 브라우저, 재생/일시정지, 이전/다음, 진행률, 볼륨과 오류 상태를 PC에서 완성한다.
-- WAV를 기준 경로로 먼저 통과시키고 MP3/FLAC/OGG는 메모리·라이선스·ESP 이식성을
-  확인한 디코더 경계로 추가한다.
-- 디코더가 앱 UI나 출력 장치를 직접 소유하지 않게 한다.
-- 파일이 없을 때의 내장 8비트 로비 트랙도 같은 transport와 믹서를 사용한다.
+- `GG/music` 탐색, WAV 재생/일시정지, 이전/다음, 진행률, 볼륨과 오류 상태를 PC에서 완성했다.
+- PCM 8/16/24/32-bit와 float32, mono/stereo, 8~192kHz WAV를 스트리밍으로 48kHz stereo로
+  변환한다. 디코더는 앱 UI나 출력 장치를 소유하지 않는다.
+- 파일이 없을 때 8초 길이의 코드 생성 임시 8비트 로비 트랙을 같은 transport와 믹서로
+  반복 재생하고 앱 종료 시 소유권과 출력을 해제한다.
+- MP3/FLAC/OGG는 카탈로그에 보이되 아직 지원하지 않는다는 오류를 표시한다. 메모리·라이선스·
+  ESP 이식성을 확인한 뒤 같은 디코더 경계에 추가한다.
 
-### D3. Metronome과 앱 효과음
+### D3. Game 타일 로비와 내장 게임 *(완료)*
 
-- 공통 clock/transport에서 BPM, 박자, subdivision, accent를 생성한다.
-- PC 오디오 출력으로 click과 Bounce 등 앱 효과음을 재생한다.
-- GG에서는 같은 이벤트를 미래 코덱 백엔드로 보낸다.
+- 사용자-facing 앱 이름은 Game으로 고정하고 가운데에 4개의 정사각형 슬롯을 둔다.
+- 좌우로 슬롯을 고르고 빈 슬롯에서 OK를 누르면 이름을 표시하지 않는 내장 GG Cat으로
+  진입한다. 빈 슬롯을 선택해도 이름·소스 메타데이터는 비워 둔다.
+- GG Cat은 Chrome Dino식 대기·첫 점프 시작·가속·선인장·충돌·재시작 흐름을 사용한다.
+  방향키/OK뿐 아니라 정규화 오디오 레벨이 0.35를 상향 통과할 때 점프하고, 0.25 아래에서
+  다시 무장하는 히스테리시스로 지속음의 반복 점프를 막는다.
+- 내장 게임의 HOME은 선택 위치를 유지한 채 로비로 돌아가고, 로비의 HOME은 표준 앱 메뉴를 연다.
+- D3에서는 외부 파일을 숨기는 빈 타일 계약까지만 확정했다. D6에서 공통 코어 probe를
+  통과한 DMG `.gb`를 빈 타일 앞의 플레이 가능한 타일로 승격했다.
 
-### D4. Gallery와 미디어 UX
+### D4. Metronome과 앱 효과음 *(완료)*
 
-- 빈 폴더, 손상 파일, 긴 파일명, 로딩, 정렬과 새로고침 상태를 완성한다.
-- PC 폴더와 SD에서 같은 탐색 결과와 오류 문구를 사용한다.
-- 빈 폴더와 저장소 부재에서는 공통 어두운 `GG` 월페이퍼를 유지한다.
+- 48kHz sample-clock 엔진이 40~220 BPM, 2~5박자, quarter/eighth/triplet/sixteenth와
+  첫 박 accent click을 생성한다.
+- Metronome은 OK로 시작·정지하고 좌우로 Tempo/Meter/Division을 선택한 뒤 상하로 값을
+  바꾼다. BPM·박자·분할은 앱 Settings와 지연 NVS 저장에도 연결했다.
+- PC 출력에서는 click을 Effects 버스로 재생한다. Game의 내장 GG Cat도 같은 버스에서
+  점프·장애물 통과·충돌 효과음을 내며, 자기 효과음이 loopback onset 점프를 만들지 않도록
+  짧은 억제 구간을 둔다.
+- 코덱 없는 GG에서는 같은 앱과 시각 상태를 유지하되 무음으로 동작한다. 미래 코덱 백엔드는
+  공통 transport를 소비하므로 앱 코드를 다시 나누지 않는다.
 
-### D5. 게임
+### D5. Gallery와 미디어 UX *(완료)*
 
-- Bounce와 새 내장 게임은 공통 게임 루프·입력·오디오 출력 API를 사용한다.
-- 사용자-facing 앱 이름은 Game으로 고정하고 `No Game`에서 내장 점프 게임으로 진입한다.
-- Game은 GG2 범위인 GBA/NDS를 포함하지 않는다. GG에서 감당할 Retro-Go급 코어만
-  대상으로 하고, PC에서도 같은 코어 어댑터와 저장 형식을 사용한다.
-- ROM 카탈로그만 있는 상태를 실행 완료로 계산하지 않는다.
+- Scanning/Loading/Ready/Empty/Error 상태와 빈 저장소의 어두운 `GG` 월페이퍼를 완성했다.
+- PC 폴더와 SD가 같은 대소문자 무시 자연 정렬, 64개 표시 상한, 경로 초과·목록 초과
+  집계와 오류 문구를 사용한다.
+- BMP/PNG/JPEG/GIF/BIN의 기본 구조를 읽기 전에 검사하고, LVGL decoder 확인 뒤 형식·치수·
+  파일 크기를 표시한다. 손상 파일은 앱을 멈추지 않고 해당 항목의 오류 화면으로 남는다.
+- 긴 파일명은 원본 경로에 보존하고 하단 한 줄에서 말줄임한다. OK 재검색은 파일 경로로
+  현재 선택을 복원한다.
 
-### D6. ESP 이식과 실기
+### D6. 외부 게임 코어 *(완료)*
+
+- MIT Peanut-GB를 고정 커밋으로 포함해 원본 Game Boy DMG `.gb`를 PC와 GG의 같은 코어
+  어댑터로 실행한다. 160x144 프레임은 2배 정수 확대하고, 코어는 59.7Hz로 진행하면서
+  30fps 화면을 발행한다.
+- 공통 런타임은 코어 선택, ROM probe/load, 눌림 상태+이벤트 입력, 프레임 발행, 48kHz stereo
+  audio sink 자리와 save RAM `.sav`를 소유한다. 첫 Peanut-GB 구성은 오디오를 생성하지 않는다.
+- 확장자만 믿지 않고 선언 크기, 헤더 체크섬, DMG 호환 여부와 지원 카트리지 종류를 검사한
+  파일만 로비에 표시한다. 실행 코어가 없는 NES/GBC 등은 카탈로그에 있어도 타일에 나오지 않는다.
+- 6키 GG에서는 방향키가 D-pad, OK가 현재 A/B/START/SELECT/BACK 동작이며 HOME 짧게로
+  동작을 순환한다. HOME 길게와 풋스위치의 전역 계약은 유지한다. PC는 Z/X/A/S 직접 키도 쓴다.
+- 기존 1MiB 파티션을 바꾸지 않은 ESP 기본 빌드가 통과했다. GBA/NDS는 GG2 범위다.
+
+### D7. MIDI Monitor *(완료)*
+
+- parser 출력은 공통 MIDI 서비스에 발행한다. 서비스는 16개 비클록 메시지 이력,
+  누적/clock 수, 최신 Program Change와 sequence를 lock-free snapshot으로 제공한다.
+- MIDI Monitor는 현재 메시지와 5개 이력, 누적·clock·drop 수를 표시한다. 좌우 채널 필터,
+  OK pause/live, UP clear를 제공하며 clock은 행을 채우지 않고 수만 센다.
+- PC는 WinMM callback에서 짧은 메시지를 lock-free 큐에 넣고 시뮬레이터 메인 루프가 기존
+  `midi_feed()`에 전달한다. GG의 UART/BLE 백엔드는 아직 unavailable stub이다.
+
+### D8. ESP 이식과 실기
 
 - PC에서 수용된 앱 코드는 바꾸지 않고 ESP 저장소·오디오 출력·MIDI 백엔드를 연결한다.
 - PSRAM, 플래시, 프레임 시간, 디코딩 버퍼 차이는 플랫폼 설정과 제한값으로 다룬다.

@@ -2,5 +2,11 @@
 /sdkconfig
 /sdkconfig.old
 /managed_components/
+/device_backups/
+/.codex-build/
+/tests/build/
+/sim/build/*
+!/sim/build/pedal_sim.exe
+/hardware/.history/
 *.pyc
 __pycache__/

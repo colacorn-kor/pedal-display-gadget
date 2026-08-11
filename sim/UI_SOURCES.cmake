@@ -1,14 +1,27 @@
 set(PEDAL_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
 
 set(PEDAL_UI_SOURCES
+    "${PEDAL_ROOT}/audio_playback.c"
+    "${PEDAL_ROOT}/audio_effects.c"
     "${PEDAL_ROOT}/app_bounce.c"
     "${PEDAL_ROOT}/app_db_meter.c"
+    "${PEDAL_ROOT}/app_game.c"
     "${PEDAL_ROOT}/app_images.c"
+    "${PEDAL_ROOT}/app_music.c"
+    "${PEDAL_ROOT}/app_metronome.c"
+    "${PEDAL_ROOT}/app_oscilloscope.c"
+    "${PEDAL_ROOT}/app_midi_monitor.c"
     "${PEDAL_ROOT}/app_monitor.c"
     "${PEDAL_ROOT}/app_slots.c"
     "${PEDAL_ROOT}/app_tuner.c"
     "${PEDAL_ROOT}/content_screen.c"
     "${PEDAL_ROOT}/gadget_app.c"
+    "${PEDAL_ROOT}/game_core_peanut.c"
+    "${PEDAL_ROOT}/game_runtime.c"
+    "${PEDAL_ROOT}/image_probe.c"
+    "${PEDAL_ROOT}/music_lobby.c"
+    "${PEDAL_ROOT}/metronome_engine.c"
+    "${PEDAL_ROOT}/midi_service.c"
     "${PEDAL_ROOT}/renderer.c"
     "${PEDAL_ROOT}/renderer_bars.c"
     "${PEDAL_ROOT}/renderer_circular.c"
@@ -19,4 +32,5 @@ set(PEDAL_UI_SOURCES
     "${PEDAL_ROOT}/storage.c"
     "${PEDAL_ROOT}/theme.c"
     "${PEDAL_ROOT}/tuner_screen.c"
+    "${PEDAL_ROOT}/wav_decoder.c"
 )

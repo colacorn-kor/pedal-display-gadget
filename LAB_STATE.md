@@ -1,34 +1,46 @@
 # LAB_STATE.md - 현재 장치 및 실기 상태
 
-> 갱신일: 2026-08-05
+> 갱신일: 2026-08-10
 > 이 문서는 마지막 플래시와 현재 실험 상태의 SSOT다.
 
 ## 1. 기준 상태
 
-- 플래시 이미지 기준 커밋: `052f2876` (`Record Color Mode hardware verification`)
-- 마지막 실기 펌웨어: 위 커밋의 dirty 작업 트리에서 빌드한 Curve/Reference 개발본
-- 현재 펌웨어 상태: 자동 빌드·플래시·25초 부팅 로그 통과, Curve/Reference 사용자
-  화면·버튼 실기 확인 통과
-- 현재 미플래시 개발본: `dB/oct`를 제거한 분석을 3k/12k/48kHz 3단계 FFT와 중심 시각
-  정렬로 확장하고 Reference의 시간 잔상을 제거했다. 2Hz DC blocker와 선택형
-  Flat/A-weighted 표시도 추가했다. Curve/Reference의 6개 주파수 구간 배경과 전역
-  `Dark/Light × 4 Color`, 앱 5 Color 체계도 반영했다. PC·호스트·ESP 자동 검증은
-  통과했다. 이후 팝업을 앱 `Settings/Info`, 런처 `Theme/About`, 앱
-  `Settings → Theme → Mode/Color`로 정리하고 60-phon Loudness 표시 두 종류를 추가했다.
-  후속 개발본은 Sound Monitor 상·하 직접 Weighting 전환과 표시 하한의 무음 잔여값
-  확대 방지를 추가했다. 이어 dB Meter를 좌우 Input/Window 선택·상하 값 변경으로 바꾸고
-  Settings에도 Input/Window를 연결했다. PC·호스트·ESP 자동 검증을 통과했으며 본체 화면,
-  Core1 실시간 부하, 실제 오디오 입력은 아직 확인하지 않았다.
+- 플래시 이미지 기준 커밋: `7e6b8199-dirty` (`Optimize 12-band and circular renderers` 이후 개발본)
+- 마지막 실기 펌웨어: 런처 오버플로 표시·Oscilloscope·MIDI Monitor와 16MB 파티션 표를
+  포함한 2026-08-07 개발본
+- 현재 펌웨어 상태: COM4 전체 삭제 없이 플래시, 16MB 파티션·8MB PSRAM 확인과 30초
+  부팅 로그 통과. 이어 45초 입력 로그에서 오류·watchdog 없이 OK 입력을 확인했다.
+- 현재 소스 개발본(미플래시): 독립 Bounce 앱을 제거해 등록 앱은 9개다. Game 빈 슬롯은
+  이름과 `built-in` 정보를 전혀 표시하지 않고, OK로 고양이 캐릭터의 Chrome Dino식 내장
+  GG Cat을 실행한다. 버튼과 임계 레벨 이상의 오디오 입력으로 점프한다. 일반 런처 앱
+  타일의 우하단 커서는 제거하고 Reorder 커서만 유지했으며 STASH 행을 12px 올렸다.
+  Gallery는 정상 사진에서 5초 무입력 뒤 정보 배너를 숨기고 입력 시 복귀한다. Sound
+  Monitor는 여섯 대역명을 표시하고 Bass 색을 Sub Bass에 가깝게 조정했다. 깨끗한 PC
+  빌드와 전체 smoke, 호스트 C 테스트 15개와 FFT 정규화 Python 테스트, ESP-IDF 기본 및
+  `INPUT_TRS_LADDER=0` 빌드가 모두 통과했다. 기본 펌웨어는 `0xfea90` bytes이고 4MB 앱
+  파티션의 75%가 남는다. 본체 플래시는 아직 하지 않았다.
+- 마지막 플래시 개발본: Sound Monitor 3단계 FFT·4종 Weighting·6개 주파수 구간과 공통
+  Theme/Settings, dB Meter Input/Window 조작을 포함한다. 이어 플랫폼 capability와 공통
+  재생 transport, PC Music/WAV, Game 타일 로비·내장 Cat Run, Metronome과 게임 효과음,
+  Oscilloscope와 MIDI Monitor까지 구현해 당시 등록 앱은 10개다. Setlist는 제품 범위에서
+  제거했다. PC·호스트·ESP 자동 검증은 통과했다. 16MB 커스텀 파티션 표를 본체에 적용해
+  factory와 OTA 슬롯을 각각 4MB로 예약했다. 런처 화살표·Oscilloscope 화면과 조작,
+  실제 오디오 입력과 헤드폰 출력은 사용자 육안·청감 확인을 기다린다.
 - 마지막 확인 포트: COM4
 - 전원 전제: 사용자가 별도로 알리지 않는 한 외부 9V는 분리, USB만 연결된 상태
-- 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter 총 5개
+- 마지막 실기 플래시본 등록 앱: Sound Monitor, Gallery, Tuner, Bounce, dB Meter, Music,
+  Game, Metronome, Oscilloscope, MIDI Monitor 총 10개
 - 조립 상태: 디스플레이·PCM1808·TRS 6키·풋스위치 연결, SD 배선 완료
-- 미장착: 뮤트 회로
+- 미장착: 재생/AUX/헤드폰 모듈, MIDI 물리 회로, 뮤트 회로
 - 보유 SD 모듈: 아두이노 MicroSD 카드 소켓 모듈 `SZH-EKBZ-005`
   (VCC 4.5~5.5V, 온보드 3.3V LDO·레벨 변환), 배선 완료·기능 확인 대기
 - Ring 100Ω / Tip 220Ω: 현재 장착됨
-- 오디오 입력 프론트엔드: 현재 TL072+SPDT 회로로 재배선 필요, 외부 9V 동작 미검증
+- 오디오 입력 프론트엔드: 현재 끝점 재확인 필요, 외부 9V 동작 미검증. 임시 TL072+SPDT를
+  다시 만들지 않고 OPA2192 자동 듀얼레인지로 진행
 - 목표 자동 듀얼레인지 회로는 문서와 소프트웨어만 준비됐으며 OPA2192를 보유하지 않음
+- 목표 주변 회로: TLV320DAC3100 재생/AUX/헤드폰, 6N138+SN74AHCT14 MIDI,
+  G39+AQY221R2S 병렬 뮤트, D1 1N5822+LM66200 전원 보호로 확정. 부품 미구매·미배선,
+  ESP codec/MIDI backend 미구현
 - 현재 실물 배선은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 배선은 `ASSEMBLY.md`,
   미래 회로와 교정은 `hardware/NETLIST_SPEC.md`와
   `hardware/AUDIO_FRONTEND_ENGINEERING.md`로 분리
@@ -662,7 +674,7 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - Gallery는 이미지나 SD 루트가 없을 때 어두운 `GG` 월페이퍼와 상태 문구를 표시한다.
   smoke가 이 폴백 화면을 실제 객체 상태로 검사하도록 확장했다.
 - 저장소의 Retro 명칭을 Game으로 바꾸고 표준 경로를 `GG/games`로 정했다. Game의
-  `No Game`→내장 점프 게임과 Music의 내장 8비트 로비 음악은 제품 계약을 확정했으며,
+  빈 타일→내장 점프 게임과 Music의 내장 8비트 로비 음악은 제품 계약을 확정했으며,
   실제 앱·재생 구현은 다음 단계다. 앱은 한 번에 하나만 실행하고 Bluetooth audio는
   GG 범위에서 제외한다.
 - 깨끗한 PC Debug 빌드와 갱신된 추적 `pedal_sim.exe` smoke, 호스트 CTest 6/6,
@@ -696,14 +708,242 @@ HOME이 먼저 래치된 뒤 더 낮은 비율을 무시하는 기존 정책 때
 - 추적 `pedal_sim.exe`를 같은 소스로 갱신했다. 본체 플래시와 실기 화면 확인은 수행하지
   않았다.
 
+### 2026-08-06 D1 플랫폼 능력·PC 오디오 출력 기반
+
+- `gadget_app_t.needs_codec`를 `required_capabilities`로 교체했다. 플랫폼은 화면·분석 입력·
+  재생 출력·저장소·MIDI·게임 런타임 능력 비트의 타입을 제공하고, 매니저는 런처 표시뿐
+  아니라 직접 진입·부팅 복원·풋스위치 라이브 순환에서도 가용 앱만 선택한다.
+- `audio_playback.*`에 48kHz 스테레오, 단일 앱 ID 소유권, 재생/일시정지/정지,
+  Music/Effects 큐와 버스·마스터 gain 및 최종 클리핑을 구현했다. 메인 기타 Thru는 이
+  capability와 믹서에 포함하지 않았다.
+- PC의 `sim_audio_output.*`는 SDL queued output을 사용한다. 출력 장치가 실제 개방된
+  경우만 `AUDIO_PLAYBACK_OUTPUT`을 제공하며 `--output-device N`과 출력 장치 열거를
+  지원한다. smoke에서는 실제 소리를 내지 않는 가상 sink로 256 프레임의 좌우가 다른
+  스테레오 신호와 소유권 해제를 검증한다.
+- 현재 Windows 세션의 SDL 장치 열거에서는 활성 재생 endpoint가 0개여서 실제 청음은
+  확인하지 못했다. 이 경우 장시간 개방을 기다리지 않고 즉시 unavailable로 내려가며,
+  재생 장치가 보이는 환경에서의 실제 SDL 출력·청음은 D2 Music과 함께 확인한다.
+- 현재 ESP는 재생 capability 없이 공통 API를 명시적 `UNAVAILABLE`로 초기화하며 큐 메모리를
+  할당하지 않는다. 미래 코덱 백엔드는 Core1에서 같은 render API를 소비한다.
+- 호스트 CTest 10/10, 깨끗한 PC Debug 빌드와 전체 smoke가 통과했다. smoke 전후 사용자
+  `sim/build/sim_nvs.bin` SHA-256은 `0766BA...E26D`로 같았다.
+- ESP-IDF 5.4.4 공식 PowerShell 환경이 다시 정상 동작했다. 깨끗한 기본과
+  `INPUT_TRS_LADDER=0` `-Werror=all` 빌드가 통과했고 이미지는 각각 `0xf0d20`
+  (1MiB 앱 파티션 6% 여유), `0xed710`(7% 여유)다. 래더 비활성 첫 병렬 빌드에서 외부
+  `esp-dsp` 한 파일의 GCC 내부 오류가 한 번 발생했으나 같은 개체 재실행은 통과했다.
+- 이번 단계는 재생 기반만 구현했다. Music UI·로비 음악·WAV 디코더는 다음 D2 범위이며,
+  본체 플래시와 실제 스피커/헤드폰 청음은 수행하지 않았다.
+
+### 2026-08-06 D2 Music 앱·WAV 재생
+
+- `music` 앱을 레지스트리에 추가했다. PC 출력 장치가 열려 `AUDIO_PLAYBACK_OUTPUT` 능력이
+  있을 때만 런처와 라이브 체인에 나타나며, 코덱 없는 현재 ESP에서는 비활성이다.
+- `GG/music`에서 음악 파일을 정렬 탐색한다. WAV는 PCM 8/16/24/32-bit와 float32,
+  mono/stereo, 8~192kHz를 순차 읽어 48kHz stereo로 변환한다. MP3/FLAC/OGG는 목록에는
+  나타나지만 선택 시 아직 지원하지 않는다는 오류를 명시한다.
+- 음악 파일이 없으면 저작권 외부 자산 없이 코드로 생성한 8초 E-minor 8비트 임시 로비
+  트랙을 반복 재생한다. 좌우=이전/다음, OK=재생/일시정지, 상하=5% 볼륨 조정이며 진행률·
+  시간·소스·WAV 형식·오류 상태를 표시한다. 앱 종료 시 출력 큐와 소유권을 해제한다.
+- `AUDIO_NONE`을 추가해 Music 실행 중 Core1의 I2S 수신 주기는 유지하면서 tuner/FFT/meter
+  분석만 건너뛴다. 오디오 발행과 하드와이어 메인 기타 Thru 계약은 바꾸지 않았다.
+- Music preview를 육안 확인해 480x320 화면의 제목·볼륨·트랙·진행률·조작 아이콘 겹침과
+  폰트 문제를 수정했다. 자동 smoke는 가상 stereo sink에서 로비 출력의 비영점 샘플, 진행,
+  일시정지/재개, 볼륨과 앱 전환을 확인했다.
+- 호스트 CTest 11/11, 깨끗한 PC Debug 빌드와 전체 smoke가 통과했다. 추적
+  `sim/build/pedal_sim.exe`를 같은 소스로 갱신했고 사용자 `sim_nvs.bin` SHA-256은
+  `0766BA...E26D`로 유지됐다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` `-Werror=all` 전체 빌드가 통과했다.
+  이미지는 각각 `0xf3120`(1MiB 앱 파티션 5% 여유), `0xefb20`(6% 여유)다.
+- 현재 Windows 세션에서 HDMI와 모니터 재생 endpoint 2개가 열거됐고 0번 장치를
+  48kHz stereo로 실제 개방하는 데 성공했다. Music 샘플의 가상 출력 검증과 실제 장치 개방은
+  통과했지만 사람이 들리는 소리를 판정하는 청음 확인과 본체 플래시는 수행하지 않았다.
+
+### 2026-08-06 D3 Game 타일 로비·내장 Cat Run
+
+- `game` 앱을 7번째 앱으로 등록했다. 가운데에 96x96 정사각형 슬롯 4개를 배치하고 좌우로
+  선택한다. 실행 가능한 외부 코어가 아직 없으므로 `GG/games` 파일은 탐색만 하며 타일에는
+  표시하지 않는다. 빈 타일에서 OK를 누르면 내장 Cat Run을 시작한다.
+- Bounce의 점프·충돌·오디오 onset 런타임을 `bounce_game.*` 경계로 공유한다. Game은 로비와
+  상태 전환만 소유하고, 내장 게임의 HOME은 선택 타일을 보존한 로비로 돌아간다. 로비의
+  HOME은 기존 표준 앱 메뉴를 연다.
+- Game preview를 육안 확인해 480x320 화면의 네 슬롯, 정사각형 비율, 선택 테두리·커서,
+  제목과 소스 표시가 겹치지 않음을 확인했다. 자동 smoke는 타일 이동, 빈 타일 진입,
+  내장 Cat Run 점프, HOME 로비 복귀와 선택 위치 보존을 검사했다.
+- 호스트 CTest 11/11, 깨끗한 PC Debug 빌드와 추적 `sim/build/pedal_sim.exe` 전체 smoke가
+  통과했다. 추적 사용자 `sim/build/sim_nvs.bin`은 작업 전 SHA-256
+  `0766BA...E26D`로 복원·보존했다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 빌드가 통과했다. 이미지는 각각
+  `0xf3870`(1MiB 앱 파티션 5% 여유), `0xf02a0`(6% 여유)다.
+- 외부 9V, USB 장치, 본체 플래시와 실기 버튼·화면 검증은 이번 단계에서 건드리지 않았다.
+
+### 2026-08-06 D4 Metronome·앱 효과음
+
+- `metronome`을 8번째 앱으로 등록했다. 48kHz sample-clock 엔진이 40~220 BPM,
+  2~5박자와 Quarter/Eighth/Triplet/Sixteenth tick을 만들며 첫 박을 더 강하게 표시·재생한다.
+  앱은 정지 상태로 시작하고 OK=시작/정지, 좌우=Tempo/Meter/Division 선택,
+  상하=값 변경이다. 직접 조작과 Settings는 같은 상태를 쓰며 BPM·박자·분할을 지연 저장한다.
+- PC에서 `AUDIO_PLAYBACK_OUTPUT`을 사용할 수 있으면 Metronome click이 공통 Effects 버스로
+  출력된다. 현재 코덱 없는 ESP에서는 앱을 숨기지 않고 `VISUAL` 무음 모드로 동작시킨다.
+- Bounce와 Game의 수동 점프·장애물 통과·충돌에 코드 생성 효과음을 연결했다. 앱이 실행
+  중일 때만 재생 소유권을 잡고 종료 시 해제하며, PC loopback이 자기 효과음을 오디오 점프로
+  다시 감지하지 않도록 출력 뒤 120ms onset 억제를 둔다.
+- Metronome preview를 480x320에서 확인해 BPM, 4개 beat box, subdivision 점, 재생 아이콘과
+  아래 3개 조작부가 겹치지 않고 중앙 정렬됨을 확인했다. 시작·정지와 설정 상태는 결정론적
+  smoke에서 추가로 검사했다.
+- 호스트 CTest 13/13과 FFT normalization, 깨끗한 PC Debug 빌드와 전체 smoke가 통과했다.
+  추적 `sim/build/pedal_sim.exe`를 같은 소스로 갱신했고 사용자 `sim_nvs.bin` SHA-256은
+  `0766BA4E680CBEF698728E0834333D8CC802A8820A1D62C08A5C3DE9AF0BE26D`로 유지됐다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 `-Werror=all` 빌드가 통과했다. 이미지는
+  각각 `0xf4f10`(1MiB 앱 파티션 4% 여유), `0xf1920`(6% 여유)다. 다음 대규모 앱 추가 전에
+  승인된 파티션 확장 계획이 필요하다.
+- 본체 플래시, 실제 헤드폰 청음과 실기 버튼·화면 검증은 수행하지 않았다. 외부 9V와 장치
+  연결 상태도 변경하지 않았다.
+
+### 2026-08-06 D5 Gallery 미디어 UX
+
+- Gallery에 Scanning/Loading/Ready/Empty/Error 상태를 추가했다. 빈 폴더·저장소 부재는
+  어두운 `GG` 월페이퍼를 유지하고, 손상 파일은 앱을 중단하지 않는 항목별 오류 화면으로
+  표시한다.
+- 공통 저장소 스캔은 허용 파일 전체를 확인한 뒤 대소문자 무시 자연 정렬하고 최대 64개를
+  표시한다. 긴 경로와 상한 초과를 별도로 집계하며 OK 재검색은 파일 경로로 선택을 복원한다.
+- `image_probe.*`가 BMP/PNG/JPEG/GIF/BIN의 서명·핵심 헤더·끝 구조를 검사한다. LVGL decoder
+  확인을 통과한 파일은 이름, 순번, 형식, 치수와 크기를 표시하고 긴 이름은 한 줄 말줄임한다.
+- PC 임시 저장소 fixture로 빈 상태, `Image2`/`Image10` 자연 정렬, 손상 PNG, 100자 이상
+  파일명과 선택 보존 새로고침을 smoke에 추가했다. 네 상태 preview를 480x320에서 확인해
+  이미지·오류 문구·하단 정보·말줄임이 겹치지 않음을 확인했다.
+- 호스트 CTest 14/14, 깨끗한 PC Debug 전체 빌드와 smoke가 통과했다. 추적
+  `sim/build/pedal_sim.exe`를 같은 소스로 갱신했고 사용자 `sim_nvs.bin` SHA-256은
+  `0766BA4E680CBEF698728E0834333D8CC802A8820A1D62C08A5C3DE9AF0BE26D`로 유지됐다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 `-Werror=all` 빌드가 통과했다. 이미지는
+  각각 `0xec280`(1MiB 앱 파티션 8% 여유), `0xe8c60`(9% 여유)다.
+- 본체 플래시와 실제 FAT32 SD 카드의 mount·이미지 전환·LCD 공유 SPI 실기 검증은 수행하지
+  않았다. 외부 9V와 USB 장치 상태도 변경하지 않았다.
+
+### 2026-08-06 D6 외부 Game Boy 코어
+
+- MIT Peanut-GB 커밋 `8e656982f08663785794b84823d3e27f856fdb7f`를 원형 그대로
+  포함하고, 공통 `game_core`/`game_runtime` 경계에서 PC와 GG가 같은 코어를 빌드한다.
+  첫 구성은 DMG `.gb`만 지원하며 외부 게임 오디오는 PC와 GG 모두 무음이다.
+- ROM 확장자뿐 아니라 선언 크기, 헤더 체크섬, DMG 호환 플래그와 Peanut-GB가 지원하는
+  카트리지 형식을 검사한다. 통과한 파일만 Game 로비 타일에 표시하고, save RAM은 앱을
+  떠날 때 ROM 옆의 같은 이름 `.sav`로 기록한다. ROM 파일은 저장소에 포함하지 않았다.
+- 외부 플레이어는 160x144 프레임을 2배 정수 확대해 320x288로 표시한다. 코어 진행은
+  59.7Hz, 화면 발행은 30fps이며 최대 3프레임 catch-up으로 UI 정지를 제한한다.
+  6키 GG는 방향키=D-pad, HOME 짧게=A/B/START/SELECT/BACK 선택, OK=선택 동작이다.
+  PC는 같은 보조 조작과 함께 `Z/X/A/S` 직접 A/B/SELECT/START 입력을 제공한다.
+- 호스트 CTest 15/15, 깨끗한 PC Debug 전체 빌드와 smoke가 통과했다. smoke는 합성 DMG
+  ROM probe·프레임 진행·로비 복귀와 빈 타일 Cat Run을 검사한다. 추적
+  `sim/build/pedal_sim.exe`도 같은 smoke를 통과했고 `sim_nvs.bin` SHA-256은 전후
+  `0766BA4E680CBEF698728E0834333D8CC802A8820A1D62C08A5C3DE9AF0BE26D`로 유지됐다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 `-Werror=all` 빌드가 통과했다. 이미지는
+  각각 `0xf29a0`(1MiB 앱 파티션 5% 여유), `0xef410`(7% 여유)이며 파티션 표는 바꾸지
+  않았다.
+- 본체 플래시와 실제 SD의 합법적으로 보유한 `.gb` 로딩, LCD 프레임 시간, 6키 조작,
+  `.sav` 생성·재로드는 아직 실기 검증하지 않았다. 외부 9V와 장치 연결 상태는 변경하지
+  않았다.
+
+### 2026-08-06 D7 MIDI Monitor
+
+- `midi_service.*`를 추가해 parser가 완성한 메시지의 최근 비클록 이력 16개, 전체·clock
+  수, 최신 Program Change와 sequence를 seqlock snapshot으로 발행한다. Monitor capture
+  중에는 기존 scene·CC·clock 매핑을 중복 실행하지 않고 앱을 나가면 복원한다.
+- PC는 WinMM 입력 callback의 lock-free 큐를 시뮬레이터 메인 루프에서 `midi_feed()`로
+  배출하고 짧은 메시지 출력을 지원한다. CLI는 `--list-midi`, `--midi-in`, `--midi-out`,
+  `--no-midi`다. 현재 PC의 실제 열거 결과는 입력 0개, 출력 1개
+  `Microsoft GS Wavetable Synth`였다.
+- MIDI Monitor는 현재 메시지와 5개 이력, 누적·clock·drop 수를 표시한다. 좌우 채널 필터,
+  OK pause/live, UP clear이며 clock은 이력 행을 채우지 않는다. 480x320 실제 SDL 창에서
+  겹침과 보조 텍스트 대비를 확인했다.
+- 새 MIDI service를 포함한 호스트 테스트, 깨끗한 PC Debug 빌드와 전체 smoke가 통과했다.
+  smoke는 가상 MIDI로 Monitor 이력·필터·pause·clear·capture를 검증했다. 추적
+  `sim/build/pedal_sim.exe`도 갱신했고
+  `sim_nvs.bin` SHA-256은 `0766BA4E...E26D`로 유지됐다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 `-Werror=all` 빌드가 통과했다. 이미지는
+  각각 `0xf5180`(1MiB 앱 파티션 4% 여유), `0xf1b40`(6% 여유)이며 파티션은 바꾸지 않았다.
+  다음 대규모 앱 추가 전에 16MB flash용 앱 파티션 확장·NVS 보존 계획을 먼저 승인해야 한다.
+- 현재 GG에는 MIDI 물리 단자와 UART/BLE 백엔드가 없어 플랫폼은 unavailable stub이다.
+  이번 단계에서는 본체 플래시·물리 MIDI·실기 버튼 검증을 하지 않았고 외부 9V와 USB 연결
+  상태도 변경하지 않았다.
+
+### 2026-08-06 16MB 앱 파티션 확장 준비
+
+- `partitions.csv`와 `sdkconfig.defaults`를 16MB 커스텀 표로 전환했다. 기존 NVS
+  `0x9000`/`0x6000`, PHY `0xf000`/`0x1000`, factory 시작 `0x10000`은 유지한다.
+  factory는 4MB, `otadata`는 `0x410000`/8KB, `ota_0`과 `ota_1`은 각각
+  `0x420000`·`0x820000` 시작 4MB다. 뒤쪽 약 3.9MB는 할당하지 않았다.
+- ESP-IDF 5.4.4 파티션 생성·역변환 검증과 기본/`INPUT_TRS_LADDER=0`
+  `-Werror=all` 깨끗한 전체 빌드가 통과했다. 이미지는 각각 `0xff3a0`, `0xfbdb0`이고
+  최소 4MB 앱 슬롯의 75%가 남는다. 호스트 CTest도 현재 목록 17/17을 통과했다.
+- 2026-08-06 확인 시 Windows에 COM 및 Espressif/USB serial 장치가 하나도 열거되지 않아
+  NVS 백업과 파티션 변경 플래시는 수행하지 않았다. 장치 재연결 뒤 NVS `0x9000`의
+  `0x6000`바이트를 먼저 백업하고 전체 flash erase 없이 기본 변형을 플래시해야 한다.
+
+### 2026-08-07 런처 오버플로 표시·Oscilloscope
+
+- LIVE/STASH 행에서 화면 왼쪽이나 오른쪽에 가려진 앱이 있으면 해당 가장자리에 삼각형
+  표시를 그린다. 현재 선택 행의 표시는 테마 강조색으로 선명하게, 다른 행은 낮은 불투명도로
+  표시한다. PC 실제 창에서 첫 화면 오른쪽 표시와 스크롤 뒤 양방향 표시 위치를 확인했다.
+- Setlist 앱과 CSV catalog, 저장소 media 종류, MIDI capture 경로, 호스트 테스트 및 관련
+  문서 계약을 제거했다. 같은 레지스트리 위치에는 Oscilloscope를 등록해 앱 수는 10개를
+  유지한다.
+- Oscilloscope는 Core1이 발행하는 2,048-sample 파형 snapshot만 소비한다. 앱이 활성화된
+  동안에만 256 sample마다 별도 double-buffer seqlock으로 발행하며 I2S/DSP 소유권은
+  Core1에 그대로 둔다. 시간축 2/5/10/20ms, 세로 범위 ±0.10/0.20/0.50/1.00FS,
+  상승 영점 trigger와 free-run fallback, OK Hold/Run을 구현했다.
+- 깨끗한 호스트 테스트 15/15, 깨끗한 PC 빌드와 synthetic smoke가 통과했다. PC 실제 창에서
+  런처 표시와 Oscilloscope의 480x320 배치·파형 표시를 확인했고 추적
+  `sim/build/pedal_sim.exe`도 갱신했다.
+- ESP-IDF 5.4.4 기본과 `INPUT_TRS_LADDER=0` 전체 `-Werror=all` 빌드가 통과했다. 최종 이미지는
+  각각 `0xfe8c0`, `0xfb230`이며 4MB 앱 파티션에서 모두 75%가 남는다.
+- COM4에서 실제 16MB flash를 확인하고 NVS `0x9000`/`0x6000`을
+  `device_backups/nvs_COM4_20260807_pre_oscilloscope.bin`으로 보존했다. 백업은 24,576바이트,
+  SHA-256 `9D75FAB9B16FF285039A8D4CF0D7BCD62D466840DE56B7E85780E9E5F3F109CA`다. 그 뒤 전체
+  삭제 없이 bootloader·partition table·factory·otadata를 기록했고 각 write hash가 통과했다.
+- 첫 부팅에서 Oscilloscope의 12KB 정적 파형 저장소 때문에 LVGL 내부 DMA 버퍼가 부족한
+  것을 발견해 파형 저장소를 앱 진입 시 PSRAM에 할당하도록 바꿨다. LVGL 버퍼 자체를 PSRAM
+  DMA로 옮기는 시도는 ST7796 SPI queue 오류와 watchdog을 일으켜 폐기했다. 최종본은 내부
+  DMA 이중 버퍼를 유지하되 한 버퍼 높이를 40줄에서 30줄로 낮췄다.
+- 최종 30초 부팅 로그에서 16MB 파티션, 8MB PSRAM 테스트, LVGL·TRS ladder 초기화와
+  Sound Monitor 27~30fps를 확인했다. 이어 재부팅 없는 45초 로그에서 OK 입력이 반복 감지됐고
+  SPI·메모리·watchdog 오류는 없었다. 런처 화살표와 Oscilloscope 파형·Hold/Run의 육안
+  판정은 사용자 확인을 기다린다.
+
+### 2026-08-10 남은 하드웨어 목표 회로 확정
+
+- PCM1808은 분석 전용 ADC로 유지하고 재생/AUX/헤드폰은 Adafruit TLV320DAC3100
+  Product 6309 모듈로 확정했다. G9/G18 클럭을 PCM1808과 공유하고 G40 I2S data,
+  G41/G42 I2C, G7 reset을 사용한다. AUX L/R은 2.2uF+10k를 거쳐 AIN1/AIN2로 들어가고
+  앱 음원과 함께 온보드 헤드폰 잭으로만 출력된다.
+- 물리 MIDI는 절연형 3.5mm TRS-A 두 단자, 6N138 MIDI IN(G5), 5V SN74AHCT14 두 gate
+  MIDI OUT(G6)으로 확정했다. MIDI IN Sleeve에는 회로 GND DC 경로를 만들지 않는다.
+- 메인 기타 뮤트는 J201을 폐기하고 AQY221R2S 저용량 normally-open PhotoMOS를 출력
+  Tip-Sleeve에 병렬로 두는 방식으로 확정했다. ESP32-S3 strapping G3 대신 G39를 쓰며
+  `app_main.c` 핀도 G39로 변경했다. 전원 OFF에는 하드와이어 Tip 직결만 남는다.
+- USB 단독 사용 시 MP1584 출력 역급전을 막기 위해 D1은 3A 1N5822, buck 출력 격리는
+  2.5A Adafruit LM66200 Product 5830을 쓰도록 목표 전원 회로를 보강했다. MP1584 `OUT+`를
+  4.9~5.1V로 조정한다.
+- 사용자용 구매표 `hardware/PURCHASE_LIST.md`를 추가하고 `ASSEMBLY.md`를 위 목표 회로
+  전체 배선표로 교체했다. `NETLIST_SPEC`, 제품 정의와 로드맵도 같은 선택으로 맞췄다.
+- 자동 듀얼레인지 입력은 임시 TL072+LINE/INST를 다시 만들지 않고 OPA2192 목표 회로로
+  진행한다. 고임피던스/pF 구간은 납땜 기판에서 만들고 sweep 교정한다.
+- G39 변경 뒤 ESP-IDF 기본/`INPUT_TRS_LADDER=0` `-Werror` 빌드가 통과했다. 바이너리는
+  각각 `0xfea90`/`0xfb4c0` bytes로 4MB 앱 파티션에 75%가 남으며 호스트 테스트 15개도
+  모두 통과했다. 앱/UI/공유 DSP 변경이 없어 PC 시뮬레이터는 다시 빌드하지 않았다.
+- 이번 기록은 설계와 문서 확정이다. 사용자가 실물 변경을 보고하지 않았으므로
+  `hardware/AS_BUILT_WIRING.md`는 갱신하지 않았다. 부품 구매·배선·플래시·실기 검증도
+  수행하지 않았으며 외부 9V/USB 상태를 변경하지 않았다.
+
 ## 7. 다음 작업
 
-1. 물리 `needs_codec`를 플랫폼 오디오 출력 능력으로 일반화하고 공통 재생 API와 PC 출력
-   백엔드를 구현한다.
-2. PC에서 Music의 내장 로비 음악과 `GG/music` WAV 재생, Game의 `No Game` 내장 점프 게임
-   진입 흐름을 순서대로 구현한다.
-3. ESP-IDF v5.4.4 공식 Python 환경을 복구해 일반 `idf.py` 빌드·플래시 경로를 정상화한다.
-4. 하드웨어 작업을 재개할 때는 먼저 실물 오디오 연결을 확인해
-   `hardware/AS_BUILT_WIRING.md`의 미확인 행을 갱신한다.
-5. `ASSEMBLY.md` 권장 TL072 배선을 반영한 뒤 무전원·외부 9V 검사와 기준 측정을 수행한다.
-6. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.
+1. 현재 플래시본의 런처 화살표, Oscilloscope 파형·시간축·감도·Hold/Run을 사용자 육안으로
+   확인한다.
+2. 소프트웨어 우선순위는 시스템 오디오·마이크·미디어 폴더·출력·MIDI 장치 선택 UI다.
+3. 다음 실기 차례에는 USB 단독에서 실제 FAT32 SD의 DMG `.gb` 화면·프레임·6키 입력과
+   `.sav` 생성·재로드를 확인한다.
+4. `hardware/PURCHASE_LIST.md`의 부품을 조달하고 `ASSEMBLY.md`에 따라 코덱/AUX/헤드폰,
+   MIDI, PhotoMOS 뮤트와 OPA2192 분석 기판을 무전원 상태에서 조립한다.
+5. 실물 변경 때마다 사용자가 `hardware/AS_BUILT_WIRING.md`를 갱신하고 Codex가
+   `NETLIST_SPEC`과 연속성·레일 단락을 대조한다.
+6. 하드웨어를 통과하면 ESP TLV320DAC3100 I2S/I2C playback backend와 UART MIDI backend를
+   구현한 뒤 USB 단독 디지털 시험, 외부 9V 단독 오디오 교정 순서로 검증한다.
+7. 배선 완료된 SD 모듈은 USB 단독에서 FAT32 Gallery와 LCD 공유 SPI를 실기 검증한다.

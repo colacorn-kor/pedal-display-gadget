@@ -41,12 +41,12 @@ typedef struct {
     app_input_source_t input_sources;
     app_output_route_t output_routes;
     int variant_count;
-    bool needs_codec;               /* 임시: 오디오 재생 출력 부재 시 비활성 */
+    platform_capability_mask_t required_capabilities; /* 0 = 추가 요구 없음 */
 } gadget_app_t;
 ```
 
-**3자 앱 작성자가 채우는 것(계약):** id·name·audio_mode·**icon**·4개 생명주기 콜백과,
-Color 재스타일 콜백 및 Mode 열거 훅.
+**3자 앱 작성자가 채우는 것(계약):** id·name·audio_mode·**icon**·4개 생명주기 콜백,
+Color 재스타일 콜백·Mode 열거 훅과 필요한 플랫폼 capability.
 (아이콘은 앱이 리소스로 제공 — 확정. 없으면 기본 아이콘으로 표시.)
 **앱이 접근 가능한 것(제공 API):**
 - 오디오: `audio_viz_snapshot_get()` (스펙트럼 bars/peaks/level, seqlock 스냅샷)
@@ -102,12 +102,14 @@ static app_slot_t s_slots[APP_COUNT];
 - **행 내비게이션**: 상·하만 `LIVE ↔ STASH ↔ 메뉴 항목`을 순환한다. 앱이 없는 행도
   건너뛰지 않고 섹션 라벨로 포커스를 표시한다.
 - **행 내부 내비게이션**: 좌·우만 현재 행의 앱 또는 `Reorder ↔ Settings`를 순환한다.
+- **화면 밖 표시**: 현재 보이는 네 타일보다 왼쪽이나 오른쪽에 앱이 더 있으면 해당 행의
+  화면 가장자리에 삼각 화살표를 표시한다. 선택 행은 완전 불투명, 다른 행은 약하게 표시한다.
 - **커서**: 선택 타일은 확대 상태와 3px 테두리를 함께 유지하고 우하단에 대각 화살표를
   겹친다. 메뉴 항목은 강조색 글자와 좌상단 대각 화살표를 사용한다.
 - **확인(OK)**: 앱 타일 = 실행 / `Reorder` = 순서변경 / `Settings` = 설정 팝업.
 - **홈**: 뒤로(런처가 최상위면 무동작). **풋스위치**: 라이브(직전 앱)로 복귀.
 - 오디오 재생이 필요한 앱인데 플랫폼에 `AUDIO_PLAYBACK_OUTPUT` 능력이 없음 → 타일을
-  흐리게 하고 진입 시 안내한다. 현재 `needs_codec` 필드는 이 능력 검사로 교체할 임시 이름이다.
+  흐리게 하고 진입을 막는다. 같은 가용성 검사는 부팅 복원과 풋스위치 순환에도 적용한다.
 
 ### 진입/복귀 규칙
 - 부팅 시: 마지막 활성 앱 or 런처(설정에 따름).
@@ -140,8 +142,8 @@ static app_slot_t s_slots[APP_COUNT];
   `Default/Blue/Green/Yellow/Red`이며, `Default`는 현재 런처 Theme을 상속한다.
   고정 Color는 앱 콘텐츠의 색만 바꾸되 전역 Dark/Light는 따르고, 런처나 공통 팝업
   팔레트에는 영향을 주지 않는다.
-- Sound Monitor의 Mode는 `Curve`, `12-Band`, `Circular`, `Reference`이고 Bounce의 Mode는
-  `Classic Cat`이다. 나머지 현재 앱도 확장 위치를 일관되게 유지하기 위해 한 개의
+- Sound Monitor의 Mode는 `Curve`, `12-Band`, `Circular`, `Reference`다. 나머지 현재
+  앱은 확장 위치를 일관되게 유지하기 위해 한 개의
   명명된 Mode를 제공한다. Sound Monitor Settings에는 Theme 뒤에 `Weighting`을 두며,
   네 항목은 `Flat/A-weighted/Flat(Loudness)/A-weighted(Loudness)`다. Sound Monitor
   화면의 상·하는 Weighting을 이전·다음으로 바꾸며, Curve의 좌·우만 단순화 수준을
@@ -175,8 +177,8 @@ typedef struct {
 - 현재 `platform_config`는 **version 6**다. 기존 `local_theme` 1바이트를
   `appearance`로 재사용해 하위 3비트에 Color, 상위 5비트에 Mode를 저장하므로 v2~v5와
   blob 크기가 같다. v4의 Monitor 6개 프리셋은 같은 Color/Mode 조합으로 변환하고,
-  v5 앱 White는 Blue로, 전역 White는 Light+Blue로 변환한다. 제거된 Bounce Nyan 값은
-  `Default + Classic Cat`으로 변환한다. 현재 구형 dB Meter의
+  v5 앱 White는 Blue로, 전역 White는 Light+Blue로 변환한다. 제거된 앱 ID는 로드 때
+  무시하고 다음 저장에서 정리한다. 현재 구형 dB Meter의
   `options` 바이트는 LINE/INST와 LIVE/AVG 1s/AVG 3s 선택을 그대로 저장한다.
   자동 듀얼레인지 전환 시 INPUT 비트는 마이그레이션용으로만 읽고 UI에서는 제거한다.
 
@@ -197,15 +199,18 @@ typedef struct {
 
 ---
 
-## 7. 앱 카탈로그 (초기)
+## 7. 앱 카탈로그 (현재)
 | id | 이름 | audio | 변형 | 상태 |
 |---|---|---|---|---|
-| monitor | Sound Monitor | SPECTRUM | — | 동작(①②) |
+| monitor | Sound Monitor | SPECTRUM | — | 4개 분석 Mode 동작 |
 | dbmeter | dB Meter | SPECTRUM | — | 동작 |
-| tuner | Tuner | TUNER | 기본/고급 | 동작(변형은 ③) |
+| tuner | Tuner | TUNER | 기본/고급 | 동작 |
 | images | Gallery | SPECTRUM | — | SD 이미지 탐색 동작 |
-| rhythm | (미정) Rhythm Game | SPECTRUM/TUNER | — | ③ 이후 프로토타입 목표 |
-| setlist/metronome/midimon | — | NONE | — | MIDI 앱(Phase 2 하드웨어 후) |
+| music | Music | NONE | — | PC WAV·내장 로비, GG 코덱 대기 |
+| game | Game | SPECTRUM | — | DMG `.gb`·빈 타일 내장 GG Cat 이스터 에그 |
+| oscilloscope | Oscilloscope | SPECTRUM | — | PCM 시간파형·trigger·timebase/scale·hold |
+| metronome | Metronome | NONE | — | PC click, GG 시각 모드 |
+| midimon | MIDI Monitor | NONE | — | 채널 필터·pause·clear·clock 집계 |
 
 ---
 

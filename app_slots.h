@@ -42,3 +42,4 @@ void app_slots_set_mode(const gadget_app_t *app, uint8_t mode);
 void app_slots_set_mode_runtime(const gadget_app_t *app, uint8_t mode);
 uint8_t app_slots_options(const gadget_app_t *app);
 void app_slots_set_options(const gadget_app_t *app, uint8_t options);
+void app_slots_set_options_runtime(const gadget_app_t *app, uint8_t options);

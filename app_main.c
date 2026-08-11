@@ -29,6 +29,7 @@
 #endif
 #include "esp_attr.h"
 #include "esp_err.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "lvgl.h"
@@ -39,10 +40,11 @@
 #include "display_bringup.h"
 #include "fft_map.h"
 #include "music_events.h"
+#include "platform.h"
 #include "tuner.h"
 
 #define DMA_FRAMES  256
-#define MUTE_IO      GPIO_NUM_3
+#define MUTE_IO      GPIO_NUM_39
 #define BTN_UP_IO    GPIO_NUM_4
 #define BTN_DOWN_IO  GPIO_NUM_5
 #define BTN_LEFT_IO  GPIO_NUM_6
@@ -96,6 +98,14 @@ static const char *TAG = "app";
 static audio_viz_snapshot_t s_viz[2];
 static _Atomic unsigned     s_viz_seq[2];
 static _Atomic int          s_viz_ready;
+typedef struct {
+    audio_waveform_snapshot_t snapshots[2];
+    int16_t history[AUDIO_WAVEFORM_SAMPLES];
+} waveform_store_t;
+static _Atomic(waveform_store_t *) s_waveform_store;
+static _Atomic unsigned     s_waveform_seq[2];
+static _Atomic int          s_waveform_ready;
+static _Atomic bool         s_waveform_enabled;
 static _Atomic int          s_audio_mode = AUDIO_SPECTRUM;
 static _Atomic int          s_viz_mode = VIZ_MONITOR;
 
@@ -111,7 +121,8 @@ static void publish_empty_viz_frame(int *producer)
 
 void audio_set_mode(audio_mode_t mode)
 {
-    if (mode != AUDIO_SPECTRUM && mode != AUDIO_TUNER) return;
+    if (mode != AUDIO_SPECTRUM && mode != AUDIO_TUNER &&
+        mode != AUDIO_NONE) return;
     atomic_store_explicit(&s_audio_mode, (int)mode, memory_order_release);
 }
 
@@ -148,6 +159,99 @@ void audio_viz_snapshot_get(audio_viz_snapshot_t *out)
         unsigned after = atomic_load_explicit(&s_viz_seq[idx], memory_order_acquire);
         if (before == after && !(after & 1U)) return;
     }
+}
+
+void audio_waveform_set_enabled(bool enabled)
+{
+    if (enabled && !atomic_load_explicit(&s_waveform_store,
+                                         memory_order_acquire)) {
+        waveform_store_t *store = heap_caps_calloc(
+            1, sizeof(*store), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (!store) {
+            ESP_LOGE(TAG, "oscilloscope PSRAM allocation failed (%u bytes)",
+                     (unsigned)sizeof(*store));
+            return;
+        }
+        atomic_store_explicit(&s_waveform_store, store,
+                              memory_order_release);
+    }
+    atomic_store_explicit(&s_waveform_enabled, enabled,
+                          memory_order_release);
+}
+
+void audio_waveform_snapshot_get(audio_waveform_snapshot_t *out)
+{
+    if (!out) return;
+
+    waveform_store_t *store = atomic_load_explicit(&s_waveform_store,
+                                                    memory_order_acquire);
+    if (!store) {
+        memset(out, 0, sizeof(*out));
+        return;
+    }
+
+    for (;;) {
+        int idx = atomic_load_explicit(&s_waveform_ready,
+                                       memory_order_acquire);
+        unsigned before = atomic_load_explicit(&s_waveform_seq[idx],
+                                               memory_order_acquire);
+        if (before & 1U) continue;
+
+        memcpy(out, &store->snapshots[idx], sizeof(*out));
+        atomic_thread_fence(memory_order_acquire);
+
+        unsigned after = atomic_load_explicit(&s_waveform_seq[idx],
+                                              memory_order_acquire);
+        if (before == after && !(after & 1U)) return;
+    }
+}
+
+static void publish_waveform_block(const float *samples, int count,
+                                   int *producer)
+{
+    static int write_index;
+    static int history_count;
+    static uint32_t frame_sequence;
+    static bool was_enabled;
+
+    const bool enabled = atomic_load_explicit(&s_waveform_enabled,
+                                              memory_order_acquire);
+    if (enabled != was_enabled) {
+        write_index = 0;
+        history_count = 0;
+        was_enabled = enabled;
+    }
+    if (!enabled) return;
+
+    waveform_store_t *store = atomic_load_explicit(&s_waveform_store,
+                                                    memory_order_acquire);
+    if (!store) return;
+
+    for (int i = 0; i < count; i++) {
+        float sample = samples[i];
+        if (sample > 1.0f) sample = 1.0f;
+        if (sample < -1.0f) sample = -1.0f;
+        store->history[write_index] = (int16_t)(sample * 32767.0f);
+        write_index = (write_index + 1) % AUDIO_WAVEFORM_SAMPLES;
+        if (history_count < AUDIO_WAVEFORM_SAMPLES) history_count++;
+    }
+
+    const int slot = *producer;
+    atomic_fetch_add_explicit(&s_waveform_seq[slot], 1U,
+                              memory_order_acq_rel);
+    audio_waveform_snapshot_t *out = &store->snapshots[slot];
+    const int oldest = (write_index + AUDIO_WAVEFORM_SAMPLES -
+                        history_count) % AUDIO_WAVEFORM_SAMPLES;
+    for (int i = 0; i < history_count; i++) {
+        out->samples[i] =
+            store->history[(oldest + i) % AUDIO_WAVEFORM_SAMPLES];
+    }
+    out->count = (uint16_t)history_count;
+    out->frame_sequence = ++frame_sequence;
+    atomic_fetch_add_explicit(&s_waveform_seq[slot], 1U,
+                              memory_order_release);
+    atomic_store_explicit(&s_waveform_ready, slot, memory_order_release);
+    *producer ^= 1;
 }
 
 /* ---------- Mute ---------------------------------------------------------- */
@@ -297,6 +401,7 @@ static void audio_task(void *arg)
     music_events_init();
 
     int producer = 1;
+    int waveform_producer = 1;
     audio_mode_t active_mode = audio_get_mode();
     viz_mode_t active_viz = audio_get_viz_mode();
     fft_map_set_mode(active_viz);
@@ -424,11 +529,14 @@ static void audio_task(void *arg)
             fft_map_set_mode(active_viz);
         }
 
+        publish_waveform_block(samples, n, &waveform_producer);
+
         if (active_mode == AUDIO_TUNER) {
             tuner_feed(samples, n);
             music_events_process_block(rms, level);
             continue;
         }
+        if (active_mode == AUDIO_NONE) continue;
 
         meter_energy_total += (double)sum;
         meter_sample_total += (uint64_t)n;
@@ -917,6 +1025,20 @@ static void input_task(void *arg)
         input_ladder_poll();
 #endif
         for (int i = 0; i < button_count; i++) input_button_update(&buttons[i]);
+
+        platform_game_input_mask_t held = 0;
+        for (int i = 0; i < button_count; i++) {
+            if (buttons[i].stable_level != 0) continue;
+            switch (buttons[i].ev_short) {
+            case EV_UP: held |= PLAT_GAME_INPUT_UP; break;
+            case EV_DOWN: held |= PLAT_GAME_INPUT_DOWN; break;
+            case EV_LEFT: held |= PLAT_GAME_INPUT_LEFT; break;
+            case EV_RIGHT: held |= PLAT_GAME_INPUT_RIGHT; break;
+            case EV_OK: held |= PLAT_GAME_INPUT_OK; break;
+            default: break;
+            }
+        }
+        plat_game_input_publish(held);
         vTaskDelay(poll_ticks);
     }
 }

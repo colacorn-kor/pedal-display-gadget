@@ -5,8 +5,11 @@
 
 #include <SDL.h>
 
+#include "audio_playback.h"
 #include "platform_sim.h"
 #include "sim_audio.h"
+#include "sim_audio_output.h"
+#include "sim_midi.h"
 
 #define SIM_NVS_FILE "sim_nvs.bin"
 #define INPUT_HOLD_MS 500u
@@ -45,10 +48,13 @@ static int s_q_head;
 static int s_q_tail;
 static bool s_initialized;
 static bool s_audio_configured;
+static bool s_output_configured;
+static bool s_midi_configured;
 static bool s_quit;
 static bool s_smoke_test;
 static bool s_renderer_benchmark;
 static const char *s_preview;
+static platform_game_input_mask_t s_direct_game_input;
 static audio_mode_t s_audio_mode = AUDIO_SPECTRUM;
 static viz_mode_t s_viz_mode = VIZ_MONITOR;
 static int s_mute;
@@ -127,6 +133,22 @@ static int sdl_event_watch(void *userdata, SDL_Event *event)
 
     if (event->type == SDL_KEYDOWN && event->key.repeat == 0) {
         SDL_Keycode key = event->key.keysym.sym;
+        if (key == SDLK_z) {
+            s_direct_game_input |= PLAT_GAME_INPUT_A;
+            return 0;
+        }
+        if (key == SDLK_x) {
+            s_direct_game_input |= PLAT_GAME_INPUT_B;
+            return 0;
+        }
+        if (key == SDLK_a) {
+            s_direct_game_input |= PLAT_GAME_INPUT_SELECT;
+            return 0;
+        }
+        if (key == SDLK_s) {
+            s_direct_game_input |= PLAT_GAME_INPUT_START;
+            return 0;
+        }
         if (key == SDLK_o) {
             sim_audio_trigger_synthetic_onset();
             return 0;
@@ -140,7 +162,12 @@ static int sdl_event_watch(void *userdata, SDL_Event *event)
     }
 
     if (event->type == SDL_KEYUP) {
-        button_up(button_for_key(event->key.keysym.sym));
+        const SDL_Keycode key = event->key.keysym.sym;
+        if (key == SDLK_z) s_direct_game_input &= ~PLAT_GAME_INPUT_A;
+        else if (key == SDLK_x) s_direct_game_input &= ~PLAT_GAME_INPUT_B;
+        else if (key == SDLK_a) s_direct_game_input &= ~PLAT_GAME_INPUT_SELECT;
+        else if (key == SDLK_s) s_direct_game_input &= ~PLAT_GAME_INPUT_START;
+        else button_up(button_for_key(key));
     }
 
     return 0;
@@ -181,21 +208,64 @@ bool plat_sim_configure(int argc, char **argv)
             s_smoke_test = true;
         }
     }
+    if (!sim_midi_init(argc, argv, s_smoke_test)) return false;
+    s_midi_configured = true;
+    if (sim_midi_should_exit_after_args()) return true;
     s_audio_configured = true;
-    return sim_audio_init(argc, argv);
+    if (!sim_audio_init(argc, argv)) return false;
+    if (!sim_audio_should_exit_after_args()) {
+        const bool output_ready = sim_audio_output_init(
+            argc, argv, s_smoke_test);
+        if (!audio_playback_init(output_ready)) {
+            sim_audio_output_shutdown();
+            (void)audio_playback_init(false);
+        }
+        s_output_configured = true;
+    }
+    return true;
 }
 
 bool plat_sim_should_exit_after_args(void)
 {
-    return sim_audio_should_exit_after_args();
+    return sim_audio_should_exit_after_args() ||
+           sim_midi_should_exit_after_args();
 }
 
 void plat_init(void)
 {
     if (s_initialized) return;
     s_initialized = true;
+    if (!s_midi_configured) {
+        (void)sim_midi_init(0, NULL, false);
+        s_midi_configured = true;
+    }
     if (!s_audio_configured) (void)sim_audio_init(0, NULL);
+    if (!s_output_configured) {
+        const bool output_ready = sim_audio_output_init(0, NULL, false);
+        if (!audio_playback_init(output_ready)) {
+            sim_audio_output_shutdown();
+            (void)audio_playback_init(false);
+        }
+        s_output_configured = true;
+    }
     SDL_AddEventWatch(sdl_event_watch, NULL);
+}
+
+platform_capability_mask_t plat_capabilities(void)
+{
+    platform_capability_mask_t capabilities =
+        PLAT_CAP_DISPLAY |
+        PLAT_CAP_AUDIO_ANALYSIS_INPUT |
+        PLAT_CAP_MEDIA_STORAGE |
+        PLAT_CAP_GAME_RUNTIME;
+    if (audio_playback_is_available()) {
+        capabilities |= PLAT_CAP_AUDIO_PLAYBACK_OUTPUT;
+    }
+    platform_midi_status_t midi;
+    sim_midi_get_status(&midi);
+    if (midi.input_available) capabilities |= PLAT_CAP_MIDI_INPUT;
+    if (midi.output_available) capabilities |= PLAT_CAP_MIDI_OUTPUT;
+    return capabilities;
 }
 
 uint32_t plat_millis(void)
@@ -203,11 +273,42 @@ uint32_t plat_millis(void)
     return SDL_GetTicks();
 }
 
+uint64_t plat_micros(void)
+{
+    return (uint64_t)((double)SDL_GetPerformanceCounter() * 1000000.0 /
+                      (double)SDL_GetPerformanceFrequency());
+}
+
 bool plat_input_poll(ui_event_t *ev)
 {
+    sim_midi_pump();
     sim_audio_pump();
+    sim_audio_output_pump();
     poll_button_timers(SDL_GetTicks());
     return queue_pop(ev);
+}
+
+platform_game_input_mask_t plat_game_input_state(void)
+{
+    platform_game_input_mask_t state = s_direct_game_input;
+    const int count = (int)(sizeof(s_buttons) / sizeof(s_buttons[0]));
+    for (int i = 0; i < count; i++) {
+        if (!s_buttons[i].down) continue;
+        switch (s_buttons[i].ev_short) {
+        case EV_UP: state |= PLAT_GAME_INPUT_UP; break;
+        case EV_DOWN: state |= PLAT_GAME_INPUT_DOWN; break;
+        case EV_LEFT: state |= PLAT_GAME_INPUT_LEFT; break;
+        case EV_RIGHT: state |= PLAT_GAME_INPUT_RIGHT; break;
+        case EV_OK: state |= PLAT_GAME_INPUT_OK; break;
+        default: break;
+        }
+    }
+    return state;
+}
+
+void plat_game_input_publish(platform_game_input_mask_t held_mask)
+{
+    (void)held_mask;
 }
 
 void plat_nvs_load(void *blob, size_t n, bool *found)
@@ -250,6 +351,16 @@ void plat_music_get(music_snapshot_t *out)
     sim_audio_music_get(out);
 }
 
+void plat_midi_get_status(platform_midi_status_t *out)
+{
+    sim_midi_get_status(out);
+}
+
+bool plat_midi_send_short(uint8_t status, uint8_t data1, uint8_t data2)
+{
+    return sim_midi_send_short(status, data1, data2);
+}
+
 void plat_lvgl_lock(void)
 {
 }
@@ -288,9 +399,38 @@ void plat_sim_trigger_onset(void)
     sim_audio_trigger_synthetic_onset();
 }
 
+bool plat_sim_midi_inject_short(uint8_t status, uint8_t data1, uint8_t data2)
+{
+    return sim_midi_inject_short(status, data1, data2);
+}
+
+bool ui_post_event(ui_event_t event)
+{
+    return queue_push(event);
+}
+
+bool ui_post_scene(int content_idx, int theme_idx, const char *renderer_name)
+{
+    sm_load_scene_named(content_idx, theme_idx, renderer_name);
+    return true;
+}
+
+bool ui_post_tempo(float bpm)
+{
+    sm_set_tempo(bpm);
+    return true;
+}
+
+bool ui_post_mute_toggle(void)
+{
+    mute_set(!mute_get());
+    return true;
+}
+
 void audio_set_mode(audio_mode_t mode)
 {
-    if (mode == AUDIO_SPECTRUM || mode == AUDIO_TUNER) s_audio_mode = mode;
+    if (mode == AUDIO_SPECTRUM || mode == AUDIO_TUNER ||
+        mode == AUDIO_NONE) s_audio_mode = mode;
 }
 
 audio_mode_t audio_get_mode(void)
@@ -312,6 +452,16 @@ viz_mode_t audio_get_viz_mode(void)
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out)
 {
     plat_audio_viz_get(out);
+}
+
+void audio_waveform_set_enabled(bool enabled)
+{
+    sim_audio_waveform_set_enabled(enabled);
+}
+
+void audio_waveform_snapshot_get(audio_waveform_snapshot_t *out)
+{
+    sim_audio_waveform_get(out);
 }
 
 void mute_set(int on)

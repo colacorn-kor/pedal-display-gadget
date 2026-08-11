@@ -33,17 +33,23 @@
 
 ## 2. 로드맵 (현재 위치 → 확장)
 ```
-[완료] 디스플레이 · 앱플랫폼 · 입력레이어 · 슬롯/NVS · 런처/테마 · music_events/Bounce
+[완료] 디스플레이 · 앱플랫폼 · 입력레이어 · 슬롯/NVS · 런처/테마 · music_events
        · S1 플랫폼 추상화/PC 시뮬레이터 · 렌더러 최적화 · 저장소 위생
 [완료] input 태스크 WDT 핫픽스: 310초 무재발 · 정상 UI · FOOTSW 전환 확인
 [완료] 신회로 TRS 6키 ADC 실측 · HOME/FOOTSW 롱 동작 확인
 [완료] 결정론적 PC 시뮬레이터 smoke CLI · 합성 시각화/튜너 DSP · NVS 격리
        · Windows 기본 출력 WASAPI 루프백 입력
 [완료] SDSPI/FATFS 기반 · SD Gallery · PC SD 폴더 · music/game 공통 카탈로그
-[현재 SW] Sound Monitor 우선 최적화 → PC 기준 제품 D0/D1
-[다음 SW] 플랫폼 능력·PC 오디오 출력 → Music → Gallery UX → Game
-[병행 HW] SD 기능 확인 · TL072 분석 탭 재배선 · 자동 듀얼레인지 · KiCad 목표 회로
-[확장] S2 코덱 출력 → S3 WiFi/OTA → S4 MIDI(UART+BLE) → S5 스크립트 로더
+[완료] D1 플랫폼 capability · 공통 스테레오 transport/mixer · PC SDL 출력
+[완료] D2 Music: 코드 생성 내장 로비 트랙 · WAV 탐색/스트리밍 재생 · 플레이어 UI
+[완료] D3 Game: 4칸 타일 로비 · 빈 타일 OK=이름 없는 내장 GG Cat · HOME 로비 복귀
+[완료] D4 Metronome: sample-clock click · 박자/subdivision UI · Game 효과음
+[완료] D5 Gallery: 상태 UI · 자연 정렬 · 손상 검사 · 메타데이터 · 선택 보존 새로고침
+[완료] D6 Game: MIT Peanut-GB DMG `.gb` 실행 · 검증 타일 · 2x 화면 · `.sav` · 공통 입력
+[완료] D7 MIDI Monitor · 공통 MIDI 서비스 · Windows WinMM 입출력
+[현재 SW] 오디오·미디어·출력·MIDI 장치 선택 UI와 PC 패키징
+[병행 HW] SD 기능 확인 · 자동 듀얼레인지 · TLV320DAC3100/AUX/헤드폰 · MIDI · PhotoMOS 뮤트
+[확장] S2 코덱 ESP 백엔드 → S3 WiFi/OTA → S4 MIDI UART/BLE 백엔드 → S5 스크립트 로더
        → S6 스마트 컨트롤러 → S7 GG Analog Meter
 ```
 
@@ -61,12 +67,15 @@
 - 실제 모듈은 `SZH-EKBZ-005`이며 VCC는 `+5V`(4.5~5.5V), SPI 신호는 온보드
   레벨 변환을 거치는 3.3V 로직이다.
 - `/GG/images`, `/GG/music`, `/GG/games`를 공통 카탈로그로 읽는다. Gallery의
-  JPG/PNG/BMP/GIF/BIN 표시는 구현됐다. Music 재생은 PC 출력에서 먼저 구현하고 GG에서는
-  S2 코덱 백엔드에 연결한다.
-- 사용자-facing 이름은 Game이다. 외부 게임 실행은 공식
-  [Retro-Go](https://github.com/ducalex/retro-go) 코어의 포팅·GPLv2
-  라이선스 결정·확장 파티션 승인 뒤 진행한다.
-  현재는 ROM 파일 판별과 정렬 기반만 있으며 게임 실행을 가장하지 않는다.
+  JPG/PNG/BMP/GIF/BIN 표시와 PC Music WAV/내장 로비 재생은 구현됐다. Gallery는
+  자연 정렬, 형식·치수·크기 표시, 손상 파일 오류와 선택 보존 새로고침을 PC/SD 공통
+  코드로 처리한다. GG Music은 S2 코덱 백엔드가 생길 때 같은 공통 transport에 연결한다.
+- 사용자-facing 이름은 Game이다. 첫 외부 코어는 MIT 라이선스의
+  [Peanut-GB](https://github.com/deltabeard/Peanut-GB)를 고정 커밋으로 포함한다. DMG `.gb`의
+  헤더·체크섬·크기·카트리지 형식을 검사해 실제 실행 가능한 파일만 타일에 표시하고 save RAM은
+  같은 폴더의 `.sav`에 저장한다. PC와 GG가 같은 코어를 쓰며 현재 외부 게임 오디오는 무음이다.
+- NES 등 다른 Retro-Go급 기종은 코어별 코드 크기와 라이선스를 다시 검토한 뒤 같은 어댑터에
+  추가한다. GPLv2 전체 Retro-Go 포팅과 앱 파티션 확장은 자동 전제가 아니다.
 - Gallery·Music·Game은 SD가 없어도 각각 `GG` 월페이퍼·내장 8비트 로비 음악·내장
   점프 게임으로 기본 동작한다. Music과 Game은 동시에 실행하지 않는다.
 
@@ -75,16 +84,24 @@
   GG 없이도 사용할 수 있는 독립 데스크톱 앱으로 개발한다.
 - 공통 앱은 PC에서 먼저 완성하고, ESP에서는 화면·입력·오디오·저장소 백엔드만 바꾼다.
 - PC의 WASAPI loopback/캡처 장치는 PCM1808 분석 입력을, 로컬 `GG/` 폴더는 MicroSD를
-  대신한다. 다음 기반은 PC 오디오 출력이며 미래 GG 코덱과 같은 재생 API를 사용한다.
-- 상세 기능 격차와 D0~D6 순서는 `PC_SIMULATOR_PRODUCT.md`가 권위다.
+  대신한다. SDL 출력은 미래 GG 코덱과 같은 공통 48kHz 스테레오 transport/mixer를
+  사용하며 Music의 로비 트랙·WAV, Metronome click과 Game 효과음이 이 경로에서
+  동작한다. Windows WinMM은 공통 MIDI 서비스와 MIDI Monitor의 입출력 백엔드다.
+- 상세 기능 격차와 D0~D8 순서는 `PC_SIMULATOR_PRODUCT.md`가 권위다.
 
 ### S2. 오디오 출력 (3.5mm 스테레오 = 헤드폰/AUX 활성화)
-- 공통 재생 transport·믹서와 Music/Metronome UI는 PC 오디오 출력에서 먼저 완성한다.
-- 코덱(I2S TX) 추가: **예약핀 G40(DOUT)·G41(SDA)·G42(SCL)** 사용(권장 배선표에서 비움).
-- 소프트웨어: `audio_out` API(앱사운드 믹서, Core1 생산) + 기존 패스스루는 아날로그 그대로.
-- 앱 계약 확장: `needs_codec` 임시 판정을 플랫폼 오디오 출력 능력으로 일반화한다.
-- **HW(태윤)**: 코덱모듈 선정 필요 — 출력만이면 PCM5102A(무I2C·간단), 입출력 통합이면 ES8388.
-  선정되면 NETLIST_SPEC 확장 → 브레드보드.
+- 공통 재생 transport·믹서와 PC SDL 출력, Music·Metronome UI와 앱 효과음은 구현됐다.
+  현재 GG는 Metronome을 무음 시각 모드로 실행하며, Music과 실제 click/effect 출력은
+  코덱 백엔드가 생길 때 같은 공통 경로에 연결한다.
+- 재생 모듈은 **Adafruit TLV320DAC3100 Product 6309**로 확정했다. G40(DOUT),
+  G41(SDA), G42(SCL), G7(RST)을 쓰고 PCM1808과 G9(BCK)·G18(WS)를 공유한다.
+- 소프트웨어: `audio_playback` API(앱사운드 믹서, 미래 Core1 소비) + 기존 패스스루는
+  아날로그 그대로.
+- 앱 계약은 물리 `needs_codec` 대신 `required_capabilities`로 플랫폼 오디오 출력 능력을
+  요구한다.
+- **HW**: 코덱 모듈, AUX 커플링/감쇠와 헤드폰 잭 배선은 `ASSEMBLY.md`에 확정했다.
+  TLV320DAC3100의 AIN1/AIN2 analog mix-in을 AUX L/R로 쓰며 별도 헤드폰 앰프는 없다.
+- **SW**: ESP I2S0 full-duplex TX와 I2C 초기화, playback capability 연결은 아직 남았다.
 - 앱 소리·음악·메트로놈은 헤드폰 경로에만 섞고, 하드와이어 기타 Thru에는 섞지 않는다.
 
 ### S3. 무선 (WiFi 우선, BLE 보조)
@@ -93,10 +110,13 @@
   업로드, SD보다 편함. + **OTA 펌웨어 업데이트**. AP모드(비번) 기본, 설정에서 on/off.
 - **BLE**: BLE-MIDI(폰 앱 연동), 컴패니언 제어. HW 추가 불필요(칩 내장).
 
-### S4. MIDI (Phase 2 예정대로)
-- 물리: TRS-A 3.5mm + 옵토커플러(IN)·전류원(OUT), UART. 파서(midi.c)·매핑 이미 존재.
-- BLE-MIDI를 같은 midi.c 이벤트로 합류(전송계층만 다름).
-- **HW(태윤)**: 옵토(6N138류)·TRS-A잭 2개, 프로토타입 제외 결정 유지 → PCB 리비전에서.
+### S4. MIDI (공통 앱·PC 완료, GG 전송계층 대기)
+- 공통 parser·메시지 이력·Program Change 상태·capture 모드와 MIDI Monitor 앱은 구현됐다.
+  PC는 WinMM 입출력과 장치 열거를 제공한다.
+- GG 플랫폼은 현재 명시적 unavailable stub이다. 물리 회로는 TRS-A 3.5mm 두 개,
+  6N138 절연 IN(G5)과 SN74AHCT14 5V 표준 OUT(G6)으로 확정했다. UART와 BLE-MIDI를
+  같은 `midi_feed()` 경계에 연결한다.
+- **HW**: 프로토타입 배선과 구매표를 확정했다. **SW**: UART backend와 capability 연결이 남았다.
 
 ### S5. 스크립트 앱 로더 (열린 플랫폼 완성)
 - LAUNCHER_DESIGN §6 확장점 준수됨(동적등록·id키잉) → 인터프리터(Lua류)가
@@ -116,16 +136,18 @@
 ## 4. 하드웨어 태윤 TODO (소프트웨어와 비동기)
 - 현재 실물은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 연결은 `ASSEMBLY.md`가 맡는다.
 - Fritzing 보조 도면은 `hardware/as-built/GG_PROTOTYPE.fzz`에 둔다.
-- SD 모듈 배선은 완료됐고 기능 확인이 남았다. 오디오 입력 구간은 TL072 기준 재배선이 필요하다.
-- [ ] 코덱 모듈 선정(PCM5102A vs ES8388) — S2 착수 조건
-- [ ] 현재 TL072 LINE/INST 프로토타입 재배선과 외부 9V 기준 측정
+- SD 모듈 배선은 완료됐고 기능 확인이 남았다. 오디오 입력은 임시 TL072를 다시 만들지 않고
+  OPA2192 자동 듀얼레인지 목표 회로로 진행한다.
+- [x] 재생/AUX/헤드폰 모듈 선정: Adafruit TLV320DAC3100 Product 6309
+- [x] MIDI IN/OUT과 PhotoMOS 뮤트 목표 배선 확정
+- [ ] `hardware/PURCHASE_LIST.md` 부품 조달과 `ASSEMBLY.md` 배선 반영
 - [x] PCM1808 두 채널 자동 듀얼레인지·Range Diagnostics·교정값 주입 경로
 - [ ] OPA2192 부품 조달 뒤 목표 회로의 자동 범위 전환 실기 검증
 - [ ] HOT/SENSITIVE 범위별 1kHz 및 20Hz~20kHz sweep 교정
 - [x] `SZH-EKBZ-005` 배선
-- [ ] `SZH-EKBZ-005` 공유 SPI 실기 브링업과 뮤트 회로 확정
+- [ ] `SZH-EKBZ-005` 공유 SPI 실기 브링업과 G39 PhotoMOS 뮤트 실기 확인
 - [ ] KiCad Phase1 스키매틱(연습) → .net export → AI 검토 루프
-- [ ] (PCB 리비전 시) MIDI, 코덱, USB Host 전원 스위치·ESD, GG Analog Meter 반영
+- [ ] (PCB 리비전 시) 확정 MIDI/코덱/뮤트 회로, USB Host 전원 스위치·ESD, GG Analog Meter 반영
 - [ ] (S6 착수 시) Smart 컨트롤러 MCU·LED 전력 예산과 Ring 검출 후 급전 회로 확정
 
 ## 5. 다음 세션 시작 절차

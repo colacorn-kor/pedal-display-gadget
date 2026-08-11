@@ -17,6 +17,8 @@ set(APP_SOURCES
 
 idf_component_register(SRCS ${APP_SOURCES} INCLUDE_DIRS "..")
 
+target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra -Werror)
+
 if(DEFINED INPUT_TRS_LADDER)
     target_compile_definitions(
         ${COMPONENT_LIB} PRIVATE INPUT_TRS_LADDER=${INPUT_TRS_LADDER}

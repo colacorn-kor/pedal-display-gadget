@@ -6,17 +6,22 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 > **리비전 상태:** 아래 권위 넷은 GG 목표인 **무스위치 자동 듀얼레인지** 회로다. 현재
 > 실물 브레드보드의 연결은 `hardware/AS_BUILT_WIRING.md`, 다음 권장 연결은
 > `ASSEMBLY.md`, 장치 상태는 `LAB_STATE.md`에 기록한다.
-> 2026-08-03 현재 오디오 구간은 TL072+SPDT로 재배선해야 하며 사용자는 OPA2192를
-> 보유하지 않는다. 목표 회로의 조달 조건·측정·교정은
-> `hardware/AUDIO_FRONTEND_ENGINEERING.md`에 분리했으며, 그 착수 조건을 충족하기 전에는
-> 목표 회로를 실장하거나 듀얼 펌웨어를 플래시하지 않는다.
+> 2026-08-10 현재 사용자는 남은 하드웨어를 완성하기 위한 부품 조달과 배선 정리를
+> 요청했다. 다음 권장 연결은 임시 TL072+SPDT가 아니라 아래 자동 듀얼레인지 목표 회로다.
+> 조달표는 `hardware/PURCHASE_LIST.md`, 실장·측정·교정 조건은
+> `hardware/AUDIO_FRONTEND_ENGINEERING.md`에 둔다. 부품 실장과 무전원 검사를 통과하기
+> 전에는 듀얼 펌웨어를 플래시하지 않는다.
 >
 > 참조 부품(레퍼런스 예시): `U1`=ESP32-S3-DevKitC-1, `U2`=ST7796 디스플레이,
-> `U3`=PCM1808 모듈, `U4/U6`=OPA2192 RRIO dual op-amp, `U5`=MP1584, `D1`=1N5819,
+> `U3`=PCM1808 모듈, `U4/U6`=OPA2192 RRIO dual op-amp, `U5`=MP1584, `D1`=1N5822,
 > `D2`=BAV199 저누설 dual-series clamp,
 > `J1`=입력잭, `J2`=출력잭,
-> `J3`=SZH-EKBZ-005 MicroSD 모듈, `SW1..SW7`=버튼,
-> `PWR1`=ELB040202(9V 입력).
+> `J3`=SZH-EKBZ-005 MicroSD 모듈, `J4`=AUX TRS, `J5`=MIDI IN TRS-A,
+> `J6`=MIDI OUT TRS-A, `U7`=Adafruit TLV320DAC3100 모듈,
+> `U8`=SN74AHCT14N, `U9`=6N138, `U10`=AQY221R2S PhotoMOS,
+> `SW1..SW7`=버튼,
+> `PWR1`=ELB040202(9V 입력), `D1`=1N5822 Schottky,
+> `U11`=Adafruit LM66200 Ideal Dual Diodes Product 5830.
 > 저항/캡은 값으로 부른다(R10k_1 등). OPA2192 핀번호는 표준 dual op-amp
 > 8핀 기준(1=OUTA,2=-INA,3=+INA,4=V−,5=+INB,6=−INB,7=OUTB,8=V+).
 > 현재 DIP TL072와 핀 기능은 같지만 최종 패키지와 footprint는 발주 부품에 맞춘다.
@@ -27,12 +32,17 @@ KiCad로 그릴 때 이 네트들을 그대로 구현하고, `File → Export �
 
 ```
 +9V_RAW    : PWR1.+, D1.anode
-+9V_PROT   : D1.cathode(띠), U5(MP1584).IN+, R100.1        ← 역전압 보호 뒤. 부하는 전부 여기서
-GND        : (모든 GND 공통 — PWR1.-, U5.IN-/OUT-, U1.GND, U2.GND, U3.GND,
-             U4.4(V−), U6.4(V−), D2.1(A1), J3.GND,
-             D-잭 슬리브, 각 디커플링 캡의 GND쪽 …)  ★ 스타 그라운드 한 점
-+5V        : U5(MP1584).OUT+, U1(DevKit).5V, U3(PCM1808).+5V, J3.VCC
-+3V3       : U1(DevKit).3V3, U3(PCM1808).3.3, U2(ST7796).VCC
++9V_PROT   : D1.cathode(띠), U5(MP1584).IN+, R100.1        ← 역전압 보호 뒤
+GND        : (공통 GND — PWR1.-, U5.IN-/OUT-, U1.GND, U2.GND, U3.GND,
+             U4.4(V−), U6.4(V−), D2.1(A1), J3.GND, U7.GND, U8.7, U9.5, U11.GND,
+             J1/J2/J4 sleeve, J6.sleeve, 각 디커플링 캡의 GND쪽 …)
+             ★ 스타 그라운드 한 점. J5 MIDI IN의 tip/ring/sleeve는 제외
+BUCK_5V    : U5(MP1584).OUT+, U11.VIN1
++5V        : U11.VOUT, U1(DevKit).5V, U3(PCM1808).+5V, J3.VCC,
+             U7.VIN, U8.14, U9.8
+POWER_ISO_NC: U11.VIN2, U11.OFF, U11.STAT
++3V3       : U1(DevKit).3V3, U3(PCM1808).3.3, U2(ST7796).VCC,
+             R_MIDI_RX_2K2.1
 ```
 
 op-amp 전용 깨끗한 9V (RC 필터):
@@ -42,20 +52,21 @@ op-amp 전용 깨끗한 9V (RC 필터):
              (R100 = 100Ω 직렬,  C100u_op = 100µF 전해,  C100n_op = 100nF 세라믹, 둘 다 →GND)
 ```
 
-검토 규칙: `+5V`와 `+3V3`는 **절대 서로 연결 금지**. `+9V_PROT` 이후에만 부하. 다이오드
-방향은 `D1.anode=+9V_RAW / D1.cathode=+9V_PROT` (띠가 부하 쪽).
+검토 규칙: `+5V`와 `+3V3`는 **절대 서로 연결 금지**. D1은 9V 역극성을 막고 띠가 부하
+쪽이다. U11은 USB에서 MP1584로의 역급전을 막는다. U11의 온보드 1MΩ `OFF` pull-down을
+사용하므로 OFF는 비운다. U5 `OUT+`를 4.9~5.1V로 조정한다.
 
 ---
 
-## 2. 가상 그라운드 4.5V (U4 B쪽 버퍼)
+## 2. 가상 그라운드 (U4 B쪽 버퍼)
 
 ```
 VREF_DIV   : R10k_a.2, R10k_b.1, C100u_ref.+, C100n_ref.1, U4.5(+INB)
-             (R10k_a: +9V_OPAMP↔VREF_DIV,  R10k_b: VREF_DIV↔GND → 분압 4.5V)
+             (R10k_a: +9V_OPAMP↔VREF_DIV,  R10k_b: VREF_DIV↔GND → 전원 레일의 절반)
              (C100u_ref, C100n_ref → GND)
 VREF       : U4.7(OUTB), U4.6(−INB), R22M_sense.2,
              R10k_sense.2, R1M5_hot.2, C15p_hot.2, U6.5(+INB)
-             ← 버퍼된 저임피던스 4.5V
+             ← 버퍼된 저임피던스 VREF. 9V 입력 시 보호 다이오드 강하를 포함해 보통 약 4.3V
 U6_IDLE    : U6.7(OUTB), U6.6(−INB)
              (U6 B = VREF를 따르는 미사용 unity follower)
 ```
@@ -132,16 +143,19 @@ LCD_BL     : U1.G1,  U2.BL
 
 ---
 
-## 5. I2S 오디오 — U1 ↔ U3
+## 5. I2S 오디오 — U1 ↔ PCM1808 U3 / 재생 DAC U7
 
 ```
 I2S_MCLK   : U1.G8,  U3.SCKI
-I2S_BCK    : U1.G9,  U3.BCK
-I2S_WS     : U1.G18, U3.LRC
-I2S_DIN    : U1.G10, U3.OUT(DOUT)
+I2S_BCK    : U1.G9,  U3.BCK, U7.BCK
+I2S_WS     : U1.G18, U3.LRC, U7.WSEL
+I2S_ADC_DIN: U1.G10, U3.OUT(DOUT)
+I2S_DAC_OUT: U1.G40, U7.DIN
 ```
 
-검토 규칙: U3 모드 점퍼 = 슬레이브/ I2S(스키매틱 주석으로 표기). U3 `+5V`/`3.3` 분리 확인.
+검토 규칙: U3 모드 점퍼 = 슬레이브/I2S. U3 `+5V`/`3.3` 분리 확인. U7도 I2S
+slave이며 `MCK`는 비우고 BCK를 내부 PLL 입력으로 사용한다. U1이 48kHz BCK/WS를 두
+장치에 공통 공급하고 U3는 U1으로, U1은 U7으로 서로 다른 데이터선을 사용한다.
 
 ---
 
@@ -179,8 +193,8 @@ Ring(+3V3) ─ Rtop 10k ─ Tip
 Tip ─ 각 키 ─ Sleeve(GND):
   UP=0Ω, DOWN=470Ω, LEFT=1kΩ, RIGHT=2kΩ, OK=4.7kΩ, HOME=10kΩ
 
-GPIO_RESERVED  : U1.G5, U1.G6, U1.G7, U1.G15, U1.G16
-                 (미사용, Phase 2 예비)
+GPIO_RESERVED  : U1.G15, U1.G16
+                 (미사용 예비)
 FOOTSW          : U1.G17, SW7.1 (SW7.2 → GND)
 ```
 
@@ -188,29 +202,95 @@ FOOTSW          : U1.G17, SW7.1 (SW7.2 → GND)
 Smart에서 디지털 통신으로 재사용하며 과도한 RC 필터를 달지 않는다. Rtop 10k는 분압과
 Smart 오픈드레인 풀업을 겸한다. Ring 전압은 **+3V3 고정이며 5V 연결 금지**다. Tip 직렬
 220Ω은 G4를 보호하고, Ring 직렬 100Ω은 TS 플러그 삽입 시 Ring-Sleeve 단락 전류를
-제한한다. G5/G6/G7/G15/G16은 연결하지 않는다. FOOTSW만 내부 풀업을 쓰는 active-low
+제한한다. G5/G6은 MIDI, G7은 코덱 reset에 사용하며 G15/G16만 비운다. 이 핀 계약은
+`INPUT_TRS_LADDER=1` 제품 하드웨어 기준이다. FOOTSW만 내부 풀업을 쓰는 active-low
 GPIO 입력이다.
 
 ---
 
-## 8. 뮤트 (J201) — ⚠ 회로 미확정, 지금은 배선 금지
+## 8. TLV320DAC3100 재생 DAC, AUX, 헤드폰
 
 ```
-MUTE_CTL   : U1.G3 → (게이트 드라이브 회로, 설계 예정) → J201.gate
+CODEC_RST  : U1.G7, U7.RST
+CODEC_SDA  : U1.G41, U7.SDA
+CODEC_SCL  : U1.G42, U7.SCL
+CODEC_NC   : U7.MCK, U7.SPK+, U7.SPK-, U7.IO, U7.MIC, U7.BIAS
+
+AUX_L_JACK : J4.tip, R_AUX_L_100K.1, C_AUX_L_2U2.1
+AUX_R_JACK : J4.ring, R_AUX_R_100K.1, C_AUX_R_2U2.1
+             (R_AUX_L_100K.2, R_AUX_R_100K.2 → GND)
+AUX_L_AC   : C_AUX_L_2U2.2, R_AUX_L_10K.1
+AUX_R_AC   : C_AUX_R_2U2.2, R_AUX_R_10K.1
+CODEC_AIN1 : R_AUX_L_10K.2, U7.AIN1
+CODEC_AIN2 : R_AUX_R_10K.2, U7.AIN2
+             (J4.sleeve → GND)
 ```
 
-> J201은 공핍형이라 게이트에 **음전압**이 필요 → ESP32(0~3.3V)로 직접 못 끔. `G3→게이트`
-> 직결하지 말 것. 음전압 생성 + RC 소프트램프 회로를 별도 확정한 뒤 이 네트를 채운다.
-> 그 전까진 스키매틱에 "TODO: mute gate driver" 블록으로만 표시.
+검토 규칙:
+
+- U7 `VIN=+5V`, `GND=GND`; I2S BCK/WS/DIN은 5절 네트를 사용한다.
+- AUX 100kΩ은 커플링 콘덴서의 잭 쪽에만 둔다. 내부 common-mode로 bias되는 AIN1/AIN2를
+  저항으로 GND에 당기지 않는다.
+- 2.2uF와 10kΩ/코덱 명목 11.2kΩ 입력으로 DC를 차단하고 +4dBu급 AUX 입력을 감쇠한다.
+- 헤드폰은 U7 온보드 AC-coupled 3.5mm 잭을 사용한다. speaker output은 배선·펌웨어 모두 끈다.
+- 앱/AUX 경로는 메인 기타 J1→J2 Thru와 전기적으로 섞지 않는다.
 
 ---
 
-## 9. 핀 사용 요약 (중복·금지핀 검토용)
+## 9. MIDI TRS-A IN/OUT
 
-목표 기능에 사용: 1,2,3,4,8,9,10,11,12,13,14,17,18,21,47
-- 현재 비움: 3(뮤트 드라이버 대기), 5,6,7,15,16,40,41,42
+TRS-A는 `tip=DIN pin 5/current sink`, `ring=DIN pin 4/current source`,
+`sleeve=DIN pin 2/shield`다.
+
+```
+MIDI_TX_A1 : U1.G6, U8.1
+MIDI_TX_A2 : U8.2, U8.3
+MIDI_OUT_5 : U8.4, R_MIDI_OUT_220_SINK.1
+J6.tip     : R_MIDI_OUT_220_SINK.2
+J6.ring    : R_MIDI_OUT_220_SOURCE.1
+             (R_MIDI_OUT_220_SOURCE.2 → +5V, J6.sleeve → GND)
+U8_POWER   : U8.14→+5V, U8.7→GND, C_MIDI_OUT_100N between U8.14/U8.7
+U8_UNUSED  : U8.5/U8.9/U8.11/U8.13→GND; U8.6/U8.8/U8.10/U8.12→NC
+
+MIDI_IN_4  : J5.ring, R_MIDI_IN_220.1
+MIDI_LED_A : R_MIDI_IN_220.2, U9.2, D_MIDI_REV.cathode
+MIDI_LED_K : U9.3, D_MIDI_REV.anode, J5.tip
+MIDI_RX    : U9.6, U1.G5, R_MIDI_RX_2K2.2
+U9_BASE    : U9.7, R_MIDI_BASE_4K7.1 (R_MIDI_BASE_4K7.2→GND)
+U9_POWER   : U9.8→+5V, U9.5→GND, C_MIDI_IN_100N between U9.8/U9.5
+U9_NC      : U9.1, U9.4
+MIDI_IN_ISO: J5.sleeve→NC; J5 tip/ring/sleeve에 GND DC 경로 없음
+```
+
+검토 규칙: U8은 SN74AHCT14N이며 5V에서 3.3V GPIO high를 TTL high로 인식한다. 두 gate를
+연속 사용해 UART 극성을 유지한다. U9는 6N138이다. J5는 절연형 잭을 써서 금속 외함이나
+오디오 GND와 닿지 않게 한다.
+
+---
+
+## 10. 메인 Thru 뮤트 — AQY221R2S 병렬 shunt
+
+```
+MUTE_CTL   : U1.G39, R_MUTE_390.1
+MUTE_LED_A : R_MUTE_390.2, U10.1
+MUTE_LED_K : U10.2, GND
+MUTE_SHUNT : U10.3, J2.tip
+MUTE_RETURN: U10.4, J2.sleeve, GND
+NC         : U1.G3, J201 전체
+```
+
+검토 규칙: U10은 1 Form A AC/DC PhotoMOS다. 전원 OFF에서 열리고, G39 high일 때만
+J2 tip-sleeve를 약 1Ω으로 닫는다. 출력 pin 3/4 방향은 바뀌어도 된다. J1.tip과 J2.tip의
+직결선에는 어떤 부품도 삽입하지 않는다. G3는 ESP32-S3 strapping 핀이므로 비운다.
+
+---
+
+## 11. 핀 사용 요약 (중복·금지핀 검토용)
+
+목표 기능에 사용: 1,2,4,5,6,7,8,9,10,11,12,13,14,17,18,21,39,40,41,42,47
+- 현재 비움: 3,15,16
 - 금지핀 회피: 0·45·46(스트래핑, 비움), 19·20(USB), 26~37(옥타 플래시/PSRAM), 38·48(RGB LED).
-- 스트래핑 3만 예외 사용(뮤트 출력). 12는 S3에선 일반 IO(구형 ESP32와 다름).
+- 스트래핑 3을 뮤트에서 제거했다. 12는 S3에선 일반 IO(구형 ESP32와 다름).
 - 각 GPIO는 **정확히 하나의 기능**에만. SD의 11·47은 현재 배선돼 있다.
 
 ---
@@ -218,14 +298,18 @@ MUTE_CTL   : U1.G3 → (게이트 드라이브 회로, 설계 예정) → J201.g
 ## 리뷰 시 내가 확인하는 것 (체크리스트)
 - [ ] 각 네트 끝점이 위 스펙과 일치(핀 번호·부품)
 - [ ] `+5V` ↔ `+3V3` 미연결, 전원 단일 소스
-- [ ] `D1` 방향(anode=RAW / cathode=PROT)
+- [ ] D1 방향 RAW→PROT, U11 VIN1=BUCK_5V/VOUT=+5V/GND 공통, VIN2·OFF·STAT=NC
 - [ ] `SW_GAIN`, `GAIN_LINE`, `GAIN_INST`, 구형 TL072 네트가 없음
-- [ ] `U4.6=U4.7`(버퍼), 분압 4.5V
+- [ ] `U4.6=U4.7`(버퍼), VREF=`+9V_OPAMP/2`
 - [ ] `U6.2=U6.1`(HOT 버퍼), `U6.6=U6.7` 및 `U6.5=VREF`(미사용 B 종단)
 - [ ] PCM `VINL=HOT`, `VINR=SENSITIVE`, 두 입력 상호 단락 없음
 - [ ] BAV199 `pin1=GND`, `pin2=+9V_OPAMP`, `pin3=SENSE_P`
 - [ ] HOT `10M||3.3pF`, `1.5M||15pF`와 C0G 튜닝 패드
 - [ ] 커플링 캡 ≥1µF(저역 보존)
 - [ ] LCD/SD SCLK·MOSI 버스 공유, CS 분리, J3.VCC=`+5V`
+- [ ] U7 MCK·speaker 핀 미연결, BCK/WS 공유, G40=DIN, G41/G42=I2C, G7=RST
+- [ ] AUX L/R 각각 2.2uF+10k 직렬, 100k는 잭 쪽, AIN 쪽 GND 저항 없음
+- [ ] MIDI OUT Type A와 U8 두 gate 극성 유지, MIDI IN J5 전체 DC 절연
+- [ ] PhotoMOS 출력은 J2 tip-sleeve 병렬이고 J1↔J2 직결선은 그대로 유지
 - [ ] GPIO 중복 없음 / 금지핀 없음
-- [ ] MUTE(G3)는 드라이버 회로 확정 전까지 미배선
+- [ ] G39=뮤트, G3=NC

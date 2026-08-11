@@ -6,6 +6,9 @@
 #include "app.h"
 #include "app_slots.h"
 #include "gadget_app.h"
+#include "midi.h"
+#include "midi_map.h"
+#include "midi_service.h"
 #include "platform.h"
 #include "renderer.h"
 #include "theme.h"
@@ -59,9 +62,16 @@ enum {
 #define TILE_X0 24
 #define LIVE_LABEL_Y 40
 #define LIVE_TILE_Y 58
-#define STASH_LABEL_Y 196
-#define STASH_TILE_Y 210
+#define STASH_LABEL_Y 184
+#define STASH_TILE_Y 198
 #define LAST_VIEW_SAVE_DELAY_MS 1000U
+
+enum {
+    LAUNCHER_HINT_LIVE_LEFT = 1 << 0,
+    LAUNCHER_HINT_LIVE_RIGHT = 1 << 1,
+    LAUNCHER_HINT_STASH_LEFT = 1 << 2,
+    LAUNCHER_HINT_STASH_RIGHT = 1 << 3,
+};
 
 static int s_active_app = -1;
 static sm_mode_t s_mode = MODE_LIVE;
@@ -81,6 +91,7 @@ static int s_cursor_row = ROW_LIVE;
 static int s_cursor_col;
 static int s_scroll_live;
 static int s_scroll_stash;
+static int s_launcher_hint_mask;
 static const gadget_app_t *s_return_app;
 
 static bool s_reorder_picked;
@@ -370,17 +381,9 @@ static void draw_fallback_icon(lv_obj_t *tile, const gadget_app_t *app)
 static void draw_tile_cursor(lv_obj_t *tile, bool picked)
 {
     lv_obj_t *cursor = lv_label_create(tile);
-    lv_label_set_text(
-        cursor,
-        s_mode == MODE_REORDER ? (picked ? "><" : "<>") : LV_SYMBOL_UP);
-    lv_obj_set_style_text_font(
-        cursor,
-        s_mode == MODE_REORDER ? font_small() : &lv_font_montserrat_14,
-        0);
+    lv_label_set_text(cursor, picked ? "><" : "<>");
+    lv_obj_set_style_text_font(cursor, font_small(), 0);
     lv_obj_set_style_text_color(cursor, ui()->accent2, 0);
-    if (s_mode != MODE_REORDER) {
-        lv_obj_set_style_transform_rotation(cursor, 3150, 0);
-    }
     lv_obj_align(cursor, LV_ALIGN_BOTTOM_RIGHT, picked ? 1 : 2, 2);
 }
 
@@ -394,7 +397,7 @@ static void draw_tile(int slot_idx, int row, int visible_idx, int y)
         (visible_idx + (row == ROW_STASH ? s_scroll_stash : s_scroll_live));
     const bool picked = s_reorder_picked && s_reorder_slot == slot_idx;
     const bool subdued = s_mode == MODE_REORDER && s_reorder_picked && !picked;
-    const bool disabled = slot->app->needs_codec;
+    const bool disabled = !app_registry_is_available(slot->app);
     const int x = TILE_X0 + visible_idx * (TILE_W + TILE_GAP);
     const int y_offset = picked ? -6 : 0;
 
@@ -448,7 +451,24 @@ static void draw_tile(int slot_idx, int row, int visible_idx, int y)
     lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(name, LV_ALIGN_BOTTOM_MID, 0, -8);
 
-    if (selected) draw_tile_cursor(tile, picked);
+    if (selected && s_mode == MODE_REORDER) {
+        draw_tile_cursor(tile, picked);
+    }
+}
+
+static void draw_row_overflow_hint(int row, int y, bool left)
+{
+    const ui_theme_t *t = ui();
+    const bool selected = s_cursor_row == row;
+    lv_obj_t *hint = lv_label_create(lv_screen_active());
+    lv_label_set_text(hint, left ? LV_SYMBOL_LEFT : LV_SYMBOL_RIGHT);
+    lv_obj_set_style_text_font(hint, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(hint, selected ? t->accent2 : t->accent, 0);
+    lv_obj_set_style_text_opa(hint, selected ? LV_OPA_COVER : LV_OPA_60, 0);
+    lv_obj_set_pos(hint, left ? 3 : 460, y + 34);
+
+    const int shift = row == ROW_STASH ? 2 : 0;
+    s_launcher_hint_mask |= 1 << (shift + (left ? 0 : 1));
 }
 
 static void draw_chain_row(int row, int y)
@@ -462,6 +482,8 @@ static void draw_chain_row(int row, int y)
     for (int i = scroll; i < end; i++) {
         draw_tile(idx[i], row, i - scroll, y);
     }
+    if (scroll > 0) draw_row_overflow_hint(row, y, true);
+    if (end < n) draw_row_overflow_hint(row, y, false);
 }
 
 static void draw_actions(void)
@@ -503,6 +525,7 @@ static void build_launcher(void)
 {
     clamp_cursor();
     clean_screen();
+    s_launcher_hint_mask = 0;
 
     const ui_theme_t *t = ui();
     lv_obj_t *screen = lv_screen_active();
@@ -738,7 +761,7 @@ static void popup_build(void)
                 s_popup_page == POPUP_APP_CHOICE ||
                 s_popup_page == POPUP_GLOBAL_MODE ||
                 s_popup_page == POPUP_GLOBAL_COLOR;
-            const char *label;
+            const char *label = "";
             if (s_popup_page == POPUP_APP_COLOR) {
                 label = theme_app_color_name(i);
             } else if (s_popup_page == POPUP_APP_MODE) {
@@ -811,10 +834,10 @@ static void popup_move(int delta)
     popup_highlight();
 }
 
-static void enter_app(int idx, int variant)
+static bool enter_app(int idx, int variant)
 {
     const gadget_app_t *app = app_registry_at(idx);
-    if (!app) return;
+    if (!app_registry_is_available(app)) return false;
 
     popup_close();
     exit_active_app();
@@ -828,12 +851,34 @@ static void enter_app(int idx, int variant)
     if (app->on_enter) app->on_enter(variant);
     s_last_view_save_pending = true;
     s_last_view_save_since = lv_tick_get();
+    return true;
 }
 
-static void enter_app_ptr(const gadget_app_t *app)
+static bool enter_app_ptr(const gadget_app_t *app)
 {
     const int idx = app_index(app);
-    if (idx >= 0) enter_app(idx, variant_for_app(app));
+    return idx >= 0 && enter_app(idx, variant_for_app(app));
+}
+
+static const gadget_app_t *first_available_live(void)
+{
+    const gadget_app_t *candidate = app_slots_first_live();
+    for (int i = 0; candidate && i < app_slots_count(); i++) {
+        if (app_registry_is_available(candidate)) return candidate;
+        candidate = app_slots_next_live(candidate);
+    }
+    return NULL;
+}
+
+static const gadget_app_t *next_available_live(const gadget_app_t *current)
+{
+    const gadget_app_t *candidate = current
+        ? app_slots_next_live(current) : app_slots_first_live();
+    for (int i = 0; candidate && i < app_slots_count(); i++) {
+        if (app_registry_is_available(candidate)) return candidate;
+        candidate = app_slots_next_live(candidate);
+    }
+    return NULL;
 }
 
 static void enter_launcher(void)
@@ -854,20 +899,18 @@ static void enter_launcher(void)
 static void return_to_live(void)
 {
     const gadget_app_t *target = s_return_app;
-    if (!target || !app_is_live(target)) target = app_slots_first_live();
-    if (target) {
-        enter_app_ptr(target);
-    } else {
+    if (!target || !app_is_live(target) ||
+        !app_registry_is_available(target)) {
+        target = first_available_live();
+    }
+    if (!enter_app_ptr(target)) {
         build_launcher();
     }
 }
 
 static void footsw_next_app(void)
 {
-    const gadget_app_t *app = s_active_app < 0
-        ? app_slots_first_live()
-        : app_slots_next_live(active_app());
-    enter_app_ptr(app);
+    enter_app_ptr(next_available_live(active_app()));
 }
 
 static void footsw_quick_app(void)
@@ -876,7 +919,9 @@ static void footsw_quick_app(void)
     if (idx < 0) idx = app_registry_find("tuner");
     if (idx >= 0 && s_active_app != idx) {
         const gadget_app_t *app = app_registry_at(idx);
-        enter_app(idx, variant_for_app(app));
+        if (app_registry_is_available(app)) {
+            enter_app(idx, variant_for_app(app));
+        }
     }
 }
 
@@ -1022,7 +1067,7 @@ static void launcher_activate(void)
 
     const int slot_idx = selected_slot_index();
     app_slot_t *slot = app_slots_at(slot_idx);
-    if (!slot || !slot->app || slot->app->needs_codec) return;
+    if (!slot || !app_registry_is_available(slot->app)) return;
     enter_app_ptr(slot->app);
 }
 
@@ -1196,6 +1241,9 @@ float sm_get_tempo(void)
 void sm_init(void)
 {
     plat_init();
+    midi_reset();
+    midi_service_init();
+    midi_map_reset();
     renderers_init();
     apps_init();
     app_slots_init();
@@ -1209,12 +1257,11 @@ void sm_init(void)
         : -1;
     if (last_idx >= 0) {
         const gadget_app_t *app = app_registry_at(last_idx);
-        enter_app(last_idx, variant_for_app(app));
-        return;
+        if (enter_app(last_idx, variant_for_app(app))) return;
     }
 
     if (last_view && last_view[0]) {
-        enter_app_ptr(app_slots_first_live());
+        if (!enter_app_ptr(first_available_live())) enter_launcher();
     } else {
         enter_launcher();
     }
@@ -1266,6 +1313,8 @@ void sm_on_event(ui_event_t event)
     }
 
     if (event == EV_HOME) {
+        const gadget_app_t *app = active_app();
+        if (app && app->on_event && app->on_event(event)) return;
         if (s_active_app >= 0) popup_open_app_menu();
         return;
     }
@@ -1296,5 +1345,17 @@ int sm_current(void)
 bool sm_debug_popup_open(void)
 {
     return s_popup != NULL;
+}
+
+int sm_debug_launcher_hint_mask(void)
+{
+    return s_launcher_hint_mask;
+}
+
+bool sm_debug_enter_app(const char *id)
+{
+    const int idx = id ? app_registry_find(id) : -1;
+    if (idx < 0) return false;
+    return enter_app(idx, variant_for_app(app_registry_at(idx)));
 }
 #endif

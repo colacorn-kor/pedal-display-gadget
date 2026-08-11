@@ -572,6 +572,13 @@ uint8_t app_slots_options(const gadget_app_t *app)
     return slot >= 0 ? s_slots[slot].options : 0;
 }
 
+void app_slots_set_options_runtime(const gadget_app_t *app, uint8_t options)
+{
+    const int slot = find_slot_for_app(app);
+    if (slot < 0) return;
+    s_slots[slot].options = options;
+}
+
 void app_slots_set_options(const gadget_app_t *app, uint8_t options)
 {
     const int slot = find_slot_for_app(app);

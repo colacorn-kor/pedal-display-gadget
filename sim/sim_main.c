@@ -8,12 +8,17 @@
 #include "app.h"
 #include "app_slots.h"
 #include "audio_level.h"
+#include "audio_playback.h"
 #include "content_screen.h"
 #include "gadget_app.h"
+#include "midi_service.h"
 #include "platform.h"
 #include "platform_sim.h"
 #include "renderer.h"
 #include "sim_audio.h"
+#include "sim_audio_output.h"
+#include "storage.h"
+#include "storage_sim_test.h"
 #include "theme.h"
 #include "tuner.h"
 
@@ -234,14 +239,77 @@ static bool smoke_tuner_is_voiced(tuner_result_t *result)
     return false;
 }
 
+static bool smoke_audio_playback_path(void)
+{
+    float stereo[256 * AUDIO_PLAYBACK_CHANNELS];
+    sim_audio_output_stats_t stats;
+    audio_playback_status_t status;
+    const gadget_app_t output_app = {
+        .id = "smoke-output",
+        .name = "Smoke Output",
+        .required_capabilities = PLAT_CAP_AUDIO_PLAYBACK_OUTPUT,
+    };
+
+    if (!plat_has_capabilities(PLAT_CAP_AUDIO_PLAYBACK_OUTPUT) ||
+        !audio_playback_is_available() ||
+        !app_registry_is_available(&output_app)) {
+        fprintf(stderr,
+                "SMOKE FAIL: PC playback capability is unavailable\n");
+        return false;
+    }
+    for (size_t i = 0; i < 256u; i++) {
+        stereo[i * 2u] = 0.25f;
+        stereo[i * 2u + 1u] = -0.125f;
+    }
+    if (audio_playback_claim("smoke-output") != AUDIO_PLAYBACK_OK ||
+        audio_playback_write("smoke-output", AUDIO_PLAYBACK_BUS_MUSIC,
+                             stereo, 256u) != 256u ||
+        audio_playback_play("smoke-output") != AUDIO_PLAYBACK_OK) {
+        fprintf(stderr, "SMOKE FAIL: playback transport setup failed\n");
+        return false;
+    }
+
+    sim_audio_output_reset_stats();
+    if (!run_frames_for(40)) return false;
+    sim_audio_output_get_stats(&stats);
+    if (audio_playback_release("smoke-output") != AUDIO_PLAYBACK_OK) {
+        fprintf(stderr, "SMOKE FAIL: playback owner release failed\n");
+        return false;
+    }
+    audio_playback_get_status(&status);
+    if (stats.submitted_frames < 256u || stats.nonzero_frames != 256u ||
+        fabsf(stats.peak - 0.25f) > 0.0001f ||
+        status.state != AUDIO_PLAYBACK_STOPPED || status.owner_id[0]) {
+        fprintf(stderr,
+                "SMOKE FAIL: stereo output frames=%llu nonzero=%llu "
+                "peak=%.3f state=%d owner=%s\n",
+                (unsigned long long)stats.submitted_frames,
+                (unsigned long long)stats.nonzero_frames,
+                stats.peak, (int)status.state, status.owner_id);
+        return false;
+    }
+    return true;
+}
+
 static bool run_smoke_test(void)
 {
     tuner_result_t tuner;
     const ui_theme_mode_t initial_global_mode = theme_mode();
     const ui_theme_color_t initial_global_color = theme_color();
 
+    if (!smoke_audio_playback_path()) return false;
+
     if (sm_current() != 0) {
         fprintf(stderr, "SMOKE FAIL: startup did not open launcher\n");
+        return false;
+    }
+    if (app_registry_find("bounce") >= 0) {
+        fprintf(stderr, "SMOKE FAIL: removed Bounce app is still registered\n");
+        return false;
+    }
+    if ((sm_debug_launcher_hint_mask() & 0x02) == 0) {
+        fprintf(stderr,
+                "SMOKE FAIL: launcher did not indicate hidden live apps\n");
         return false;
     }
 
@@ -416,6 +484,75 @@ static bool run_smoke_test(void)
                 "SMOKE FAIL: empty Gallery did not show GG wallpaper\n");
         return false;
     }
+    if (!sim_storage_populate_smoke_gallery() ||
+        !plat_sim_post_event(EV_OK) ||
+        !run_one_frame() ||
+        content_screen_debug_view() != CONTENT_VIEW_STATUS ||
+        strcmp(content_screen_debug_status(), "Scanning library") != 0) {
+        fprintf(stderr,
+                "SMOKE FAIL: Gallery did not expose its scanning state\n");
+        return false;
+    }
+    if (!run_frames_for(100) || images_app_debug_count() != 4 ||
+        images_app_debug_index() != 0 ||
+        content_screen_debug_view() != CONTENT_VIEW_IMAGE ||
+        strstr(images_app_debug_path(), "02 Second.bmp") == NULL ||
+        strcmp(content_screen_debug_counter(), "1 / 4") != 0) {
+        fprintf(stderr,
+                "SMOKE FAIL: Gallery refresh/natural sort did not open first image\n");
+        return false;
+    }
+    if (!smoke_send(EV_RIGHT, "Gallery 02 -> 10") ||
+        images_app_debug_index() != 1 ||
+        content_screen_debug_view() != CONTENT_VIEW_IMAGE ||
+        strstr(images_app_debug_path(), "10 Tenth.bmp") == NULL) {
+        fprintf(stderr, "SMOKE FAIL: Gallery numeric sorting is incorrect\n");
+        return false;
+    }
+    if (!smoke_send(EV_RIGHT, "Gallery 10 -> broken") ||
+        images_app_debug_index() != 2 ||
+        content_screen_debug_view() != CONTENT_VIEW_ERROR ||
+        strcmp(content_screen_debug_status(), "Can't open image") != 0) {
+        fprintf(stderr, "SMOKE FAIL: damaged Gallery file has no error state\n");
+        return false;
+    }
+    if (!smoke_send(EV_RIGHT, "Gallery broken -> long name") ||
+        images_app_debug_index() != 3 ||
+        content_screen_debug_view() != CONTENT_VIEW_IMAGE ||
+        strstr(images_app_debug_path(),
+               sim_storage_smoke_long_filename()) == NULL ||
+        strlen(content_screen_debug_name()) >=
+            strlen(sim_storage_smoke_long_filename()) ||
+        strstr(content_screen_debug_name(), "...") == NULL) {
+        fprintf(stderr,
+                "SMOKE FAIL: Gallery long filename state diverged "
+                "path='%s' visible='%s'\n",
+                images_app_debug_path(), content_screen_debug_name());
+        return false;
+    }
+    char gallery_path_before[STORAGE_PATH_MAX];
+    (void)snprintf(gallery_path_before, sizeof(gallery_path_before), "%s",
+                   images_app_debug_path());
+    if (!smoke_send(EV_OK, "refresh Gallery and preserve selection") ||
+        !run_frames_for(60) ||
+        images_app_debug_index() != 3 ||
+        strcmp(images_app_debug_path(), gallery_path_before) != 0 ||
+        content_screen_debug_view() != CONTENT_VIEW_IMAGE) {
+        fprintf(stderr, "SMOKE FAIL: Gallery refresh lost its selection\n");
+        return false;
+    }
+    if (!run_frames_for(5100) ||
+        content_screen_debug_chrome_visible()) {
+        fprintf(stderr,
+                "SMOKE FAIL: Gallery chrome stayed visible after idle\n");
+        return false;
+    }
+    if (!smoke_send(EV_LEFT, "wake hidden Gallery chrome") ||
+        !content_screen_debug_chrome_visible()) {
+        fprintf(stderr,
+                "SMOKE FAIL: Gallery input did not restore chrome\n");
+        return false;
+    }
 
     if (!smoke_send(EV_FOOTSW, "images -> tuner") ||
         !smoke_expect_app("tuner")) return false;
@@ -427,67 +564,14 @@ static bool run_smoke_test(void)
     }
     if (!run_frames_for(500) || !smoke_tuner_is_voiced(&tuner)) return false;
 
-    if (!smoke_send(EV_FOOTSW, "tuner -> bounce") ||
-        !smoke_expect_app("bounce")) return false;
+    if (!smoke_send(EV_FOOTSW, "tuner -> db meter") ||
+        !smoke_expect_app("dbmeter")) return false;
     if (mute_get() != 0) {
         fprintf(stderr, "SMOKE FAIL: tuner exit did not release mute\n");
         return false;
     }
     if (audio_get_mode() != AUDIO_SPECTRUM) {
-        fprintf(stderr, "SMOKE FAIL: bounce did not select spectrum mode\n");
-        return false;
-    }
-    const int bounce_popup_palette = theme_index();
-    const gadget_app_t *bounce =
-        app_registry_at(app_registry_find("bounce"));
-    if (app_slots_color(bounce) != APP_COLOR_DEFAULT ||
-        theme_for_app_color(app_slots_color(bounce)) != theme_get()) {
-        fprintf(stderr,
-                "SMOKE FAIL: bounce Default color did not inherit UI theme\n");
-        return false;
-    }
-    if (!smoke_send(EV_HOME, "bounce -> app menu") ||
-        !smoke_send(EV_OK, "open bounce settings") ||
-        !smoke_send(EV_OK, "bounce settings -> theme") ||
-        !smoke_send(EV_OK, "open bounce mode") ||
-        !smoke_send(EV_OK, "apply Classic Cat mode")) {
-        return false;
-    }
-    if (bounce_app_debug_mode_index() != 0 ||
-        app_slots_mode(bounce) != 0 ||
-        theme_index() != bounce_popup_palette) {
-        fprintf(stderr,
-                "SMOKE FAIL: bounce mode, saved selection, and popup "
-                "palette are inconsistent\n");
-        return false;
-    }
-    if (!smoke_send(EV_HOME, "bounce theme -> settings") ||
-        !smoke_send(EV_HOME, "bounce settings -> app menu") ||
-        !smoke_send(EV_HOME, "close bounce app menu")) {
-        return false;
-    }
-    const int cat_ground_y = bounce_app_debug_cat_y();
-    plat_sim_trigger_onset();
-    if (!run_frames_for(160) ||
-        bounce_app_debug_cat_y() >= cat_ground_y) {
-        fprintf(stderr, "SMOKE FAIL: audio onset did not jump the cat\n");
-        return false;
-    }
-    if (!run_frames_for(5200) || !bounce_app_debug_game_over()) {
-        fprintf(stderr,
-                "SMOKE FAIL: cat runner did not collide with a cup\n");
-        return false;
-    }
-    plat_sim_trigger_onset();
-    if (!run_frames_for(160) || bounce_app_debug_game_over() ||
-        bounce_app_debug_cat_y() >= cat_ground_y) {
-        fprintf(stderr,
-                "SMOKE FAIL: audio onset did not restart the cat runner\n");
-        return false;
-    }
-
-    if (!smoke_send(EV_FOOTSW, "bounce -> db meter") ||
-        !smoke_expect_app("dbmeter")) {
+        fprintf(stderr, "SMOKE FAIL: dB meter did not select spectrum mode\n");
         return false;
     }
     if (db_meter_debug_input_range() != AUDIO_INPUT_LINE ||
@@ -543,7 +627,229 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    if (!smoke_send(EV_FOOTSW_HOLD, "db meter -> quick tuner") ||
+    if (!smoke_send(EV_FOOTSW, "db meter -> music") ||
+        !smoke_expect_app("music") ||
+        audio_get_mode() != AUDIO_NONE ||
+        !music_app_debug_is_lobby() ||
+        !music_app_debug_is_playing()) {
+        fprintf(stderr,
+                "SMOKE FAIL: Music did not start the built-in lobby track\n");
+        return false;
+    }
+    const uint32_t music_position_before =
+        music_app_debug_position_ms();
+    sim_audio_output_reset_stats();
+    if (!run_frames_for(180)) return false;
+    sim_audio_output_stats_t music_output;
+    sim_audio_output_get_stats(&music_output);
+    if (music_output.nonzero_frames == 0u ||
+        music_output.peak <= 0.01f ||
+        music_app_debug_position_ms() <= music_position_before) {
+        fprintf(stderr,
+                "SMOKE FAIL: lobby output did not advance "
+                "frames=%llu peak=%.3f\n",
+                (unsigned long long)music_output.nonzero_frames,
+                music_output.peak);
+        return false;
+    }
+    if (!smoke_send(EV_OK, "pause lobby music") ||
+        music_app_debug_is_playing() ||
+        !smoke_send(EV_OK, "resume lobby music") ||
+        !music_app_debug_is_playing()) {
+        fprintf(stderr, "SMOKE FAIL: Music pause/resume failed\n");
+        return false;
+    }
+    const int music_volume_before = music_app_debug_volume_step();
+    if (!smoke_send(EV_UP, "increase Music volume") ||
+        music_app_debug_volume_step() != music_volume_before + 1) {
+        fprintf(stderr, "SMOKE FAIL: Music direct volume control failed\n");
+        return false;
+    }
+
+    if (!sim_storage_populate_smoke_game() ||
+        !smoke_send(EV_FOOTSW, "music -> game") ||
+        !smoke_expect_app("game") ||
+        audio_get_mode() != AUDIO_SPECTRUM ||
+        !game_app_debug_is_lobby() ||
+        game_app_debug_detected_files() != 1 ||
+        game_app_debug_tile_count() != 4 ||
+        game_app_debug_selected_tile() != 0) {
+        fprintf(stderr, "SMOKE FAIL: Game tile lobby did not open\n");
+        return false;
+    }
+    if (!smoke_send(EV_OK, "launch validated Game Boy ROM") ||
+        !game_app_debug_is_external() ||
+        !run_frames_for(120) ||
+        game_app_debug_frame_sequence() == 0) {
+        fprintf(stderr, "SMOKE FAIL: external Game Boy ROM did not run\n");
+        return false;
+    }
+    for (int i = 0; i < 4; i++) {
+        if (!smoke_send(EV_HOME, "cycle external game action")) return false;
+    }
+    if (!smoke_send(EV_OK, "external game -> tile lobby") ||
+        !game_app_debug_is_lobby() ||
+        game_app_debug_selected_tile() != 0 ||
+        !smoke_send(EV_RIGHT, "game select empty tile") ||
+        game_app_debug_selected_tile() != 1 ||
+        game_app_debug_lobby_name()[0] != '\0' ||
+        game_app_debug_lobby_source()[0] != '\0' ||
+        !smoke_send(EV_OK, "launch built-in game from empty tile") ||
+        !game_app_debug_is_builtin()) {
+        fprintf(stderr,
+                "SMOKE FAIL: empty Game tile leaked metadata or did not launch\n");
+        return false;
+    }
+    const int embedded_cat_before = bounce_app_debug_cat_y();
+    plat_sim_trigger_onset();
+    if (!run_frames_for(120) ||
+        bounce_app_debug_cat_y() >= embedded_cat_before) {
+        fprintf(stderr,
+                "SMOKE FAIL: audio input did not start/jump the built-in game\n");
+        return false;
+    }
+    if (!run_frames_for(1000)) return false;
+    const int landed_cat_y = bounce_app_debug_cat_y();
+    sim_audio_output_reset_stats();
+    if (!smoke_send(EV_UP, "jump in built-in game") ||
+        !run_frames_for(120) ||
+        bounce_app_debug_cat_y() >= landed_cat_y) {
+        fprintf(stderr, "SMOKE FAIL: embedded game did not jump\n");
+        return false;
+    }
+    sim_audio_output_stats_t game_output;
+    sim_audio_output_get_stats(&game_output);
+    if (game_output.nonzero_frames == 0u || game_output.peak <= 0.01f) {
+        fprintf(stderr,
+                "SMOKE FAIL: built-in game jump effect did not reach output\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "built-in game -> tile lobby") ||
+        !game_app_debug_is_lobby() ||
+        game_app_debug_selected_tile() != 1 ||
+        !smoke_send(EV_HOME, "Game lobby -> app menu") ||
+        !smoke_send(EV_HOME, "close Game app menu") ||
+        !game_app_debug_is_lobby()) {
+        fprintf(stderr, "SMOKE FAIL: Game HOME hierarchy is incorrect\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_FOOTSW, "game -> metronome") ||
+        !smoke_expect_app("metronome") ||
+        audio_get_mode() != AUDIO_NONE ||
+        metronome_app_debug_running() ||
+        !metronome_app_debug_audio_claimed() ||
+        metronome_app_debug_bpm() != 120 ||
+        metronome_app_debug_meter() != 4 ||
+        metronome_app_debug_subdivisions() != 1) {
+        fprintf(stderr, "SMOKE FAIL: Metronome defaults are incorrect\n");
+        return false;
+    }
+    sim_audio_output_reset_stats();
+    if (!smoke_send(EV_OK, "start metronome") ||
+        !run_frames_for(560) ||
+        !metronome_app_debug_running() ||
+        metronome_app_debug_tick_count() < 2u) {
+        fprintf(stderr, "SMOKE FAIL: Metronome clock did not advance\n");
+        return false;
+    }
+    sim_audio_output_stats_t metronome_output;
+    sim_audio_output_get_stats(&metronome_output);
+    if (metronome_output.nonzero_frames == 0u ||
+        metronome_output.peak <= 0.05f) {
+        fprintf(stderr,
+                "SMOKE FAIL: Metronome click did not reach output\n");
+        return false;
+    }
+    if (!smoke_send(EV_UP, "metronome 120 -> 125 BPM") ||
+        !smoke_send(EV_RIGHT, "metronome select Meter") ||
+        !smoke_send(EV_UP, "metronome 4/4 -> 5/4") ||
+        !smoke_send(EV_RIGHT, "metronome select Division") ||
+        !smoke_send(EV_UP, "metronome Quarter -> Eighth") ||
+        metronome_app_debug_bpm() != 125 ||
+        metronome_app_debug_meter() != 5 ||
+        metronome_app_debug_subdivisions() != 2) {
+        fprintf(stderr, "SMOKE FAIL: Metronome direct controls diverged\n");
+        return false;
+    }
+    if (!smoke_send(EV_HOME, "metronome -> app menu") ||
+        !smoke_send(EV_OK, "open metronome settings") ||
+        !smoke_send(EV_DOWN, "metronome Theme -> Meter") ||
+        !smoke_send(EV_OK, "open metronome Meter") ||
+        !smoke_send(EV_DOWN, "metronome 5/4 -> 2/4") ||
+        !smoke_send(EV_OK, "apply metronome 2/4") ||
+        metronome_app_debug_meter() != 2 ||
+        !smoke_send(EV_HOME, "metronome settings -> app menu") ||
+        !smoke_send(EV_HOME, "close metronome app menu") ||
+        !smoke_send(EV_OK, "stop metronome") ||
+        metronome_app_debug_running()) {
+        fprintf(stderr, "SMOKE FAIL: Metronome settings/stop failed\n");
+        return false;
+    }
+
+    if (!sm_debug_enter_app("oscilloscope") ||
+        !smoke_expect_app("oscilloscope") ||
+        !run_frames_for(100) ||
+        oscilloscope_app_debug_drawn_sequence() == 0u ||
+        oscilloscope_app_debug_time_index() != 2 ||
+        oscilloscope_app_debug_scale_index() != 2) {
+        fprintf(stderr, "SMOKE FAIL: Oscilloscope did not draw PCM input\n");
+        return false;
+    }
+    if (!smoke_send(EV_RIGHT, "Oscilloscope 10 -> 20 ms") ||
+        !smoke_send(EV_UP, "Oscilloscope +/-0.50 -> +/-0.20 FS") ||
+        oscilloscope_app_debug_time_index() != 3 ||
+        oscilloscope_app_debug_scale_index() != 1 ||
+        !smoke_send(EV_OK, "Oscilloscope hold") ||
+        !oscilloscope_app_debug_held() ||
+        !smoke_send(EV_OK, "Oscilloscope run") ||
+        oscilloscope_app_debug_held()) {
+        fprintf(stderr, "SMOKE FAIL: Oscilloscope controls failed\n");
+        return false;
+    }
+
+    if (!sm_debug_enter_app("midimon") ||
+        !smoke_expect_app("midimon") ||
+        midi_service_capture() != MIDI_CAPTURE_MONITOR) {
+        fprintf(stderr, "SMOKE FAIL: MIDI Monitor capture did not start\n");
+        return false;
+    }
+    const uint32_t midi_total_before = midi_monitor_debug_total();
+    if (!plat_sim_midi_inject_short(0x90, 60, 100) ||
+        !plat_sim_midi_inject_short(0xb1, 74, 90) ||
+        !plat_sim_midi_inject_short(0xf8, 0, 0) ||
+        !run_frames_for(20) ||
+        midi_monitor_debug_total() != midi_total_before + 3u ||
+        midi_monitor_debug_visible_count() != 2 ||
+        !smoke_send(EV_RIGHT, "MIDI Monitor filter All -> CH 1") ||
+        midi_monitor_debug_channel() != 1 ||
+        midi_monitor_debug_visible_count() != 1) {
+        fprintf(stderr, "SMOKE FAIL: MIDI Monitor history/filter failed\n");
+        return false;
+    }
+    if (!smoke_send(EV_OK, "pause MIDI Monitor") ||
+        !midi_monitor_debug_paused()) {
+        fprintf(stderr, "SMOKE FAIL: MIDI Monitor did not pause\n");
+        return false;
+    }
+    const int frozen_visible = midi_monitor_debug_visible_count();
+    if (!plat_sim_midi_inject_short(0x90, 64, 110) ||
+        !run_frames_for(20) ||
+        midi_monitor_debug_visible_count() != frozen_visible ||
+        !smoke_send(EV_UP, "clear MIDI Monitor") ||
+        midi_monitor_debug_visible_count() != 0 ||
+        !smoke_send(EV_OK, "resume MIDI Monitor") ||
+        midi_monitor_debug_paused() ||
+        !plat_sim_midi_inject_short(0xc0, 3, 0) ||
+        !run_frames_for(20) ||
+        !smoke_expect_app("midimon") ||
+        midi_monitor_debug_visible_count() != 1) {
+        fprintf(stderr,
+                "SMOKE FAIL: MIDI Monitor pause/clear/capture failed\n");
+        return false;
+    }
+
+    if (!smoke_send(EV_FOOTSW_HOLD, "MIDI Monitor -> quick tuner") ||
         !smoke_expect_app("tuner") || mute_get() != 1) {
         fprintf(stderr, "SMOKE FAIL: quick app did not enter muted tuner\n");
         return false;
@@ -556,17 +862,25 @@ static bool run_smoke_test(void)
         return false;
     }
 
-    printf("SMOKE PASS: three-row launcher, Theme/About, app Theme "
+    printf("SMOKE PASS: platform playback capability, stereo transport/mixer, "
+           "three-row launcher, Theme/About, app Theme "
            "Mode/Color, four monitor weightings with direct controls, reorder, "
            "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
-           "Curve controls, Reference mode, Classic Cat runner, "
-           "input-voltage meter controls/settings, quick app, cleanup\n",
+           "Curve controls, Reference mode, built-in cat Dino runner, "
+           "input-voltage meter controls/settings, Music lobby playback, "
+           "validated Game Boy core, Game tile lobby and embedded "
+           "runner/effects, Metronome clock/click/settings, launcher overflow "
+           "hint, Oscilloscope timebase/scale/hold, MIDI Monitor history/"
+           "filter/pause/clear, "
+           "quick app, cleanup\n",
            tuner.f0, tuner.name, tuner.octave);
     return true;
 }
 
 static bool open_preview(const char *preview)
 {
+    if (strcmp(preview, "launcher") == 0) return sm_current() == 0;
+
     if (strcmp(preview, "monitor-menu") == 0 ||
         strcmp(preview, "monitor-settings") == 0 ||
         strcmp(preview, "monitor-color") == 0 ||
@@ -618,20 +932,89 @@ static bool open_preview(const char *preview)
         return smoke_expect_app("dbmeter");
     }
 
-    if (strcmp(preview, "gallery") == 0) {
+    if (strcmp(preview, "gallery") == 0 ||
+        strcmp(preview, "gallery-empty") == 0 ||
+        strcmp(preview, "gallery-ready") == 0 ||
+        strcmp(preview, "gallery-error") == 0 ||
+        strcmp(preview, "gallery-long") == 0) {
         int idx = app_registry_find("images");
         if (idx < 0) return false;
-        for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
-        sm_on_event(EV_OK);
+        if (strcmp(preview, "gallery-ready") == 0 ||
+            strcmp(preview, "gallery-error") == 0 ||
+            strcmp(preview, "gallery-long") == 0) {
+            if (!sim_storage_populate_smoke_gallery()) return false;
+            if (strcmp(preview, "gallery-error") == 0) {
+                images_app_set_content(2);
+            } else if (strcmp(preview, "gallery-long") == 0) {
+                images_app_set_content(3);
+            } else {
+                images_app_set_content(0);
+            }
+        }
+        if (!sm_debug_enter_app("images")) return false;
         return smoke_expect_app("images");
     }
 
-    if (strcmp(preview, "bounce") == 0) {
-        int idx = app_registry_find("bounce");
+    if (strcmp(preview, "music") == 0) {
+        int idx = app_registry_find("music");
         if (idx < 0) return false;
         for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
         sm_on_event(EV_OK);
-        return smoke_expect_app("bounce");
+        return smoke_expect_app("music");
+    }
+
+    if (strcmp(preview, "game") == 0 ||
+        strcmp(preview, "game-builtin") == 0 ||
+        strcmp(preview, "game-external") == 0) {
+        int idx = app_registry_find("game");
+        if (idx < 0) return false;
+        if (strcmp(preview, "game-external") == 0 &&
+            !sim_storage_populate_smoke_game()) {
+            return false;
+        }
+        for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
+        sm_on_event(EV_OK);
+        if (!smoke_expect_app("game") || !game_app_debug_is_lobby()) {
+            return false;
+        }
+        if (strcmp(preview, "game-builtin") == 0) {
+            const int detected = game_app_debug_detected_files();
+            for (int i = 0; i < detected; i++) sm_on_event(EV_RIGHT);
+            sm_on_event(EV_OK);
+            return game_app_debug_is_builtin();
+        }
+        if (strcmp(preview, "game-external") == 0) {
+            sm_on_event(EV_OK);
+            return game_app_debug_is_external();
+        }
+        return true;
+    }
+
+    if (strcmp(preview, "metronome") == 0) {
+        int idx = app_registry_find("metronome");
+        if (idx < 0) return false;
+        for (int i = 0; i < idx; i++) sm_on_event(EV_RIGHT);
+        sm_on_event(EV_OK);
+        return smoke_expect_app("metronome");
+    }
+
+    if (strcmp(preview, "oscilloscope") == 0) {
+        if (!sm_debug_enter_app("oscilloscope") ||
+            !run_frames_for(100)) return false;
+        return smoke_expect_app("oscilloscope");
+    }
+
+    if (strcmp(preview, "midi-monitor") == 0) {
+        platform_midi_status_t midi;
+        plat_midi_get_status(&midi);
+        if (!sm_debug_enter_app("midimon") ||
+            (midi.input_available &&
+             (!plat_sim_midi_inject_short(0x90, 60, 100) ||
+              !plat_sim_midi_inject_short(0xb1, 74, 90))) ||
+            !run_one_frame()) {
+            return false;
+        }
+        return smoke_expect_app("midimon");
     }
 
     fprintf(stderr, "Unknown preview: %s\n", preview);

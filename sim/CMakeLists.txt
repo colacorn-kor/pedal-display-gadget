@@ -49,11 +49,15 @@ include("${CMAKE_CURRENT_LIST_DIR}/UI_SOURCES.cmake")
 add_executable(pedal_sim
     "${CMAKE_CURRENT_LIST_DIR}/platform_sim.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_audio.c"
+    "${CMAKE_CURRENT_LIST_DIR}/sim_audio_output.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_fft_backend.c"
     "${CMAKE_CURRENT_LIST_DIR}/sim_main.c"
+    "${CMAKE_CURRENT_LIST_DIR}/sim_midi.c"
     "${CMAKE_CURRENT_LIST_DIR}/storage_sim.c"
     "${PROJECT_ROOT}/fft_map.c"
     "${PROJECT_ROOT}/music_events.c"
+    "${PROJECT_ROOT}/midi.c"
+    "${PROJECT_ROOT}/midi_map.c"
     "${PROJECT_ROOT}/tuner.c"
     ${PEDAL_UI_SOURCES}
 )
@@ -62,7 +66,7 @@ if(WIN32)
     target_sources(pedal_sim PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/sim_loopback_win.cpp"
     )
-    target_link_libraries(pedal_sim PRIVATE ole32)
+    target_link_libraries(pedal_sim PRIVATE ole32 winmm)
 endif()
 
 target_include_directories(pedal_sim PRIVATE
@@ -78,6 +82,10 @@ target_compile_definitions(
 )
 
 if(MSVC)
+    set_source_files_properties(
+        "${PROJECT_ROOT}/game_core_peanut.c"
+        PROPERTIES COMPILE_OPTIONS "/wd4244;/wd4324"
+    )
     target_compile_options(pedal_sim PRIVATE /W4)
     target_compile_options(pedal_sim PRIVATE "$<$<COMPILE_LANGUAGE:C>:/std:c11>")
     target_compile_options(pedal_sim PRIVATE "$<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>")

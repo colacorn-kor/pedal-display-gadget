@@ -70,12 +70,12 @@ static const int DB_MARKS[] = { 0, -12, -24, -36, -48, -60, -72 };
 #define DB_MARK_COUNT ((int)(sizeof(DB_MARKS) / sizeof(DB_MARKS[0])))
 
 static const frequency_zone_t FREQUENCY_ZONES[] = {
-    {    20.0f,    60.0f, 0xD94A64, NULL   },
-    {    60.0f,   250.0f, 0xFF8C42, "Bass" },
-    {   250.0f,   500.0f, 0xF6C945, NULL   },
-    {   500.0f,  2000.0f, 0x5BCB77, "Mid"  },
-    {  2000.0f,  8000.0f, 0x43BCCD, NULL   },
-    {  8000.0f, 20000.0f, 0x8E6CEF, "High" },
+    {    20.0f,    60.0f, 0xD94A64, "Sub\nBass" },
+    {    60.0f,   250.0f, 0xEA6257, "Bass"      },
+    {   250.0f,   500.0f, 0xF6C945, "Low\nMid"  },
+    {   500.0f,  2000.0f, 0x5BCB77, "Mid"       },
+    {  2000.0f,  8000.0f, 0x43BCCD, "High\nMid" },
+    {  8000.0f, 20000.0f, 0x8E6CEF, "High"      },
 };
 #define FREQUENCY_ZONE_COUNT \
     ((int)(sizeof(FREQUENCY_ZONES) / sizeof(FREQUENCY_ZONES[0])))
@@ -277,6 +277,7 @@ static void create_zone_labels(void)
         lv_obj_t *label = create_label(
             s_root, zone->label,
             mix_hex(s_theme.bg, zone->color, 176));
+        lv_obj_set_height(label, 30);
         lv_obj_set_width(label, x1 - x0);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_pos(label, PX + x0, PY + 5);

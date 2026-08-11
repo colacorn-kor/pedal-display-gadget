@@ -53,6 +53,11 @@ static int s_queue_tail;
 static int s_queue_count;
 
 static audio_viz_snapshot_t s_viz;
+static audio_waveform_snapshot_t s_waveform;
+static int16_t s_waveform_history[AUDIO_WAVEFORM_SAMPLES];
+static int s_waveform_write;
+static int s_waveform_count;
+static bool s_waveform_enabled;
 static audio_mode_t s_active_mode = AUDIO_SPECTRUM;
 static bool s_active_mode_ready;
 static viz_mode_t s_active_viz_mode = VIZ_MONITOR;
@@ -81,11 +86,17 @@ static void usage(void)
 {
     fprintf(stderr,
             "Usage: pedal_sim.exe [--list-audio] [--audio-device N]"
+            " [--output-device N]"
             " [--system-audio|--microphone] [--synthetic] [--smoke-test]"
             " [--renderer-benchmark]"
-            " [--preview curve|reference|bars|circular|gallery|dbmeter|bounce"
+            " [--preview curve|reference|bars|circular|gallery|gallery-empty"
+            "|gallery-ready|gallery-error|gallery-long|dbmeter|music|game"
+            "|game-builtin|game-external"
+            "|metronome|launcher|oscilloscope"
             "|monitor-menu|monitor-settings|monitor-color|monitor-mode"
-            "|monitor-weighting]\n");
+            "|monitor-weighting|midi-monitor] [--list-midi] "
+            "[--midi-in N] "
+            "[--midi-out N] [--no-midi]\n");
 }
 
 static bool parse_device_index(const char *text, int *out)
@@ -112,12 +123,37 @@ static bool parse_args(int argc, char **argv, int *device_index)
             continue;
         }
 
+        if (strcmp(arg, "--list-midi") == 0 ||
+            strcmp(arg, "--no-midi") == 0) {
+            continue;
+        }
+        if (strcmp(arg, "--midi-in") == 0 ||
+            strcmp(arg, "--midi-out") == 0) {
+            if (i + 1 >= argc) {
+                usage();
+                return false;
+            }
+            i++;
+            continue;
+        }
+
         if (strcmp(arg, "--audio-device") == 0) {
             if (i + 1 >= argc || !parse_device_index(argv[i + 1], device_index)) {
                 usage();
                 return false;
             }
             s_input_choice = SIM_INPUT_CAPTURE_DEVICE;
+            i++;
+            continue;
+        }
+
+        if (strcmp(arg, "--output-device") == 0) {
+            int output_device_index;
+            if (i + 1 >= argc ||
+                !parse_device_index(argv[i + 1], &output_device_index)) {
+                usage();
+                return false;
+            }
             i++;
             continue;
         }
@@ -156,7 +192,7 @@ static bool parse_args(int argc, char **argv, int *device_index)
     return true;
 }
 
-static void list_capture_devices(void)
+static void list_audio_devices(void)
 {
     int count = SDL_GetNumAudioDevices(1);
 
@@ -167,11 +203,22 @@ static void list_capture_devices(void)
     printf("Capture audio devices:\n");
     if (count <= 0) {
         printf("  (none)\n");
-        return;
+    } else {
+        for (int i = 0; i < count; i++) {
+            const char *name = SDL_GetAudioDeviceName(i, 1);
+            printf("  %d: %s\n", i, name ? name : "(unknown)");
+        }
     }
 
+    count = SDL_GetNumAudioDevices(0);
+    printf("Playback audio devices:\n");
+    printf("  default: system default output (when available)\n");
+    if (count <= 0) {
+        printf("  (no separately selectable devices)\n");
+        return;
+    }
     for (int i = 0; i < count; i++) {
-        const char *name = SDL_GetAudioDeviceName(i, 1);
+        const char *name = SDL_GetAudioDeviceName(i, 0);
         printf("  %d: %s\n", i, name ? name : "(unknown)");
     }
 }
@@ -231,7 +278,7 @@ static bool open_capture_device(int device_index)
         if (device_index >= count) {
             fprintf(stderr, "E (sim) audio device index out of range: %d\n",
                     device_index);
-            list_capture_devices();
+            list_audio_devices();
             return false;
         }
         device_name = SDL_GetAudioDeviceName(device_index, 1);
@@ -375,6 +422,33 @@ static float level_from_rms(float rms)
     return level;
 }
 
+static void publish_waveform_block(const float *block)
+{
+    if (!s_waveform_enabled) return;
+
+    for (int i = 0; i < SIM_BLOCK_SIZE; i++) {
+        float sample = block[i];
+        if (sample > 1.0f) sample = 1.0f;
+        if (sample < -1.0f) sample = -1.0f;
+        s_waveform_history[s_waveform_write] =
+            (int16_t)(sample * 32767.0f);
+        s_waveform_write =
+            (s_waveform_write + 1) % AUDIO_WAVEFORM_SAMPLES;
+        if (s_waveform_count < AUDIO_WAVEFORM_SAMPLES) {
+            s_waveform_count++;
+        }
+    }
+
+    const int oldest = (s_waveform_write + AUDIO_WAVEFORM_SAMPLES -
+                        s_waveform_count) % AUDIO_WAVEFORM_SAMPLES;
+    for (int i = 0; i < s_waveform_count; i++) {
+        s_waveform.samples[i] = s_waveform_history[
+            (oldest + i) % AUDIO_WAVEFORM_SAMPLES];
+    }
+    s_waveform.count = (uint16_t)s_waveform_count;
+    s_waveform.frame_sequence++;
+}
+
 static void process_block(const float *block)
 {
     float rms = block_rms(block);
@@ -384,11 +458,13 @@ static void process_block(const float *block)
 
     handle_mode_change(mode);
     sync_visualizer_profile();
+    publish_waveform_block(block);
     if (mode == AUDIO_TUNER) {
         tuner_feed(block, SIM_BLOCK_SIZE);
         music_events_process_block(rms, level);
         return;
     }
+    if (mode == AUDIO_NONE) return;
 
     s_viz.meter_energy_total +=
         (double)rms * (double)rms * (double)SIM_BLOCK_SIZE;
@@ -606,7 +682,7 @@ bool sim_audio_init(int argc, char **argv)
     sdl_audio_ready = SDL_InitSubSystem(SDL_INIT_AUDIO) == 0;
 
     if (s_exit_after_args) {
-        list_capture_devices();
+        list_audio_devices();
         return true;
     }
 
@@ -664,6 +740,22 @@ void sim_audio_audio_viz_get(audio_viz_snapshot_t *out)
 {
     if (!out) return;
     *out = s_viz;
+}
+
+void sim_audio_waveform_set_enabled(bool enabled)
+{
+    if (enabled == s_waveform_enabled) return;
+    s_waveform_enabled = enabled;
+    s_waveform_write = 0;
+    s_waveform_count = 0;
+    memset(s_waveform_history, 0, sizeof(s_waveform_history));
+    memset(&s_waveform, 0, sizeof(s_waveform));
+}
+
+void sim_audio_waveform_get(audio_waveform_snapshot_t *out)
+{
+    if (!out) return;
+    *out = s_waveform;
 }
 
 void sim_audio_music_get(music_snapshot_t *out)
