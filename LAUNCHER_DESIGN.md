@@ -23,7 +23,7 @@
 typedef struct {
     const char *id;         /* 고유 id (영속성 키). 예 "monitor","rhythm" */
     const char *name;       /* 런처 표시명 */
-    audio_mode_t audio_mode;/* SPECTRUM / TUNER / NONE — 매니저가 enter 시 설정 */
+    audio_mode_t audio_mode;/* SPECTRUM / TUNER / METER / NONE — 앱 요구 모드 */
     const lv_img_dsc_t *icon; /* ③ 신규: 런처 타일 아이콘. NULL이면 기본 아이콘 */
 
     void (*on_enter)(int variant);  /* 화면 빌드 (LVGL lock 안) */

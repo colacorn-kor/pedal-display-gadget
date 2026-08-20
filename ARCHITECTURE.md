@@ -43,7 +43,7 @@ Phase 1 하드웨어(디스플레이 + 튜너 + 비주얼라이저 + 기타 탭)
 ## 2. 시스템 컨텍스트 (기존 구조와의 경계)
 
 ```
-Core 1: I2S + DSP(fft_map/tuner) + seqlock 발행
+Core 1: I2S + DSP(fft_map/tuner/loudness) + seqlock 발행
         ↓ audio_viz_snapshot_get() / audio_waveform_snapshot_get() / tuner_get()
 Core 0 (이 문서): LVGL + 앱 플랫폼  ← screen_manager 자리
         - 모든 앱 코드는 lvgl_port_lock 안에서 실행 (현재와 동일)
@@ -120,7 +120,7 @@ typedef struct {
 struct gadget_app {
     const char  *id;            /* "tuner" — 안정적 식별자(설정 키) */
     const char  *name;          /* "Tuner" — 표시명 */
-    audio_mode_t audio_mode;    /* 이 앱이 오디오코어에 요구: SPECTRUM/TUNER/NONE */
+    audio_mode_t audio_mode;    /* 오디오코어 요구: SPECTRUM/TUNER/METER/NONE */
     const lv_img_dsc_t *icon;   /* 런처 아이콘. NULL이면 이름 첫 글자 */
 
     app_enter_fn  on_enter;     /* 화면 빌드 + 자원 획득(뮤트/오디오모드) */
@@ -294,6 +294,9 @@ typedef enum {
   시간 평균·attack/release·peak hold도 적용하지 않는다. 단, FFT 창 자체의 시간 폭과
   PCM1808/프론트엔드의 실제 주파수 응답은 남으므로 교정 전에는 실험실급 분석기를
   뜻하지 않는다.
+- Curve와 Reference에서 OK는 현재의 **무가공 스펙트럼**을 비교 기준선으로 고정하거나
+  해제한다. 기준선은 peak 색으로 겹쳐 그리며 현재 Weighting과 공간 평활을 동일하게
+  적용하므로 설정 변경 뒤에도 같은 입력끼리 비교한다. 모드 변경이나 앱 종료 시 해제한다.
 - 2Hz 1차 DC blocker로 0Hz 성분과 바이어스 이동을 제거한다. 첫 표시점 20Hz의 감쇠는
   0.05dB 미만이다. 0dBFS는 full scale이지 무신호가 아니므로 DC와 무신호는 표시 하한으로
   내려간다.
@@ -353,6 +356,16 @@ typedef enum {
   sample peak는 각 표시 구간의 최댓값을 1초간 hold한다.
 - 현재 AC 커플링과 PCM1808 내장 HPF를 통과한 오디오만 측정하므로 DC 전압계가 아니다.
   따라서 화면의 V 값은 오디오 대역 AC RMS이며 DC 전압계가 아니다.
+- Mode는 `Level Meter/Loudness`를 제공하며 듀얼레인지 빌드에서만
+  `Range Diagnostics`를 추가한다. dB Meter는 전용 `AUDIO_METER` 모드로 동작해 활성 중
+  불필요한 FFT를 실행하지 않는다.
+- Loudness는 48kHz mono 입력에 BS.1770 K-weighting을 적용하고 100ms 간격으로 겹치는
+  400ms Momentary, 3초 Short-term, -70LUFS 절대 gate와 -10LU 상대 gate를 적용한
+  Integrated LUFS를 표시한다. OK는 Integrated·경과시간·true-peak 최대값을 함께 초기화한다.
+- True Peak는 16-tap windowed-sinc 4배 보간의 **추정 dBTP**다. 호스트 회귀 테스트는
+  997Hz full-scale sine의 `-3.01LUFS`와 20dB 레벨 차, 무음 gate와 inter-sample peak
+  경계를 확인한다. 하드웨어 주파수·레벨 교정 및 공인 계측기 대조 전에는 방송 납품용
+  인증 미터로 취급하지 않는다.
 
 ### Oscilloscope 표시 계약
 
@@ -587,7 +600,7 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 - 빈 폴더·저장소 부재는 어두운 `GG` 월페이퍼를, 손상 파일은 다음 항목으로 이동할 수 있는
   항목별 오류 화면을 사용한다. 이 상태 기계는 PC와 ESP 공통 앱 코드다.
 
-- 각 앱이 `audio_mode`(SPECTRUM / TUNER / NONE) 선언.
+- 각 앱이 `audio_mode`(SPECTRUM / TUNER / METER / NONE) 선언.
 - 매니저가 앱 `enter()` 시 `audio_set_mode()` 호출(현재 screen_manager가 하던 일을
   일반화). 앱 전환 시 자동으로 맞춰짐. *(②까지는 각 앱 `on_enter`가 직접 `audio_set_mode`를
   호출해 정상 동작 중이며, 매니저 일반화는 ③에서 정리.)*
@@ -603,7 +616,7 @@ Color 3비트와 Mode 5비트로 패킹한다. v5의 `Default/Blue/White/Green`�
 | id | 이름 | audio_mode | 변형 | 비고 |
 |----|------|-----------|------|------|
 | `monitor` | Sound Monitor | SPECTRUM | — | `renderer_t` 중첩. Mode=`Curve/12-Band/Circular/Reference` |
-| `dbmeter` | dB Meter | SPECTRUM | — | LIVE/1s/3s RMS, 입력잭 Vrms·dBV·dBu·dBFS |
+| `dbmeter` | dB Meter | METER | — | Level + M/S/I LUFS·4x true-peak 추정, 입력잭 Vrms·dBV·dBu·dBFS |
 | `tuner` | Tuner | TUNER | 기본/고급 | enter=뮤트. 고급=432/드롭/오프셋 |
 | `images` | Gallery | SPECTRUM | — | 자연 정렬·손상 검사·메타데이터, 없으면 어두운 `GG` 월페이퍼 |
 | `music` | Music | NONE | — | WAV 탐색·재생, 없으면 코드 생성 8비트 로비 음악 |

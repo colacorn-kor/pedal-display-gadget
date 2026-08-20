@@ -28,6 +28,16 @@ if(NOT MSVC)
 endif()
 add_test(NAME audio_level_units COMMAND test_audio_level)
 
+add_executable(test_loudness_meter
+    test_loudness_meter.c
+    ../loudness_meter.c
+)
+target_include_directories(test_loudness_meter PRIVATE ..)
+if(NOT MSVC)
+    target_link_libraries(test_loudness_meter PRIVATE m)
+endif()
+add_test(NAME bs1770_loudness_meter COMMAND test_loudness_meter)
+
 add_executable(test_image_probe
     test_image_probe.c
     ../image_probe.c
@@ -149,6 +159,7 @@ if(MSVC)
         /experimental:c11atomics
     )
     target_compile_options(test_audio_level PRIVATE /utf-8 /wd4819)
+    target_compile_options(test_loudness_meter PRIVATE /utf-8 /wd4819)
     target_compile_options(test_image_probe PRIVATE /utf-8 /wd4819)
     target_compile_options(test_audio_playback PRIVATE
         /utf-8

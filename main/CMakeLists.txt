@@ -6,6 +6,7 @@ set(APP_SOURCES
     "${PROJECT_ROOT}/audio_autorange.c"
     "${PROJECT_ROOT}/display_bringup.c"
     "${PROJECT_ROOT}/fft_map.c"
+    "${PROJECT_ROOT}/loudness_meter.c"
     "${PROJECT_ROOT}/midi.c"
     "${PROJECT_ROOT}/midi_map.c"
     "${PROJECT_ROOT}/music_events.c"

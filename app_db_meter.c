@@ -43,6 +43,7 @@ typedef enum {
 
 typedef enum {
     DB_MODE_LEVEL = 0,
+    DB_MODE_LOUDNESS,
     DB_MODE_RANGE_DIAGNOSTICS,
 } db_meter_mode_t;
 
@@ -78,6 +79,11 @@ static lv_obj_t *s_peak_value;
 static lv_obj_t *s_voltage_value;
 static lv_obj_t *s_dbv_value;
 static lv_obj_t *s_dbu_value;
+static lv_obj_t *s_loudness_momentary;
+static lv_obj_t *s_loudness_short;
+static lv_obj_t *s_loudness_integrated;
+static lv_obj_t *s_loudness_true_peak;
+static lv_obj_t *s_loudness_status;
 static lv_obj_t *s_diag_status;
 static lv_obj_t *s_diag_hot_rms;
 static lv_obj_t *s_diag_hot_peak;
@@ -569,6 +575,53 @@ static void create_level_view(const ui_theme_t *theme)
     lv_obj_set_pos(footer, 0, 294);
 }
 
+static lv_obj_t *create_loudness_metric(const ui_theme_t *theme,
+                                        int x, int y, int width,
+                                        const char *caption,
+                                        const lv_font_t *font)
+{
+    lv_obj_t *caption_label = make_label(
+        s_root, caption, &lv_font_montserrat_12, theme->accent);
+    lv_obj_set_width(caption_label, width);
+    lv_obj_set_pos(caption_label, x, y);
+
+    lv_obj_t *value = make_label(s_root, "--", font, theme->text);
+    lv_obj_set_width(value, width);
+    lv_obj_set_pos(value, x, y + 20);
+    return value;
+}
+
+static void create_loudness_view(const ui_theme_t *theme)
+{
+    create_root(theme, "LOUDNESS");
+
+    s_loudness_momentary = create_loudness_metric(
+        theme, 20, 45, 260, "MOMENTARY  400 ms",
+        &lv_font_montserrat_48);
+    s_loudness_short = create_loudness_metric(
+        theme, 304, 53, 156, "SHORT-TERM  3 s",
+        &lv_font_montserrat_28);
+    s_loudness_integrated = create_loudness_metric(
+        theme, 20, 156, 260, "INTEGRATED",
+        &lv_font_montserrat_28);
+    s_loudness_true_peak = create_loudness_metric(
+        theme, 304, 164, 156, "TRUE PEAK EST.",
+        &lv_font_montserrat_28);
+
+    s_loudness_status = make_label(
+        s_root, "0:00  |  0 GATED BLOCKS",
+        &lv_font_montserrat_14, theme->accent2);
+    lv_obj_set_width(s_loudness_status, SCREEN_W - 40);
+    lv_obj_set_pos(s_loudness_status, 20, 258);
+
+    lv_obj_t *footer = make_label(
+        s_root, "ITU-R BS.1770 mono | K-weighted | 4x peak estimate",
+        &lv_font_montserrat_12, theme->text);
+    lv_obj_set_width(footer, SCREEN_W - 40);
+    lv_obj_set_style_text_opa(footer, LV_OPA_50, 0);
+    lv_obj_set_pos(footer, 20, 292);
+}
+
 #if AUDIO_DUAL_RANGE
 static lv_obj_t *create_diagnostic_value(
     const ui_theme_t *theme, int x, int y)
@@ -670,6 +723,11 @@ static void clear_ui_references(void)
     s_voltage_value = NULL;
     s_dbv_value = NULL;
     s_dbu_value = NULL;
+    s_loudness_momentary = NULL;
+    s_loudness_short = NULL;
+    s_loudness_integrated = NULL;
+    s_loudness_true_peak = NULL;
+    s_loudness_status = NULL;
     s_diag_status = NULL;
     s_diag_hot_rms = NULL;
     s_diag_hot_peak = NULL;
@@ -698,6 +756,10 @@ static void build_ui(void)
     s_accent_label_count = 0;
     memset(s_accent_label, 0, sizeof(s_accent_label));
     const ui_theme_t *theme = db_meter_theme();
+    if (s_mode == DB_MODE_LOUDNESS) {
+        create_loudness_view(theme);
+        return;
+    }
 #if AUDIO_DUAL_RANGE
     if (s_mode == DB_MODE_RANGE_DIAGNOSTICS) {
         create_range_diagnostics_view(theme);
@@ -710,14 +772,13 @@ static void build_ui(void)
 static void db_meter_enter(int variant)
 {
     (void)variant;
-    audio_set_mode(AUDIO_SPECTRUM);
+    audio_set_mode(AUDIO_METER);
     audio_set_viz_mode(VIZ_MONITOR);
     load_options();
 #if AUDIO_DUAL_RANGE
     s_control = DB_CONTROL_AVERAGE;
 #else
     s_control = DB_CONTROL_INPUT;
-    s_mode = DB_MODE_LEVEL;
 #endif
 
     s_display_rms_db = METER_FLOOR_DB;
@@ -738,6 +799,7 @@ static void db_meter_enter(int variant)
     s_dbv_text[0] = '\0';
     s_dbu_text[0] = '\0';
     build_ui();
+    if (s_mode == DB_MODE_LOUDNESS) audio_loudness_reset();
 }
 
 static void db_meter_appearance_changed(void)
@@ -907,6 +969,48 @@ static void db_meter_render(void)
     }
 #endif
 
+    if (s_mode == DB_MODE_LOUDNESS) {
+        if (now - s_last_display_ms < METER_DISPLAY_MS) return;
+        s_last_display_ms = now;
+        plat_audio_viz_get(&s_snapshot);
+        const loudness_snapshot_t *loudness = &s_snapshot.loudness;
+        char text[48];
+        if (loudness->momentary_lufs <= LOUDNESS_FLOOR_LUFS) {
+            snprintf(text, sizeof(text), "-- LUFS");
+        } else {
+            snprintf(text, sizeof(text), "%.1f LUFS",
+                     loudness->momentary_lufs);
+        }
+        lv_label_set_text(s_loudness_momentary, text);
+        if (loudness->short_term_lufs <= LOUDNESS_FLOOR_LUFS) {
+            snprintf(text, sizeof(text), "-- LUFS");
+        } else {
+            snprintf(text, sizeof(text), "%.1f LUFS",
+                     loudness->short_term_lufs);
+        }
+        lv_label_set_text(s_loudness_short, text);
+        if (loudness->integrated_lufs <= LOUDNESS_FLOOR_LUFS) {
+            snprintf(text, sizeof(text), "-- LUFS");
+        } else {
+            snprintf(text, sizeof(text), "%.1f LUFS",
+                     loudness->integrated_lufs);
+        }
+        lv_label_set_text(s_loudness_integrated, text);
+        if (loudness->true_peak_dbtp <= LOUDNESS_FLOOR_LUFS) {
+            snprintf(text, sizeof(text), "-- dBTP");
+        } else {
+            snprintf(text, sizeof(text), "%.1f dBTP",
+                     loudness->true_peak_dbtp);
+        }
+        lv_label_set_text(s_loudness_true_peak, text);
+        const unsigned seconds = loudness->elapsed_ms / 1000U;
+        snprintf(text, sizeof(text), "%u:%02u  |  %u GATED BLOCKS",
+                 seconds / 60U, seconds % 60U,
+                 (unsigned)loudness->integrated_blocks);
+        lv_label_set_text(s_loudness_status, text);
+        return;
+    }
+
     save_options_if_due(now, false);
     uint32_t sample_elapsed_ms = now - s_last_sample_ms;
     if (sample_elapsed_ms < METER_SAMPLE_MS) return;
@@ -979,6 +1083,13 @@ static void db_meter_render(void)
 
 static bool db_meter_on_event(ui_event_t event)
 {
+    if (s_mode == DB_MODE_LOUDNESS) {
+        if (event == EV_OK) {
+            audio_loudness_reset();
+            return true;
+        }
+        return false;
+    }
 #if AUDIO_DUAL_RANGE
     if (s_mode == DB_MODE_RANGE_DIAGNOSTICS) return false;
 #endif
@@ -1026,15 +1137,16 @@ static bool db_meter_on_event(ui_event_t event)
 static int db_meter_mode_count(void)
 {
 #if AUDIO_DUAL_RANGE
-    return 2;
+    return 3;
 #else
-    return 1;
+    return 2;
 #endif
 }
 
 static const char *db_meter_mode_name(int idx)
 {
     if (idx == DB_MODE_LEVEL) return "Level Meter";
+    if (idx == DB_MODE_LOUDNESS) return "Loudness";
 #if AUDIO_DUAL_RANGE
     if (idx == DB_MODE_RANGE_DIAGNOSTICS) return "Range Diagnostics";
 #endif
@@ -1052,13 +1164,16 @@ static void db_meter_mode_set(int idx)
     const db_meter_mode_t next = (db_meter_mode_t)idx;
     if (next == s_mode) return;
     s_mode = next;
-    if (s_root) s_rebuild_pending = true;
+    if (s_root) {
+        s_rebuild_pending = true;
+        if (s_mode == DB_MODE_LOUDNESS) audio_loudness_reset();
+    }
 }
 
 const gadget_app_t APP_DB_METER = {
     .id = "dbmeter",
     .name = "dB Meter",
-    .audio_mode = AUDIO_SPECTRUM,
+    .audio_mode = AUDIO_METER,
     .icon = NULL,
     .on_enter = db_meter_enter,
     .on_exit = db_meter_exit,

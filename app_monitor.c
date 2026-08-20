@@ -46,6 +46,10 @@ static int s_renderer = -1;
 static lv_obj_t *s_host;
 static viz_theme_t s_viz_theme;
 static audio_viz_snapshot_t s_viz_snapshot;
+static float s_latest_raw[VIZ_POINTS];
+static float s_compare_raw[VIZ_POINTS];
+static float s_compare_display[VIZ_POINTS];
+static bool s_compare_valid;
 static float s_weighting_db[VIZ_POINTS];
 
 static void monitor_update_weighting_cache(void)
@@ -237,6 +241,7 @@ static void monitor_mode_set(int idx)
 {
     if (idx < 0 || idx >= MONITOR_MODE_COUNT) return;
     s_mode = (monitor_mode_t)idx;
+    s_compare_valid = false;
     monitor_select_renderer();
 }
 
@@ -245,6 +250,7 @@ static void monitor_enter(int variant)
     (void)variant;
     audio_set_mode(AUDIO_SPECTRUM);
     monitor_load_options();
+    s_compare_valid = false;
 
     s_host = lv_obj_create(lv_screen_active());
     lv_obj_set_size(s_host, 480, 320);
@@ -258,6 +264,7 @@ static void monitor_enter(int variant)
 
 static void monitor_exit(void)
 {
+    s_compare_valid = false;
     renderer_teardown();
     s_host = NULL;
 }
@@ -265,18 +272,29 @@ static void monitor_exit(void)
 static void monitor_render(void)
 {
     plat_audio_viz_get(&s_viz_snapshot);
+    for (int i = 0; i < VIZ_POINTS; i++) {
+        s_latest_raw[i] = s_viz_snapshot.bars[i];
+        if (s_compare_valid) {
+            s_compare_display[i] = s_compare_raw[i];
+        }
+    }
     if (s_weighting != SPECTRUM_WEIGHT_FLAT) {
         for (int i = 0; i < VIZ_POINTS; i++) {
             s_viz_snapshot.bars[i] = spectrum_weighting_apply_db(
                 s_viz_snapshot.bars[i], s_weighting_db[i]);
             s_viz_snapshot.peaks[i] = spectrum_weighting_apply_db(
                 s_viz_snapshot.peaks[i], s_weighting_db[i]);
+            if (s_compare_valid) {
+                s_compare_display[i] = spectrum_weighting_apply_db(
+                    s_compare_display[i], s_weighting_db[i]);
+            }
         }
     }
     const viz_frame_t frame = {
         .bars = s_viz_snapshot.bars,
         .peaks = s_mode == MONITOR_MODE_12_BAND
             ? s_viz_snapshot.peaks : NULL,
+        .underlay = s_compare_valid ? s_compare_display : NULL,
         .n = VIZ_POINTS,
         .level = s_viz_snapshot.level,
     };
@@ -285,6 +303,20 @@ static void monitor_render(void)
 
 static bool monitor_on_event(ui_event_t event)
 {
+    if (event == EV_OK &&
+        (s_mode == MONITOR_MODE_CURVE ||
+         s_mode == MONITOR_MODE_REFERENCE)) {
+        if (s_compare_valid) {
+            s_compare_valid = false;
+        } else {
+            for (int i = 0; i < VIZ_POINTS; i++) {
+                s_compare_raw[i] = s_latest_raw[i];
+            }
+            s_compare_valid = true;
+        }
+        return true;
+    }
+
     if (event == EV_UP || event == EV_DOWN) {
         int next_weighting = (int)s_weighting +
             (event == EV_DOWN ? 1 : -1);
@@ -331,6 +363,11 @@ int monitor_app_debug_smoothing_index(void)
 int monitor_app_debug_weighting_index(void)
 {
     return (int)s_weighting;
+}
+
+bool monitor_app_debug_compare_active(void)
+{
+    return s_compare_valid;
 }
 #endif
 

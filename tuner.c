@@ -3,6 +3,7 @@
  * ========================================================================== */
 #include <math.h>
 #include <stdatomic.h>
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -29,9 +30,13 @@
  * window. This guard protects that invariant if the range changes later. */
 #define MIN_NSDF_OVERLAP  1024
 #define CLARITY_THRESHOLD 0.50f
-#define MIN_RMS           0.0002f
+#define MIN_RMS           0.0010f
 #define A4                440.0f
 #define RANGE_EDGE_TOLERANCE 0.015f
+#define NOTE_CHANGE_CONFIRM_FRAMES 2
+#define CENTS_SMOOTH_NEAR_ALPHA 0.24f
+#define CENTS_SMOOTH_MID_ALPHA  0.48f
+#define CENTS_SMOOTH_FAR_ALPHA  0.78f
 
 #define FIR_TAPS          63
 /* 63-tap Hamming LPF: about -0.42 dB at 1300 Hz and <= -52.7 dB from
@@ -69,6 +74,11 @@ static float s_nsdf[TAU_CALC_MAX + 1];
 
 static tuner_result_t s_result;
 static _Atomic unsigned s_result_seq;
+static int s_locked_note;
+static int s_candidate_note;
+static int s_candidate_frames;
+static float s_smoothed_midi;
+static int s_smoothed_ready;
 
 static void publish_result(const tuner_result_t *result)
 {
@@ -88,6 +98,56 @@ static void publish_unvoiced(float clarity)
         .clarity = clarity,
     };
     publish_result(&result);
+}
+
+static void reset_tracking(void)
+{
+    s_locked_note = INT_MIN;
+    s_candidate_note = INT_MIN;
+    s_candidate_frames = 0;
+    s_smoothed_midi = 0.0f;
+    s_smoothed_ready = 0;
+}
+
+static int confirm_note_change(int note)
+{
+    if (s_locked_note == INT_MIN || note == s_locked_note) {
+        s_locked_note = note;
+        s_candidate_note = INT_MIN;
+        s_candidate_frames = 0;
+        return 1;
+    }
+
+    if (note != s_candidate_note) {
+        s_candidate_note = note;
+        s_candidate_frames = 1;
+        return 0;
+    }
+    if (++s_candidate_frames < NOTE_CHANGE_CONFIRM_FRAMES) return 0;
+
+    s_locked_note = note;
+    s_candidate_note = INT_MIN;
+    s_candidate_frames = 0;
+    s_smoothed_ready = 0;
+    return 1;
+}
+
+static float smooth_midi(float midi)
+{
+    if (!s_smoothed_ready) {
+        s_smoothed_midi = midi;
+        s_smoothed_ready = 1;
+        return midi;
+    }
+
+    const float distance_cents = fabsf(midi - s_smoothed_midi) * 100.0f;
+    const float alpha = distance_cents < 3.0f
+        ? CENTS_SMOOTH_NEAR_ALPHA
+        : (distance_cents < 12.0f
+            ? CENTS_SMOOTH_MID_ALPHA
+            : CENTS_SMOOTH_FAR_ALPHA);
+    s_smoothed_midi += alpha * (midi - s_smoothed_midi);
+    return s_smoothed_midi;
 }
 
 static void fir_init(void)
@@ -134,6 +194,7 @@ void tuner_reset(void)
     s_pos = 0;
     s_since = 0;
     s_filled = 0;
+    reset_tracking();
     publish_unvoiced(0.0f);
 }
 
@@ -167,6 +228,7 @@ static void analyze(void)
     }
     float rms = sqrtf(energy / WIN);
     if (!(rms >= MIN_RMS)) {
+        reset_tracking();
         publish_unvoiced(0.0f);
         return;
     }
@@ -196,6 +258,7 @@ static void analyze(void)
         }
     }
     if (max_peak < CLARITY_THRESHOLD) {
+        reset_tracking();
         publish_unvoiced(max_peak > 0.0f ? max_peak : 0.0f);
         return;
     }
@@ -209,6 +272,7 @@ static void analyze(void)
         }
     }
     if (best < 0) {
+        reset_tracking();
         publish_unvoiced(max_peak);
         return;
     }
@@ -229,6 +293,7 @@ static void analyze(void)
     if (!isfinite(f0) ||
         f0 < FMIN * (1.0f - RANGE_EDGE_TOLERANCE) ||
         f0 > FMAX * (1.0f + RANGE_EDGE_TOLERANCE)) {
+        reset_tracking();
         publish_unvoiced(max_peak);
         return;
     }
@@ -237,6 +302,12 @@ static void analyze(void)
 
     float midi = 69.0f + 12.0f * log2f(f0 / A4);
     int note = (int)lroundf(midi);
+    if (!confirm_note_change(note)) {
+        /* Hold the last stable note during the single confirmation frame. */
+        return;
+    }
+    midi = smooth_midi(midi);
+    f0 = A4 * exp2f((midi - 69.0f) / 12.0f);
     const tuner_result_t result = {
         .voiced = 1,
         .f0 = f0,

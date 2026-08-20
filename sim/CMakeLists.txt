@@ -55,6 +55,7 @@ add_executable(pedal_sim
     "${CMAKE_CURRENT_LIST_DIR}/sim_midi.c"
     "${CMAKE_CURRENT_LIST_DIR}/storage_sim.c"
     "${PROJECT_ROOT}/fft_map.c"
+    "${PROJECT_ROOT}/loudness_meter.c"
     "${PROJECT_ROOT}/music_events.c"
     "${PROJECT_ROOT}/midi.c"
     "${PROJECT_ROOT}/midi_map.c"

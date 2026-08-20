@@ -9,6 +9,7 @@
 #include <SDL.h>
 
 #include "audio_config.h"
+#include "loudness_meter.h"
 #include "tuner.h"
 
 #ifdef _WIN32
@@ -332,6 +333,10 @@ static bool open_capture_device(int device_index)
 static void reset_visualizer(void)
 {
     memset(&s_viz, 0, sizeof(s_viz));
+    s_viz.loudness.momentary_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz.loudness.short_term_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz.loudness.integrated_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz.loudness.true_peak_dbtp = LOUDNESS_FLOOR_LUFS;
     fft_map_reset();
 }
 
@@ -344,6 +349,7 @@ static void handle_mode_change(audio_mode_t mode)
     if (mode == AUDIO_TUNER) {
         tuner_reset();
     } else {
+        if (mode == AUDIO_METER) loudness_meter_reset();
         reset_visualizer();
     }
 }
@@ -470,7 +476,12 @@ static void process_block(const float *block)
         (double)rms * (double)rms * (double)SIM_BLOCK_SIZE;
     s_viz.meter_sample_total += SIM_BLOCK_SIZE;
     music_events_process_block(rms, level);
-    fft_feed(block, SIM_BLOCK_SIZE, s_viz.bars, s_viz.peaks);
+    if (mode == AUDIO_METER) {
+        loudness_meter_feed(block, SIM_BLOCK_SIZE);
+        loudness_meter_get(&s_viz.loudness);
+    } else {
+        fft_feed(block, SIM_BLOCK_SIZE, s_viz.bars, s_viz.peaks);
+    }
     s_viz.level = level;
     s_viz.rms = rms;
     s_viz.sample_peak = sample_peak;
@@ -662,6 +673,7 @@ bool sim_audio_init(int argc, char **argv)
     s_initialized = true;
 
     tuner_init();
+    loudness_meter_init();
     music_events_init();
     if (fft_map_init() != ESP_OK) {
         fprintf(stderr, "E (sim) shared spectrum analyzer init failed\n");
@@ -734,6 +746,15 @@ void sim_audio_trigger_synthetic_onset(void)
     s_onset_seq++;
     s_onset_ms = SDL_GetTicks();
     s_onset_strength = 1.35f;
+}
+
+void sim_audio_loudness_reset(void)
+{
+    loudness_meter_reset();
+    s_viz.loudness.momentary_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz.loudness.short_term_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz.loudness.integrated_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz.loudness.true_peak_dbtp = LOUDNESS_FLOOR_LUFS;
 }
 
 void sim_audio_audio_viz_get(audio_viz_snapshot_t *out)

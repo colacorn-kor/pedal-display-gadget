@@ -7,9 +7,15 @@
 #include <stdint.h>
 #include "audio_config.h"
 #include "fft_map.h"
+#include "loudness_meter.h"
 #include "renderer.h"
 
-typedef enum { AUDIO_SPECTRUM, AUDIO_TUNER, AUDIO_NONE } audio_mode_t;
+typedef enum {
+    AUDIO_SPECTRUM,
+    AUDIO_TUNER,
+    AUDIO_METER,
+    AUDIO_NONE,
+} audio_mode_t;
 typedef enum {
     AUDIO_INPUT_SOURCE_LEGACY = 0,
     AUDIO_INPUT_SOURCE_SENSITIVE,
@@ -19,6 +25,7 @@ void         audio_set_mode(audio_mode_t mode);
 audio_mode_t audio_get_mode(void);
 void         audio_set_viz_mode(viz_mode_t mode);
 viz_mode_t   audio_get_viz_mode(void);
+void         audio_loudness_reset(void);
 
 /* UI가 렌더링하는 동안 오디오 태스크가 재사용할 수 없는 일관된 스냅샷. */
 typedef struct {
@@ -27,6 +34,7 @@ typedef struct {
     float level;
     float rms;
     float sample_peak;
+    loudness_snapshot_t loudness;
     double meter_energy_total;
     uint64_t meter_sample_total;
     audio_input_source_t input_source;

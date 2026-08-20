@@ -90,6 +90,7 @@ int images_app_count(void);
 #ifdef PEDAL_SIM
 int monitor_app_debug_smoothing_index(void);
 int monitor_app_debug_weighting_index(void);
+bool monitor_app_debug_compare_active(void);
 int bounce_app_debug_cat_y(void);
 bool bounce_app_debug_game_over(void);
 int db_meter_debug_input_range(void);

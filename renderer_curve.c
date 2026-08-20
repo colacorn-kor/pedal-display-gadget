@@ -41,8 +41,11 @@ typedef struct {
 
 typedef struct {
     float smooth[VIZ_POINTS];
+    float underlay[VIZ_POINTS];
     int y_curve[PW];
     int y_prev[PW];
+    int y_underlay[PW];
+    int y_underlay_prev[PW];
 } curve_work_t;
 
 static const frequency_mark_t FREQUENCY_MARKS[] = {
@@ -478,6 +481,7 @@ static void curve_create(lv_obj_t *parent, const viz_theme_t *theme)
     }
     for (int x = 0; x < PW; x++) {
         s_work->y_prev[x] = -1;
+        s_work->y_underlay_prev[x] = -1;
     }
 
     s_root = lv_obj_create(parent);
@@ -568,15 +572,22 @@ static void curve_update(const viz_frame_t *frame)
 
     int count = frame->n < VIZ_POINTS ? frame->n : VIZ_POINTS;
     smooth_bands(frame->bars, count, s_work->smooth);
+    if (frame->underlay) {
+        smooth_bands(frame->underlay, count, s_work->underlay);
+    }
 
     float step = (float)(count - 1) / (float)(PW - 1);
     for (int x = 0; x < PW; x++) {
         s_work->y_curve[x] =
             value_to_y(sample_column(s_work->smooth, count, step, x));
+        s_work->y_underlay[x] = frame->underlay
+            ? value_to_y(sample_column(s_work->underlay, count, step, x))
+            : -1;
     }
 
     uint16_t accent = C565(s_theme.accent);
     uint16_t line = C565(s_theme.line);
+    uint16_t compare = C565(s_theme.peak);
     int dirty_x0 = PW;
     int dirty_y0 = PH;
     int dirty_x1 = -1;
@@ -584,25 +595,48 @@ static void curve_update(const viz_frame_t *frame)
     for (int x = 0; x < PW; x++) {
         int adjacent_changed = x > 0 &&
             s_work->y_prev[x - 1] != s_work->y_curve[x - 1];
+        int underlay_adjacent_changed = x > 0 &&
+            s_work->y_underlay_prev[x - 1] !=
+                s_work->y_underlay[x - 1];
         int changed = !s_frame_valid ||
                       s_work->y_prev[x] != s_work->y_curve[x] ||
-                      adjacent_changed;
+                      adjacent_changed ||
+                      s_work->y_underlay_prev[x] !=
+                          s_work->y_underlay[x] ||
+                      underlay_adjacent_changed;
         if (!changed) continue;
 
         int old_adjacent = x > 0
             ? s_work->y_prev[x - 1] : s_work->y_prev[x];
         int new_adjacent = x > 0
             ? s_work->y_curve[x - 1] : s_work->y_curve[x];
+        int old_underlay_adjacent = x > 0
+            ? s_work->y_underlay_prev[x - 1]
+            : s_work->y_underlay_prev[x];
+        int new_underlay_adjacent = x > 0
+            ? s_work->y_underlay[x - 1] : s_work->y_underlay[x];
         int old_top = s_frame_valid
             ? minimum_visible_y(s_work->y_prev[x], old_adjacent)
             : 0;
         int new_top = minimum_visible_y(s_work->y_curve[x], new_adjacent);
+        if (s_work->y_underlay_prev[x] >= 0) {
+            int underlay_top = minimum_visible_y(
+                s_work->y_underlay_prev[x], old_underlay_adjacent);
+            if (underlay_top < old_top) old_top = underlay_top;
+        }
+        if (s_work->y_underlay[x] >= 0) {
+            int underlay_top = minimum_visible_y(
+                s_work->y_underlay[x], new_underlay_adjacent);
+            if (underlay_top < new_top) new_top = underlay_top;
+        }
         int y0 = old_top < new_top ? old_top : new_top;
         restore_column(x, y0 - 2);
 
         draw_fill_column(x, s_work->y_curve[x], accent);
         draw_trace_segment(x, new_adjacent, s_work->y_curve[x],
                            line, accent, 118);
+        draw_trace_segment(x, new_underlay_adjacent,
+                           s_work->y_underlay[x], compare, compare, 72);
 
         if (x < dirty_x0) dirty_x0 = x;
         if (x > dirty_x1) dirty_x1 = x;
@@ -611,6 +645,7 @@ static void curve_update(const viz_frame_t *frame)
 
     for (int x = 0; x < PW; x++) {
         s_work->y_prev[x] = s_work->y_curve[x];
+        s_work->y_underlay_prev[x] = s_work->y_underlay[x];
     }
 
     if (dirty_x1 >= dirty_x0) {

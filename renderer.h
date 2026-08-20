@@ -15,6 +15,7 @@
 typedef struct {
     const float *bars;    /* 스펙트럼 0..1, n개 (현재 256) */
     const float *peaks;   /* 피크 0..1, n개 */
+    const float *underlay; /* 비교용 고정 스펙트럼 0..1, NULL이면 숨김 */
     int          n;
     float        level;   /* 전체 레벨 0..1 (반응형 테마용) */
 } viz_frame_t;

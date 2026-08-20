@@ -468,6 +468,15 @@ static bool run_smoke_test(void)
         return false;
     }
 
+    if (!smoke_send(EV_OK, "capture monitor comparison") ||
+        !monitor_app_debug_compare_active() ||
+        !smoke_send(EV_OK, "clear monitor comparison") ||
+        monitor_app_debug_compare_active()) {
+        fprintf(stderr,
+                "SMOKE FAIL: monitor comparison toggle was not stable\n");
+        return false;
+    }
+
     if (!run_frames_for(250) || !smoke_visualizer_has_signal()) return false;
 
     if (!smoke_send(EV_HOME_HOLD, "monitor -> launcher") ||
@@ -570,8 +579,8 @@ static bool run_smoke_test(void)
         fprintf(stderr, "SMOKE FAIL: tuner exit did not release mute\n");
         return false;
     }
-    if (audio_get_mode() != AUDIO_SPECTRUM) {
-        fprintf(stderr, "SMOKE FAIL: dB meter did not select spectrum mode\n");
+    if (audio_get_mode() != AUDIO_METER) {
+        fprintf(stderr, "SMOKE FAIL: dB meter did not select meter mode\n");
         return false;
     }
     if (db_meter_debug_input_range() != AUDIO_INPUT_LINE ||
@@ -626,6 +635,38 @@ static bool run_smoke_test(void)
                 "SMOKE FAIL: dB meter cumulative power did not advance\n");
         return false;
     }
+
+    const gadget_app_t *db_meter =
+        app_registry_at(app_registry_find("dbmeter"));
+    if (!db_meter || !db_meter->mode_set || !db_meter->mode_index) {
+        fprintf(stderr, "SMOKE FAIL: dB meter mode contract is missing\n");
+        return false;
+    }
+    db_meter->mode_set(1);
+    if (!run_frames_for(3200)) return false;
+    audio_viz_snapshot_t loudness_before_reset;
+    plat_audio_viz_get(&loudness_before_reset);
+    if (db_meter->mode_index() != 1 ||
+        loudness_before_reset.loudness.integrated_blocks == 0u ||
+        loudness_before_reset.loudness.short_term_lufs <=
+            LOUDNESS_FLOOR_LUFS) {
+        fprintf(stderr,
+                "SMOKE FAIL: dB meter Loudness view did not receive "
+                "BS.1770 data\n");
+        return false;
+    }
+    if (!smoke_send(EV_OK, "reset integrated loudness") ||
+        !run_frames_for(120)) return false;
+    audio_viz_snapshot_t loudness_after_reset;
+    plat_audio_viz_get(&loudness_after_reset);
+    if (loudness_after_reset.loudness.elapsed_ms >=
+        loudness_before_reset.loudness.elapsed_ms) {
+        fprintf(stderr,
+                "SMOKE FAIL: dB meter Loudness reset did not restart time\n");
+        return false;
+    }
+    db_meter->mode_set(0);
+    if (!run_one_frame()) return false;
 
     if (!smoke_send(EV_FOOTSW, "db meter -> music") ||
         !smoke_expect_app("music") ||
@@ -865,9 +906,10 @@ static bool run_smoke_test(void)
     printf("SMOKE PASS: platform playback capability, stereo transport/mixer, "
            "three-row launcher, Theme/About, app Theme "
            "Mode/Color, four monitor weightings with direct controls, reorder, "
-           "monitor viz, Gallery GG fallback, live cycle, tuner %.2f Hz (%s%d), "
-           "Curve controls, Reference mode, built-in cat Dino runner, "
-           "input-voltage meter controls/settings, Music lobby playback, "
+           "monitor viz/compare, Gallery GG fallback, live cycle, "
+           "tuner %.2f Hz (%s%d), Curve controls, Reference mode, "
+           "built-in cat Dino runner, input-voltage meter controls/settings, "
+           "BS.1770 Loudness/reset, Music lobby playback, "
            "validated Game Boy core, Game tile lobby and embedded "
            "runner/effects, Metronome clock/click/settings, launcher overflow "
            "hint, Oscilloscope timebase/scale/hold, MIDI Monitor history/"

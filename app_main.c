@@ -39,6 +39,7 @@
 #include "content_screen.h"
 #include "display_bringup.h"
 #include "fft_map.h"
+#include "loudness_meter.h"
 #include "music_events.h"
 #include "platform.h"
 #include "tuner.h"
@@ -108,12 +109,17 @@ static _Atomic int          s_waveform_ready;
 static _Atomic bool         s_waveform_enabled;
 static _Atomic int          s_audio_mode = AUDIO_SPECTRUM;
 static _Atomic int          s_viz_mode = VIZ_MONITOR;
+static _Atomic unsigned     s_loudness_reset_request;
 
 static void publish_empty_viz_frame(int *producer)
 {
     int slot = *producer;
     atomic_fetch_add_explicit(&s_viz_seq[slot], 1U, memory_order_acq_rel);
     memset(&s_viz[slot], 0, sizeof(s_viz[slot]));
+    s_viz[slot].loudness.momentary_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz[slot].loudness.short_term_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz[slot].loudness.integrated_lufs = LOUDNESS_FLOOR_LUFS;
+    s_viz[slot].loudness.true_peak_dbtp = LOUDNESS_FLOOR_LUFS;
     atomic_fetch_add_explicit(&s_viz_seq[slot], 1U, memory_order_release);
     atomic_store_explicit(&s_viz_ready, slot, memory_order_release);
     *producer ^= 1;
@@ -122,6 +128,7 @@ static void publish_empty_viz_frame(int *producer)
 void audio_set_mode(audio_mode_t mode)
 {
     if (mode != AUDIO_SPECTRUM && mode != AUDIO_TUNER &&
+        mode != AUDIO_METER &&
         mode != AUDIO_NONE) return;
     atomic_store_explicit(&s_audio_mode, (int)mode, memory_order_release);
 }
@@ -142,6 +149,12 @@ viz_mode_t audio_get_viz_mode(void)
 {
     return (viz_mode_t)atomic_load_explicit(
         &s_viz_mode, memory_order_acquire);
+}
+
+void audio_loudness_reset(void)
+{
+    atomic_fetch_add_explicit(&s_loudness_reset_request, 1U,
+                              memory_order_release);
 }
 
 void audio_viz_snapshot_get(audio_viz_snapshot_t *out)
@@ -397,6 +410,7 @@ static void audio_task(void *arg)
 
     ESP_ERROR_CHECK(fft_map_init());
     tuner_init();
+    loudness_meter_init();
     audio_init();
     music_events_init();
 
@@ -409,6 +423,9 @@ static void audio_task(void *arg)
     unsigned processed_blocks = 0;
     double meter_energy_total = 0.0;
     uint64_t meter_sample_total = 0;
+    uint32_t meter_publish_samples = 0;
+    unsigned loudness_reset_seen = atomic_load_explicit(
+        &s_loudness_reset_request, memory_order_acquire);
 #if AUDIO_DUAL_RANGE
     audio_autorange_t autorange;
     audio_autorange_reset(&autorange);
@@ -492,6 +509,13 @@ static void audio_task(void *arg)
         audio_input_source_t input_source = AUDIO_INPUT_SOURCE_LEGACY;
         bool input_clipped = false;
 #endif
+        const unsigned loudness_reset = atomic_load_explicit(
+            &s_loudness_reset_request, memory_order_acquire);
+        if (loudness_reset != loudness_reset_seen) {
+            loudness_reset_seen = loudness_reset;
+            loudness_meter_reset();
+            meter_publish_samples = 0;
+        }
         float sum = 0.0f;
         float sample_peak = 0.0f;
         for (int i = 0; i < n; i++) {
@@ -514,10 +538,13 @@ static void audio_task(void *arg)
         audio_mode_t requested_mode = audio_get_mode();
         if (requested_mode != active_mode) {
             active_mode = requested_mode;
-            if (active_mode == AUDIO_TUNER) tuner_reset();
-            else {
+            if (active_mode == AUDIO_TUNER) {
+                tuner_reset();
+            } else {
                 meter_energy_total = 0.0;
                 meter_sample_total = 0;
+                meter_publish_samples = 0;
+                if (active_mode == AUDIO_METER) loudness_meter_reset();
                 fft_map_reset();
                 publish_empty_viz_frame(&producer);
             }
@@ -543,9 +570,20 @@ static void audio_task(void *arg)
         music_events_process_block(rms, level);
 
         atomic_fetch_add_explicit(&s_viz_seq[producer], 1U, memory_order_acq_rel);
-        int produced = fft_feed(samples, n,
+        int produced;
+        if (active_mode == AUDIO_METER) {
+            loudness_meter_feed(samples, n);
+            meter_publish_samples += (uint32_t)n;
+            produced = meter_publish_samples >= AUDIO_SAMPLE_RATE / 20U;
+            if (produced) {
+                meter_publish_samples = 0;
+                loudness_meter_get(&s_viz[producer].loudness);
+            }
+        } else {
+            produced = fft_feed(samples, n,
                                 s_viz[producer].bars,
                                 s_viz[producer].peaks);
+        }
         s_viz[producer].level = level;
         s_viz[producer].rms = rms;
         s_viz[producer].sample_peak = sample_peak;

@@ -22,7 +22,7 @@ PC 시뮬레이터는 화면을 잠깐 확인하는 모형이 아니라 다음 �
 - `gadget_app_t` 앱 구현과 레지스트리
 - 런처, 슬롯, 공통 팝업, 전역 Dark/Light·Color와 앱 Color/Mode/세부 설정
 - LVGL 화면과 렌더러
-- FFT 매핑, 튜너, 레벨 계산, music event 검출
+- FFT 매핑, 튜너, 레벨·BS.1770 loudness 계산, music event 검출
 - 미디어 카탈로그, 재생 상태 기계, 게임 상태와 입력 규칙
 - 설정 스키마와 마이그레이션 규칙
 
@@ -84,7 +84,7 @@ SDL 출력 장치 개방에 성공하면 `AUDIO_PLAYBACK_OUTPUT`을 제공한다
 | Launcher/Settings | 동작 | 동작 | UI와 세부 설정을 PC에서 먼저 개선 |
 | Sound Monitor | 실오디오·합성 입력 동작 | 동작 | 공통 renderer 유지 |
 | Tuner | 실오디오·합성 입력 동작 | 동작 | 공통 DSP 유지 |
-| dB Meter | 좌우 Input/Window 선택·상하 값 변경과 Settings 동작 | 동작, 실전압 교정 대기 | PC UI 선행, GG는 교정값만 추가 |
+| dB Meter | Level과 K-weighted M/S/I LUFS·4x true-peak 추정, 설정 동작 | 같은 공통 DSP, 실전압·계측 대조 대기 | GG는 교정값과 공인 미터 대조만 추가 |
 | Oscilloscope | 시스템/캡처 PCM 시간파형·trigger·hold 동작 | 같은 Core1 snapshot 계약 | 실제 입력에서 trigger·부하 실기 검증 |
 | Gallery | 상태 UI·자연 정렬·손상 검사·메타데이터·5초 배너 숨김 동작 | 같은 공통 코드, SD 실기 대기 | FAT32 카드 실기 검증 |
 | Metronome | click·UI·설정 동작 | 무음 시각 모드 동작 | GG 코덱 백엔드에서 같은 click 출력 |

@@ -1,6 +1,6 @@
 # LAB_STATE.md - 현재 장치 및 실기 상태
 
-> 갱신일: 2026-08-10
+> 갱신일: 2026-08-20
 > 이 문서는 마지막 플래시와 현재 실험 상태의 SSOT다.
 
 ## 1. 기준 상태
@@ -19,6 +19,12 @@
   빌드와 전체 smoke, 호스트 C 테스트 15개와 FFT 정규화 Python 테스트, ESP-IDF 기본 및
   `INPUT_TRS_LADDER=0` 빌드가 모두 통과했다. 기본 펌웨어는 `0xfea90` bytes이고 4MB 앱
   파티션의 75%가 남는다. 본체 플래시는 아직 하지 않았다.
+- 2026-08-20 현재 소스 개발본(미플래시): 튜너에 무음 gate, 적응 평활과 2프레임 음이름
+  전환 확인을 추가했다. dB Meter에는 전용 `AUDIO_METER` 경로와 K-weighted Momentary/
+  Short-term/Integrated LUFS, 4배 true-peak 추정 및 OK 리셋을 추가했다. Sound Monitor의
+  Curve/Reference는 OK로 현재 스펙트럼 비교 기준선을 고정·해제한다. PC 전체 smoke와
+  호스트 17/17, 깨끗한 ESP-IDF 기본 및 `INPUT_TRS_LADDER=0` `-Werror=all` 빌드가
+  통과했다. 이미지는 각각 `0x102cb0`/`0xff600`이고 4MB 앱 슬롯의 75%가 남는다.
 - 마지막 플래시 개발본: Sound Monitor 3단계 FFT·4종 Weighting·6개 주파수 구간과 공통
   Theme/Settings, dB Meter Input/Window 조작을 포함한다. 이어 플랫폼 capability와 공통
   재생 transport, PC Music/WAV, Game 타일 로비·내장 Cat Run, Metronome과 게임 효과음,

@@ -39,6 +39,58 @@ static tuner_result_t detect(float frequency, int harmonic_rich)
     return result;
 }
 
+static tuner_result_t detect_level(float frequency, float amplitude)
+{
+    tuner_reset();
+    float block[256];
+    int total = AUDIO_SAMPLE_RATE / 2;
+    int generated = 0;
+    while (generated < total) {
+        int count = total - generated;
+        if (count > (int)(sizeof(block) / sizeof(block[0]))) {
+            count = (int)(sizeof(block) / sizeof(block[0]));
+        }
+        for (int i = 0; i < count; i++) {
+            float phase = 2.0f * PI_F * frequency *
+                (generated + i) / AUDIO_SAMPLE_RATE;
+            block[i] = amplitude * sinf(phase);
+        }
+        tuner_feed(block, count);
+        generated += count;
+    }
+    tuner_result_t result;
+    tuner_get(&result);
+    return result;
+}
+
+static tuner_result_t switch_note(float first, float second)
+{
+    tuner_reset();
+    float block[256];
+    const int segment = AUDIO_SAMPLE_RATE * 3 / 10;
+    int generated = 0;
+    for (int part = 0; part < 2; part++) {
+        const float frequency = part == 0 ? first : second;
+        for (int offset = 0; offset < segment;) {
+            int count = segment - offset;
+            if (count > (int)(sizeof(block) / sizeof(block[0]))) {
+                count = (int)(sizeof(block) / sizeof(block[0]));
+            }
+            for (int i = 0; i < count; i++) {
+                float phase = 2.0f * PI_F * frequency *
+                    (generated + i) / AUDIO_SAMPLE_RATE;
+                block[i] = 0.4f * sinf(phase);
+            }
+            tuner_feed(block, count);
+            offset += count;
+            generated += count;
+        }
+    }
+    tuner_result_t result;
+    tuner_get(&result);
+    return result;
+}
+
 static void assert_detected(float frequency, int harmonic_rich)
 {
     tuner_result_t result = detect(frequency, harmonic_rich);
@@ -62,5 +114,12 @@ int main(void)
     for (unsigned i = 0; i < sizeof(low_harmonic_rich) / sizeof(low_harmonic_rich[0]); i++) {
         assert_detected(low_harmonic_rich[i], 1);
     }
+
+    tuner_result_t below_gate = detect_level(440.0f, 0.0005f);
+    assert(!below_gate.voiced);
+
+    tuner_result_t switched = switch_note(82.4f, 329.6f);
+    assert(switched.voiced);
+    assert(fabsf(switched.f0 - 329.6f) / 329.6f < 0.015f);
     return 0;
 }

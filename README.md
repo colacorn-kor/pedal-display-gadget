@@ -29,6 +29,8 @@ Core1 audio_task
   I2S RX
     +-- AUDIO_SPECTRUM -> fft_map -> 시각화 스냅샷 발행
     +-- AUDIO_TUNER    -> tuner   -> 튜너 결과 발행
+    +-- AUDIO_METER    -> loudness_meter -> LUFS/true-peak 추정 발행
+    +-- AUDIO_NONE     -> 분석 생략
 
 Core0 display_task / LVGL
   발행된 복사본 -> 활성 gadget_app_t -> 화면 렌더
@@ -37,7 +39,7 @@ Core0 input_task
   TRS 래더 + FOOTSW -> ui_event_t -> 활성 앱 우선 디스패치
 
 PC simulator
-  platform_sim + 동일 앱/UI/renderer/fft_map/tuner/music_events 코드
+  platform_sim + 동일 앱/UI/renderer/fft_map/tuner/loudness/music_events 코드
 ```
 
 오디오/DSP 상태는 Core1이 단독 소유한다. UI는
@@ -48,10 +50,10 @@ PC simulator
 
 | ID | 표시명 | 역할 |
 |---|---|---|
-| `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무잔상 Reference, 4종 Weighting 표시 |
+| `monitor` | Sound Monitor | Curve, 기타·베이스 12-Band, Circular, 무잔상 Reference, 4종 Weighting과 비교 기준선 표시 |
 | `images` | Gallery | SD의 JPG/PNG/BMP/GIF/LVGL BIN 이미지 탐색·표시 |
 | `tuner` | Tuner | 진입 시 뮤트와 튜너 오디오 모드 소유 |
-| `dbmeter` | dB Meter | RMS/피크 dBFS와 ADC 핀 기준 Vrms·dBV·dBu 표시 |
+| `dbmeter` | dB Meter | RMS/피크 dBFS·Vrms·dBV·dBu와 M/S/I LUFS·true-peak 추정 표시 |
 | `music` | Music | PC WAV·내장 8비트 로비 트랙 재생, 현재 GG는 코덱 대기 |
 | `game` | Game | 검증된 DMG `.gb` 타일 실행과 빈 타일의 내장 GG Cat 이스터 에그 |
 | `metronome` | Metronome | 40~220 BPM, 2~5박자, 4종 분할과 PC click |
